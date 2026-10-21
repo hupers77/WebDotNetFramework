@@ -1,0 +1,5 @@
+-- 프레임워크 스키마
+CREATE SCHEMA [FW] AUTHORIZATION [dbo];
+GO
+-- 로그 스키마 (INSERT 전용)
+CREATE SCHEMA [LOG] AUTHORIZATION [dbo];

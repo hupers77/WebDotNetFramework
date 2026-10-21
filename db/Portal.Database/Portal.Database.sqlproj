@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.Build.Sql/2.3.0">
+  <!--
+    포털 DB 형상 관리 (SDK 스타일 SQL 프로젝트). dotnet build로 DACPAC을 만들고 SqlPackage로 배포한다.
+    파일 하나에 객체 하나, 폴더는 스키마/객체 종류 (개발 표준 가이드 3장).
+  -->
+  <PropertyGroup>
+    <Name>Portal.Database</Name>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql160DatabaseSchemaProvider</DSP>
+    <ModelCollation>1033, CI</ModelCollation>
+    <DefaultCollation>Korean_Wansung_CI_AS</DefaultCollation>
+    <ReadCommittedSnapshot>True</ReadCommittedSnapshot>
+    <AllowSnapshotIsolation>True</AllowSnapshotIsolation>
+    <QueryStoreDesiredState>ReadWrite</QueryStoreDesiredState>
+    <TreatTSqlWarningsAsErrors>True</TreatTSqlWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PostDeploy Include="Scripts\PostDeployment.sql" />
+  </ItemGroup>
+</Project>

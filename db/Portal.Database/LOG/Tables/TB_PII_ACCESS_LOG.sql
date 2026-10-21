@@ -1,0 +1,15 @@
+-- 개인정보 접속기록: 조회·다운로드·마스킹 해제와 사유 (10년 보관)
+CREATE TABLE [LOG].[TB_PII_ACCESS_LOG] (
+  [LOG_ID]         BIGINT IDENTITY(1,1) NOT NULL,
+  [LOG_DT]         DATETIME2(3)   NOT NULL CONSTRAINT [DF_TB_PII_ACCESS_LOG_LOG_DT] DEFAULT (SYSUTCDATETIME()),
+  [USER_ID]        VARCHAR(30)    NOT NULL,
+  [PROGRAM_ID]     VARCHAR(30)    NOT NULL,
+  [ACTION_CD]      VARCHAR(10)    NOT NULL,             -- VIEW/DOWNLOAD/UNMASK
+  [TARGET_DESC]    NVARCHAR(500)  NULL,                 -- 대상 식별(건수, 조건). 개인정보 원문은 넣지 않음
+  [REASON]         NVARCHAR(500)  NULL,
+  [CLIENT_IP]      VARCHAR(45)    NULL,
+  [PREV_HASH]      BINARY(32)     NOT NULL,             -- 직전 행의 ROW_HASH (해시 체인, 위·변조 검증)
+  [ROW_HASH]       BINARY(32)     NOT NULL,
+  CONSTRAINT [PK_TB_PII_ACCESS_LOG] PRIMARY KEY CLUSTERED ([LOG_DT], [LOG_ID])
+    WITH (DATA_COMPRESSION = PAGE) ON [PS_LOG_MONTH] ([LOG_DT])
+);

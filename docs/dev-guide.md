@@ -69,7 +69,7 @@ dotnet test
 
 1. **프로그램 ID를 정합니다.** 형식은 `<모듈>_<대상>_<유형>`, 예: `PUR_VENDOR_MGT`. 유형은 `MGT`(관리), `INQ`(조회), `RPT`(레포트), `POP`(팝업)입니다.
 2. **DB 객체를 만듭니다.** `db/Portal.Database/<스키마>/Tables`, `/StoredProcedures`, `/Types`에 테이블, SP 4종(`USP_VENDOR_GET_LIST`, `_GET`, `_SAVE`, `_DEL`), 필요하면 TVP를 추가합니다. 파일 하나에 객체 하나입니다.
-3. **등록 데이터를 추가합니다.** `db/seed/<모듈>/PUR_VENDOR_MGT.sql`에 `TB_PROGRAM`, `TB_PROGRAM_FUNC`, `TB_PROGRAM_API`, 메뉴, 다국어 키를 `MERGE`로 작성합니다. 여러 번 실행해도 결과가 같아야 합니다(배포 시 자동 실행).
+3. **등록 데이터를 추가합니다.** `db/seed/<모듈>/PUR_VENDOR_MGT.sql`에 `TB_PROGRAM`, `TB_PROGRAM_FUNC`, `TB_PROGRAM_API`, 메뉴, 다국어 키를 `MERGE`로 작성합니다. 여러 번 실행해도 결과가 같아야 합니다(배포 시 자동 실행). 새 파일은 `db/Portal.Database/Scripts/PostDeployment.sql`에 `:r` 한 줄로 등록합니다.
 4. **DTO와 Service를 만듭니다.** `IVendorService` 인터페이스와 구현에 업무 규칙을 둡니다. SP 호출은 `ISpExecutor`로만 합니다.
 5. **Controller를 만듭니다.** `PortalController`를 상속하고 클래스에 `[Program]`, 변경 Action에 `[Func]`를 붙입니다.
 6. **View와 JS를 만듭니다.** 예제 폴더를 복사해 이름만 바꾸고, 화면 문구는 모두 다국어 키로 씁니다(한국어·영어·중국어 3개 언어 모두 입력).
@@ -294,7 +294,7 @@ public sealed class VendorSpTests(DbFixture db) : IClassFixture<DbFixture>
 }
 ```
 
-로컬에서는 `dotnet test`, 통합 테스트만 돌리려면 `dotnet test --filter Category=Integration`을 씁니다. 테스트 DB는 `db/ops/local-setup.ps1`이 만든 로컬 DB를 씁니다.
+로컬에서는 `dotnet test`, 통합 테스트만 돌리려면 `dotnet test --filter Category=Integration`, DB 없이 단위 테스트만 돌리려면 `--filter Category!=Integration`을 씁니다. 테스트 DB는 `db/ops/local-setup.ps1`이 만든 로컬 DB(`PORTAL_LOCAL`)를 쓰고, 다른 DB를 쓰려면 환경 변수 `PORTAL_TEST_DB`에 연결 문자열을 넣습니다. 통합 테스트 클래스에는 `[Collection(DbTests.Name)]`, `[Trait("Category", "Integration")]`을 붙이고 `DbFixture.BeginAsync()`로 롤백되는 트랜잭션 안에서 실행합니다.
 
 ## 10. 보안 코딩 체크리스트와 MR 규칙
 

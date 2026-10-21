@@ -104,11 +104,11 @@ Oct 21, 2026 · @사랑나무아빠
 | 로그 > 데이터 변경 기록 | `LOG_AUDIT_INQ` | EMP | SECURITY\_AUDITOR: R, E |
 | 로그 > 개인정보 접속기록 | `LOG_PII_INQ` | EMP | SECURITY\_AUDITOR: R, E |
 
-`EXEC`(작업 수동 실행)는 `FUNC_CD`에 추가되는 사용자 정의 기능입니다. 표준 화면 예제 8종(`SMP_*`)은 개발계에만 등록하고 운영계에서는 메뉴에 넣지 않습니다.
+`EXEC`(작업 수동 실행)는 `FUNC_CD`에 추가되는 사용자 정의 기능입니다. 메뉴는 고정 키(`TB_MENU.MENU_KEY`, 위 표의 프로그램 ID 또는 폴더 키 `MY`, `BRD`, `PTN`, `SYS`, `INTG`, `OPS`, `LOG`)로 식별하므로 운영 중 메뉴를 옮기거나 이름을 바꿔도 다음 배포의 시드가 덮어쓰지 않습니다. 시드 원본은 `db/seed/FW/06_PROGRAM.sql`, `07_MENU.sql`입니다. 표준 화면 예제 8종(`SMP_*`)은 개발계에만 등록하고 운영계에서는 메뉴에 넣지 않습니다.
 
 ## 5. 공통코드 그룹과 값
 
-아래 그룹은 프레임워크 동작에 필요한 시스템 코드(`SYSTEM_YN = 'Y'`)로, 화면에서 명칭·정렬·사용 여부는 바꿀 수 있지만 코드값은 추가·삭제할 수 없습니다. `FUNC_CD`와 `FILE_EXT`는 예외로 값을 추가할 수 있습니다.
+아래 그룹은 프레임워크 동작에 필요한 시스템 코드(`SYSTEM_YN = 'Y'`)로, 화면에서 명칭·정렬·사용 여부는 바꿀 수 있지만 코드값은 추가·삭제할 수 없습니다. `FUNC_CD`, `FILE_EXT`, `ICON`은 예외로 값을 추가할 수 있습니다(`TB_CODE_GROUP.ALLOW_ADD_YN = 'Y'`). 시드 원본은 `db/seed/FW/04_CODE.sql`이며 코드명은 3개 언어로 들어갑니다.
 
 | 그룹 코드 | 이름 | 값 (코드: 명칭) |
 | --- | --- | --- |
@@ -120,7 +120,7 @@ Oct 21, 2026 · @사랑나무아빠
 | `MENU_TYPE` | 메뉴 유형 | FOLDER, PAGE, LINK, POPUP |
 | `OPEN_SCOPE` | 공개 대상 | ALL: 모든 회사, EMP: 본사, PARTNER: 협력사 |
 | `BOARD_TYPE` | 게시판 유형 | NORMAL: 일반, NOTICE: 공지, FAQ, ARCHIVE: 자료실, QNA: 문의 |
-| `CONFIG_CATEGORY` | 설정 분류 | AUTH, PWD, SESSION, USER, FILE, UI, SITE, MAIL, LOG, PDF, API, AD, APPROVAL, SYS |
+| `CONFIG_CATEGORY` | 설정 분류 | AUTH, PWD, SESSION, USER, FILE, UI, SITE, MAIL, LOG, SP, PDF, API, AD, APPROVAL, NOTIFY, SYS |
 | `VAL_TYPE` | 설정값 형식 | STRING, INT, BOOL, JSON, SECRET |
 | `FILE_EXT` | 업로드 허용 확장자 | pdf, xlsx, xls, docx, doc, pptx, ppt, hwp, hwpx, txt, csv, jpg, jpeg, png, gif, zip |
 | `GRANT_TYPE` | 개인 권한 유형 | GRANT: 추가 허용, DENY: 차단 |

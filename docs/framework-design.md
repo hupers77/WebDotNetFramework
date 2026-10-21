@@ -220,7 +220,7 @@ Portal.sln
 
 | 영역 | 테이블 | 용도 |
 | --- | --- | --- |
-| 조직·사용자 | `TB_COMPANY`, `TB_DEPT`, `TB_USER`, `TB_USER_PWD_HIST`, `TB_USER_LOGIN_MAP`, `TB_USER_PREF`, `TB_USER_SESSION` | 회사(본사/협력사 구분, 협력사별 허용 IP), 부서 트리, 계정, 비밀번호 이력, AD 매핑, 개인 설정, 활성 세션 |
+| 조직·사용자 | `TB_COMPANY`, `TB_DEPT`, `TB_USER`, `TB_USER_PWD_HIST`, `TB_USER_LOGIN_MAP`, `TB_USER_AD_GROUP`, `TB_USER_PREF`, `TB_USER_SESSION` | 회사(본사/협력사 구분, 협력사별 허용 IP), 부서 트리, 계정, 비밀번호 이력, AD 매핑, AD 그룹 소속(동기화), 개인 설정, 활성 세션 |
 | 권한 | `TB_ROLE`, `TB_USER_ROLE`, `TB_DEPT_ROLE`, `TB_AD_GROUP_ROLE`, `TB_ROLE_PROGRAM_FUNC`, `TB_USER_PROGRAM_FUNC`, `TB_ROLE_DELEGATE` | 역할, 부여, 기능 권한, 개인 예외, 권한 위임 |
 | 프로그램·메뉴 | `TB_PROGRAM`, `TB_PROGRAM_FUNC`, `TB_PROGRAM_API`, `TB_MENU`, `TB_MENU_LANG`, `TB_USER_FAVORITE` | 화면/URL, 사용 기능, API 경로 매핑, 메뉴 트리, 즐겨찾기 |
 | 공통코드 | `TB_CODE_GROUP`, `TB_CODE_GROUP_LANG`, `TB_CODE`, `TB_CODE_LANG` | 계층형 코드, 추가 속성 5개, 유효기간 |
@@ -230,7 +230,7 @@ Portal.sln
 | 파일 | `TB_FILE_GROUP`, `TB_FILE` | 첨부 묶음, 파일 메타(저장명은 GUID) |
 | 알림·작업 | `TB_MSG_TEMPLATE`, `TB_MSG_QUEUE`, `TB_NOTIFICATION`, `TB_JOB`, `TB_JOB_HIST` | 메일/알림 템플릿·큐, 스케줄 작업 |
 | 외부 연계 | `TB_API_CLIENT`, `TB_API_OUTBOUND` | 수신 API 클라이언트(비밀값 해시), 송신 대상 설정 |
-| 로그 (`LOG`) | `TB_LOGIN_LOG`, `TB_ACCESS_LOG`, `TB_AUDIT_LOG`, `TB_PII_ACCESS_LOG`, `TB_ERROR_LOG`, `TB_API_LOG` | 로그인, 화면 접근, 데이터 변경, 개인정보 접속기록, 오류, API |
+| 로그 (`LOG`) | `TB_LOGIN_LOG`, `TB_ACCESS_LOG`, `TB_AUDIT_LOG`, `TB_PII_ACCESS_LOG`, `TB_ERROR_LOG`, `TB_API_LOG`, `TB_LOG_CHAIN` | 로그인, 화면 접근, 데이터 변경, 개인정보 접속기록, 오류, API, 테이블별 해시 체인 마지막 값 |
 
 **핵심 테이블 DDL** (공통 컬럼 `REG_ID, REG_DT, UPD_ID, UPD_DT, ROW_VER`는 생략)
 

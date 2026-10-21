@@ -1,0 +1,126 @@
+-- 공통코드 그리드 일괄 저장 (저장 SP 표준 템플릿, TVP). 프로그램: SYS_CODE_MGT
+-- I: 등록, U: 수정, D: 사용 안 함(논리 삭제). 명칭은 현재 사용자 언어로 저장한다.
+-- 시스템 그룹(SYSTEM_YN = 'Y')은 코드값 삭제 불가, ALLOW_ADD_YN = 'N'이면 추가도 불가.
+-- 결과: AFFECTED_CNT
+CREATE PROCEDURE [FW].[USP_CODE_SAVE]
+  @P_GROUP_CD   VARCHAR(30),
+  @P_ROWS       [FW].[TVP_CODE] READONLY,
+  @P_USER_ID    VARCHAR(30),
+  @P_LANG_CD    VARCHAR(5),
+  @P_CLIENT_IP  VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+  SET XACT_ABORT ON;
+
+  DECLARE @SYSTEM_YN CHAR(1), @ALLOW_ADD_YN CHAR(1);
+  SELECT @SYSTEM_YN = [SYSTEM_YN], @ALLOW_ADD_YN = [ALLOW_ADD_YN]
+    FROM [FW].[TB_CODE_GROUP]
+   WHERE [GROUP_CD] = @P_GROUP_CD;
+
+  -- 입력 검증 (트랜잭션 전)
+  IF @SYSTEM_YN IS NULL
+    THROW 50004, 'MSG.NOT_FOUND', 1;
+  IF EXISTS (SELECT 1 FROM @P_ROWS WHERE [ROW_STAT] NOT IN ('I', 'U', 'D'))
+    THROW 50005, 'MSG.INVALID_INPUT', 1;
+  IF @SYSTEM_YN = 'Y' AND EXISTS (SELECT 1 FROM @P_ROWS WHERE [ROW_STAT] = 'D' OR ([ROW_STAT] = 'I' AND @ALLOW_ADD_YN = 'N'))
+    THROW 50003, 'MSG.SYSTEM_CODE', 1;
+  IF EXISTS (SELECT 1 FROM @P_ROWS R JOIN [FW].[TB_CODE] C ON C.[GROUP_CD] = @P_GROUP_CD AND C.[CODE] = R.[CODE] WHERE R.[ROW_STAT] = 'I')
+    THROW 50001, 'MSG.DUP_CODE', 1;
+
+  DECLARE @CNT INT = 0;
+  DECLARE @BEFORE NVARCHAR(MAX), @AFTER NVARCHAR(MAX);
+
+  BEGIN TRY
+    BEGIN TRAN;
+
+    -- 동시성: 수정·삭제 행은 조회 시점의 ROW_VER와 같아야 한다
+    IF EXISTS (SELECT 1
+                 FROM @P_ROWS R
+                 LEFT JOIN [FW].[TB_CODE] C WITH (UPDLOCK) ON C.[GROUP_CD] = @P_GROUP_CD AND C.[CODE] = R.[CODE]
+                WHERE R.[ROW_STAT] IN ('U', 'D')
+                  AND (C.[CODE] IS NULL OR R.[ROW_VER] IS NULL OR C.[ROW_VER] <> R.[ROW_VER]))
+      THROW 50002, 'MSG.CONCURRENCY', 1;
+
+    SET @BEFORE = (SELECT C.[CODE], C.[PARENT_CODE], C.[SORT_NO], C.[ATTR1], C.[ATTR2], C.[ATTR3], C.[ATTR4], C.[ATTR5],
+                          C.[START_DT], C.[END_DT], C.[USE_YN]
+                     FROM [FW].[TB_CODE] C
+                     JOIN @P_ROWS R ON R.[CODE] = C.[CODE] AND R.[ROW_STAT] IN ('U', 'D')
+                    WHERE C.[GROUP_CD] = @P_GROUP_CD
+                    FOR JSON PATH);
+
+    -- I: 등록
+    INSERT INTO [FW].[TB_CODE]
+      ([GROUP_CD], [CODE], [PARENT_CODE], [SORT_NO], [ATTR1], [ATTR2], [ATTR3], [ATTR4], [ATTR5],
+       [START_DT], [END_DT], [USE_YN], [REG_ID], [UPD_ID])
+    SELECT @P_GROUP_CD, R.[CODE], R.[PARENT_CODE], ISNULL(R.[SORT_NO], 0), R.[ATTR1], R.[ATTR2], R.[ATTR3], R.[ATTR4], R.[ATTR5],
+           ISNULL(R.[START_DT], '1900-01-01'), ISNULL(R.[END_DT], '9999-12-31'), ISNULL(R.[USE_YN], 'Y'), @P_USER_ID, @P_USER_ID
+      FROM @P_ROWS R
+     WHERE R.[ROW_STAT] = 'I';
+    SET @CNT += @@ROWCOUNT;
+
+    -- U: 수정
+    UPDATE C
+       SET C.[PARENT_CODE] = R.[PARENT_CODE],
+           C.[SORT_NO]     = ISNULL(R.[SORT_NO], C.[SORT_NO]),
+           C.[ATTR1] = R.[ATTR1], C.[ATTR2] = R.[ATTR2], C.[ATTR3] = R.[ATTR3], C.[ATTR4] = R.[ATTR4], C.[ATTR5] = R.[ATTR5],
+           C.[START_DT]    = ISNULL(R.[START_DT], C.[START_DT]),
+           C.[END_DT]      = ISNULL(R.[END_DT], C.[END_DT]),
+           C.[USE_YN]      = ISNULL(R.[USE_YN], C.[USE_YN]),
+           C.[UPD_ID]      = @P_USER_ID,
+           C.[UPD_DT]      = SYSUTCDATETIME()
+      FROM [FW].[TB_CODE] C
+      JOIN @P_ROWS R ON R.[CODE] = C.[CODE]
+     WHERE C.[GROUP_CD] = @P_GROUP_CD
+       AND R.[ROW_STAT] = 'U';
+    SET @CNT += @@ROWCOUNT;
+
+    -- D: 사용 안 함
+    UPDATE C
+       SET C.[USE_YN] = 'N', C.[UPD_ID] = @P_USER_ID, C.[UPD_DT] = SYSUTCDATETIME()
+      FROM [FW].[TB_CODE] C
+      JOIN @P_ROWS R ON R.[CODE] = C.[CODE]
+     WHERE C.[GROUP_CD] = @P_GROUP_CD
+       AND R.[ROW_STAT] = 'D';
+    SET @CNT += @@ROWCOUNT;
+
+    -- 현재 언어 명칭
+    MERGE [FW].[TB_CODE_LANG] AS T
+    USING (SELECT [CODE], [CODE_NM] FROM @P_ROWS WHERE [ROW_STAT] IN ('I', 'U') AND [CODE_NM] IS NOT NULL) AS S
+       ON T.[GROUP_CD] = @P_GROUP_CD AND T.[CODE] = S.[CODE] AND T.[LANG_CD] = @P_LANG_CD
+    WHEN MATCHED AND T.[CODE_NM] <> S.[CODE_NM] THEN
+      UPDATE SET T.[CODE_NM] = S.[CODE_NM], T.[UPD_ID] = @P_USER_ID, T.[UPD_DT] = SYSUTCDATETIME()
+    WHEN NOT MATCHED THEN
+      INSERT ([GROUP_CD], [CODE], [LANG_CD], [CODE_NM], [REG_ID], [UPD_ID])
+      VALUES (@P_GROUP_CD, S.[CODE], @P_LANG_CD, S.[CODE_NM], @P_USER_ID, @P_USER_ID);
+
+    SET @AFTER = (SELECT C.[CODE], C.[PARENT_CODE], C.[SORT_NO], C.[ATTR1], C.[ATTR2], C.[ATTR3], C.[ATTR4], C.[ATTR5],
+                         C.[START_DT], C.[END_DT], C.[USE_YN], R.[CODE_NM]
+                    FROM [FW].[TB_CODE] C
+                    JOIN @P_ROWS R ON R.[CODE] = C.[CODE]
+                   WHERE C.[GROUP_CD] = @P_GROUP_CD
+                   FOR JSON PATH);
+
+    IF @CNT > 0
+    BEGIN
+      DECLARE @ROW_KEY NVARCHAR(200) = @P_GROUP_CD;
+      EXEC [LOG].[USP_AUDIT_WRITE]
+        @P_TABLE_NM = 'FW.TB_CODE', @P_ACTION_CD = 'U', @P_ROW_KEY = @ROW_KEY,
+        @P_BEFORE_JSON = @BEFORE, @P_AFTER_JSON = @AFTER,
+        @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD, @P_CLIENT_IP = @P_CLIENT_IP;
+
+      UPDATE [FW].[TB_CACHE_VERSION]
+         SET [VERSION_NO] += 1, [UPD_DT] = SYSUTCDATETIME()
+       WHERE [CACHE_KEY] = 'CODE';
+    END
+
+    COMMIT;
+
+    SELECT @CNT AS [AFFECTED_CNT];
+  END TRY
+  BEGIN CATCH
+    IF @@TRANCOUNT > 0
+      ROLLBACK;
+    THROW;
+  END CATCH
+END

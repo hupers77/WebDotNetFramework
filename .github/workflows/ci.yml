@@ -23,7 +23,7 @@ jobs:
         run: dotnet build Portal.sln -c Release
 
       - name: test (단위 + 아키텍처)
-        run: dotnet test Portal.sln -c Release --no-build
+        run: dotnet test Portal.sln -c Release --no-build --filter "Category!=Integration"
 
       - name: security (취약 패키지 검사)
         run: |
@@ -32,3 +32,37 @@ jobs:
             echo "취약 패키지가 있습니다." >&2
             exit 1
           fi
+
+  db-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: 테스트용 SQL Server 2022 시작 (실행마다 무작위 비밀번호)
+        run: |
+          PASSWORD="Ci$(openssl rand -hex 12)!a"
+          echo "::add-mask::$PASSWORD"
+          docker run -d --name mssql -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$PASSWORD" -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+          for i in $(seq 1 60); do
+            if docker exec mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$PASSWORD" -Q "SELECT 1" >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          echo "PORTAL_TEST_DB=Server=localhost,1433;Database=PORTAL_TEST;User ID=sa;Password=$PASSWORD;Encrypt=True;TrustServerCertificate=True" >> "$GITHUB_ENV"
+
+      - name: DB 프로젝트 빌드 → DACPAC
+        run: dotnet build db/Portal.Database -c Release
+
+      - name: 테스트 DB 배포 (스키마 + 초기 데이터, 두 번 배포해 반복 실행 가능 여부도 확인)
+        run: |
+          dotnet tool restore
+          for i in 1 2; do
+            dotnet sqlpackage /Action:Publish /SourceFile:db/Portal.Database/bin/Release/Portal.Database.dacpac \
+              /Profile:db/Portal.Database/Portal.Database.publish.xml /TargetConnectionString:"$PORTAL_TEST_DB"
+          done
+
+      - name: 통합 테스트 (SP, 데이터 범위, 감사 로그, DB 권한, 초기 데이터)
+        run: dotnet test tests/Portal.IntegrationTests -c Release

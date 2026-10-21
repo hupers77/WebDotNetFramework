@@ -105,6 +105,10 @@ public sealed class SpExecutor(
         }
     }
 
+    /// <summary>진행 중인 트랜잭션의 연결. 통합 테스트가 같은 트랜잭션 안에서 테스트 데이터를 넣을 때만 쓴다.</summary>
+    internal (SqlConnection Connection, SqlTransaction Transaction)? CurrentTransaction =>
+        _transaction is { } tx ? (tx.Connection, tx.Transaction) : null;
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
@@ -266,7 +270,8 @@ public sealed class SpExecutor(
         {
             try
             {
-                if (!_completed)
+                // SP 안의 오류(XACT_ABORT)로 서버가 이미 롤백했으면 Connection이 null이 된다.
+                if (!_completed && Transaction.Connection is not null)
                 {
                     await Transaction.RollbackAsync().ConfigureAwait(false);
                 }
