@@ -11,6 +11,8 @@
     <ProjectReference Include="..\Portal.Testing\Portal.Testing.csproj" />
     <ProjectReference Include="..\..\src\Portal.Core\Portal.Core.csproj" />
     <ProjectReference Include="..\..\src\Portal.Data\Portal.Data.csproj" />
+    <ProjectReference Include="..\..\src\Portal.Security\Portal.Security.csproj" />
+    <ProjectReference Include="..\..\src\Portal.Infrastructure\Portal.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

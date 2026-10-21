@@ -1,0 +1,66 @@
+-- 로그인 실패 처리: 실패 횟수 증가, 설정 횟수(PWD.LOCK_COUNT) 도달 시 잠금, 로그인 로그 기록.
+-- 없는 ID도 로그만 남긴다(입력값 30자까지). 자동 해제 시간이 지난 잠금은 횟수를 새로 센다.
+-- 결과: LOCK_YN (이번 실패로 잠겼거나 이미 잠긴 상태면 'Y')
+CREATE PROCEDURE [FW].[USP_AUTH_LOGIN_FAIL_EXEC]
+  @P_LOGIN_USER_ID   VARCHAR(30),
+  @P_LOGIN_RESULT_CD VARCHAR(20),
+  @P_AUTH_METHOD_CD  VARCHAR(10),
+  @P_USER_AGENT      NVARCHAR(300) = NULL,
+  @P_USER_ID         VARCHAR(30),
+  @P_LANG_CD         VARCHAR(5),
+  @P_CLIENT_IP       VARCHAR(45)   = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+  SET XACT_ABORT ON;
+
+  IF @P_LOGIN_RESULT_CD NOT LIKE 'FAIL[_]%'
+    THROW 50005, 'MSG.INVALID_INPUT', 1;
+
+  DECLARE @LOCK_COUNT INT = ISNULL(TRY_CAST((SELECT [CONFIG_VAL] FROM [FW].[TB_CONFIG] WHERE [CONFIG_KEY] = 'PWD.LOCK_COUNT') AS INT), 5);
+  DECLARE @LOCK_MINUTES INT = ISNULL(TRY_CAST((SELECT [CONFIG_VAL] FROM [FW].[TB_CONFIG] WHERE [CONFIG_KEY] = 'PWD.LOCK_MINUTES') AS INT), 0);
+  DECLARE @NOW DATETIME2(0) = SYSUTCDATETIME();
+  DECLARE @LOCK_YN CHAR(1) = 'N';
+
+  BEGIN TRY
+    BEGIN TRAN;
+
+    -- 비밀번호 오류만 횟수에 넣는다 (IP 차단·만료 계정은 비밀번호가 맞았던 경우다)
+    IF @P_LOGIN_RESULT_CD = 'FAIL_PWD'
+    BEGIN
+      UPDATE [FW].[TB_USER]
+         SET [LOGIN_FAIL_CNT] = CASE
+                                  WHEN [LOCK_YN] = 'Y' AND @LOCK_MINUTES > 0 AND [LOCK_DT] < DATEADD(MINUTE, -@LOCK_MINUTES, @NOW) THEN 1
+                                  WHEN [LOGIN_FAIL_CNT] < 255 THEN [LOGIN_FAIL_CNT] + 1
+                                  ELSE [LOGIN_FAIL_CNT]
+                                END,
+             [UPD_ID] = 'SYSTEM', [UPD_DT] = @NOW
+       WHERE [USER_ID] = @P_LOGIN_USER_ID;
+
+      UPDATE [FW].[TB_USER]
+         SET [LOCK_YN] = CASE WHEN [LOGIN_FAIL_CNT] >= @LOCK_COUNT THEN 'Y' ELSE 'N' END,
+             [LOCK_DT] = CASE WHEN [LOGIN_FAIL_CNT] >= @LOCK_COUNT
+                              THEN CASE WHEN [LOCK_YN] = 'Y' AND [LOGIN_FAIL_CNT] > @LOCK_COUNT THEN [LOCK_DT] ELSE @NOW END
+                              ELSE NULL END
+       WHERE [USER_ID] = @P_LOGIN_USER_ID;
+    END
+
+    SELECT @LOCK_YN = CASE WHEN [LOCK_YN] = 'Y' OR [USER_STAT_CD] = 'LOCKED' THEN 'Y' ELSE 'N' END
+      FROM [FW].[TB_USER]
+     WHERE [USER_ID] = @P_LOGIN_USER_ID;
+
+    EXEC [LOG].[USP_LOGIN_LOG_WRITE]
+      @P_LOGIN_USER_ID = @P_LOGIN_USER_ID, @P_LOGIN_RESULT_CD = @P_LOGIN_RESULT_CD, @P_AUTH_METHOD_CD = @P_AUTH_METHOD_CD,
+      @P_USER_AGENT = @P_USER_AGENT, @P_SESSION_HASH = NULL,
+      @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD, @P_CLIENT_IP = @P_CLIENT_IP;
+
+    COMMIT;
+
+    SELECT @LOCK_YN AS [LOCK_YN];
+  END TRY
+  BEGIN CATCH
+    IF @@TRANCOUNT > 0
+      ROLLBACK;
+    THROW;
+  END CATCH
+END
