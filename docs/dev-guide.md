@@ -269,7 +269,7 @@ SP 오류 번호 대역: `FW` 50001\~50999, `BRD` 51000\~51999, `RPT` 52000\~529
 
 | 종류 | 위치 | 작성 시점 | 규칙 |
 | --- | --- | --- | --- |
-| 단위 | `tests/Portal.UnitTests/<모듈>/` | Service에 업무 규칙을 추가·변경할 때 | DB 없이, `Portal.Testing`의 Fake(`FakeSpExecutor`, `FakeCurrentUser`, `FakeTimeProvider`)로 의존성 교체 |
+| 단위 | `tests/Portal.UnitTests/<모듈>/` | Service에 업무 규칙을 추가·변경할 때 | DB 없이, `Portal.Testing`의 Fake(`FakeSpExecutor`, `FakeCurrentUser`, `FakeTimeProvider`, `FakePortalConfig`)로 의존성 교체 |
 | SP 통합 | `tests/Portal.IntegrationTests/<모듈>/` | SP를 추가·변경할 때 (SP당 1개 이상) | 테스트마다 트랜잭션을 열고 끝나면 롤백. 데이터는 테스트 안에서 만듦 |
 | 웹 통합 | `tests/Portal.IntegrationTests/Web/` | 권한·인증·API 응답 형식에 영향을 주는 변경 | `PortalWebFactory` + 테스트 인증 핸들러로 사용자·역할·회사 지정 |
 | 회사 격리 | SP 통합 테스트 안 | 회사 소유 데이터를 다루는 모든 목록·단건 SP | 협력사 A 사용자로 협력사 B 데이터가 0건인지 확인 |

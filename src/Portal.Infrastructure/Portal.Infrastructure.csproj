@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 캐시, 설정, 이후 로깅·파일·메일·PDF·엑셀·HTTP 클라이언트·스케줄러 -->
+  <ItemGroup>
+    <ProjectReference Include="..\Portal.Core\Portal.Core.csproj" />
+    <ProjectReference Include="..\Portal.Data\Portal.Data.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Portal.UnitTests" />
+  </ItemGroup>
+</Project>

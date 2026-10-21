@@ -48,6 +48,8 @@ Oct 21, 2026 · @사랑나무아빠
 | 역할 | `SYS_ADMIN` |
 | 비밀번호 | 설치 스크립트 실행 시 임시 비밀번호를 무작위 생성해 화면에 1회만 출력. 최초 로그인 시 변경 강제 + 2단계 인증 등록 |
 
+이 계정은 초기 데이터 스크립트에 넣지 않습니다(해시를 저장소에 둘 수 없으므로). 설치 도구가 `AdminBootstrapService`(`FW.USP_AUTH_ADMIN_INIT_EXEC`)로 만들고, 같은 명령을 다시 실행하면 비상 재설정(새 임시 비밀번호, 잠금 해제, 열린 세션 종료, 감사 로그 기록)이 됩니다.
+
 `sysadmin`은 비상용으로만 쓰고, 실제 관리자에게는 각자 계정에 `PORTAL_ADMIN` 역할을 줍니다. 그래야 감사 로그에 누가 바꾼는지 남습니다.
 
 ## 3. 기본 역할
@@ -127,7 +129,7 @@ Oct 21, 2026 · @사랑나무아빠
 | `APPROVAL_STAT` | 결재 상태 | DRAFT: 작성, REQUESTED: 상신, APPROVED: 승인, REJECTED: 반려, CANCELED: 회수 |
 | `JOB_STAT` | 배치 실행 결과 | RUNNING, SUCCESS, FAILED, SKIPPED |
 | `MSG_CHANNEL` | 알림 채널 | PORTAL: 포털 알림, MAIL: 메일 |
-| `LOGIN_RESULT` | 로그인 결과 | SUCCESS, FAIL\_PWD, FAIL\_LOCKED, FAIL\_EXPIRED, FAIL\_MFA, FAIL\_IP, LOGOUT, KICKED: 중복 로그인 종료 |
+| `LOGIN_RESULT` | 로그인 결과·세션 종료 사유 | SUCCESS, FAIL\_PWD(없는 ID 포함), FAIL\_LOCKED, FAIL\_EXPIRED, FAIL\_MFA, FAIL\_IP, FAIL\_DUP: 중복 로그인 거부, LOGOUT, KICKED: 중복 로그인 종료, TIMEOUT: 비활동 만료, DISABLED: 로그인 중 계정 잠김·만료 |
 | `ICON` | 메뉴 아이콘 | home, user, board, chart, report, setting, link 등 (자체 SVG 아이콘 세트 이름) |
 
 업무 코드(직급, 직책, 거래처 유형 등)는 업무 개발 단계에서 `SYSTEM_YN = 'N'`으로 추가합니다.

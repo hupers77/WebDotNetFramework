@@ -1,6 +1,8 @@
 using System.Reflection;
 using Portal.Core.Keys;
 using Portal.IntegrationTests.Infrastructure;
+using Portal.Security.Authentication;
+using Portal.Security.Passwords;
 
 namespace Portal.IntegrationTests.Fw;
 
@@ -36,11 +38,14 @@ public sealed class SeedDataTests(DbFixture fixture)
         Assert.All(constants, c => Assert.Contains(c, rows));
     }
 
-    [Fact]
-    public async Task 메시지키_MessageKeys상수가모두3개언어로있음()
+    [Theory]
+    [InlineData(typeof(MessageKeys))]
+    [InlineData(typeof(AuthMessageKeys))]
+    [InlineData(typeof(PasswordMessageKeys))]
+    public async Task 메시지키_상수가모두3개언어로있음(Type keys)
     {
         await using var db = await fixture.BeginAsync();
-        var constants = typeof(MessageKeys).GetFields(BindingFlags.Public | BindingFlags.Static)
+        var constants = keys.GetFields(BindingFlags.Public | BindingFlags.Static)
             .Select(f => (string)f.GetRawConstantValue()!);
 
         foreach (var key in constants)
@@ -59,6 +64,18 @@ public sealed class SeedDataTests(DbFixture fixture)
             .Order(StringComparer.Ordinal);
 
         Assert.Equal(constants, await db.ColumnAsync<string>("SELECT CACHE_KEY FROM FW.TB_CACHE_VERSION ORDER BY CACHE_KEY"));
+    }
+
+    [Fact]
+    public async Task 로그인결과코드_LoginResultCodes상수가모두공통코드에있음()
+    {
+        await using var db = await fixture.BeginAsync();
+        var constants = typeof(LoginResultCodes).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Select(f => (string)f.GetRawConstantValue()!);
+
+        var rows = await db.ColumnAsync<string>("SELECT CODE FROM FW.TB_CODE WHERE GROUP_CD = 'LOGIN_RESULT'");
+
+        Assert.All(constants, c => Assert.Contains(c, rows));
     }
 
     [Theory]
