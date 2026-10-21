@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- 웹 호스트: Program.cs, 레이아웃, 로그인, 외부 API(/api/v1) -->
+  <PropertyGroup>
+    <UserSecretsId>portal-web-local</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Portal.Core\Portal.Core.csproj" />
+    <ProjectReference Include="..\Portal.Data\Portal.Data.csproj" />
+  </ItemGroup>
+</Project>

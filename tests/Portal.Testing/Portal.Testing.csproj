@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 테스트 공용 Fake. Mock 라이브러리 대신 수작업 테스트 더블을 제공한다(설계서 14장). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Portal.Core\Portal.Core.csproj" />
+    <ProjectReference Include="..\..\src\Portal.Data\Portal.Data.csproj" />
+  </ItemGroup>
+</Project>

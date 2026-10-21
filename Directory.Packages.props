@@ -1,0 +1,25 @@
+<Project>
+  <!--
+    중앙 패키지 버전 관리. 여기에 없는 패키지는 프로젝트에서 참조할 수 없다.
+    새 패키지는 설계서 2장 허용 목록과 eng/allowed-packages.txt에 먼저 추가한다(아키텍트 승인).
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- 전이 의존성도 아래 버전으로 고정해 취약 버전이 끌려오지 않게 한다 -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- 런타임 (Microsoft, MIT) -->
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 보안 패치 고정: 전이 의존성의 취약 버전 대체 (NU1902/NU1903) -->
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 테스트 전용 (배포물에 포함되지 않음) -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+</Project>

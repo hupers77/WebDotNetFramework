@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 공통 계약: 다른 Portal 프로젝트를 참조하지 않는다 -->
+</Project>

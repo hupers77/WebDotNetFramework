@@ -1,0 +1,24 @@
+<Project>
+  <!-- 모든 프로젝트 공통 빌드 규칙. 개발 표준 가이드 4장: 경고 = 오류, Nullable 사용 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+    <Version>0.1.0</Version>
+    <Company>Portal</Company>
+    <Product>Enterprise Web Portal Framework</Product>
+  </PropertyGroup>
+
+  <!-- 테스트 프로젝트는 XML 문서 주석과 일부 규칙을 요구하지 않는다 -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests')) Or '$(MSBuildProjectName)' == 'Portal.Testing'">
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>
