@@ -28,6 +28,7 @@ public sealed class DbSecurityTests(DbFixture fixture)
     [InlineData("UPDATE FW.TB_CONFIG SET CONFIG_VAL = '1' WHERE 1 = 0")]
     [InlineData("DELETE FROM LOG.TB_AUDIT_LOG WHERE 1 = 0")]
     [InlineData("UPDATE LOG.TB_LOGIN_LOG SET USER_ID = 'x' WHERE 1 = 0")]
+    [InlineData("DELETE FROM LOG.TB_ACCESS_LOG WHERE 1 = 0")]
     public async Task 앱역할_테이블직접접근_거부(string sql)
     {
         await using var db = await fixture.BeginAsync();

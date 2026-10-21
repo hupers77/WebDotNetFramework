@@ -9,6 +9,8 @@ GO
 -- TVP 형식 사용 권한 (스키마 단위)
 GRANT REFERENCES ON SCHEMA::[FW] TO [portal_app];
 GO
+GRANT REFERENCES ON SCHEMA::[LOG] TO [portal_app];
+GO
 -- 로그는 위·변조 방지를 위해 애플리케이션 계정의 직접 변경을 막는다 (SP 소유권 체인으로만 INSERT)
 DENY UPDATE, DELETE ON SCHEMA::[LOG] TO [portal_app];
 GO

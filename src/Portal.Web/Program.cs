@@ -1,14 +1,30 @@
 using System.Reflection;
+using Portal.Framework.Web;
+using Portal.Security.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 서버 정보 노출 방지 (설계서 9장 '정보 노출')
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+builder.Services.AddPortalWeb(builder.Configuration);
 
 var app = builder.Build();
 
+// 설치 직후 또는 비상시: dotnet Portal.Web.dll init-admin → 초기 관리자(sysadmin)를 만들거나 비밀번호를 재설정하고
+// 임시 비밀번호를 한 번만 출력한다(초기 데이터 정의서 2장). 임시 비밀번호는 저장·기록하지 않는다.
+if (args.Contains("init-admin", StringComparer.OrdinalIgnoreCase))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var (created, tempPassword) = await scope.ServiceProvider.GetRequiredService<AdminBootstrapService>().InitAsync();
+    Console.WriteLine(created ? "초기 관리자 sysadmin을 만들었습니다." : "sysadmin 비밀번호를 재설정했습니다.");
+    Console.WriteLine($"임시 비밀번호: {tempPassword}  (첫 로그인 때 변경해야 하며 다시 보여 주지 않습니다)");
+    return;
+}
+
 var version = Assembly.GetExecutingAssembly()
     .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
+
+app.UsePortalWeb();
 
 // 운영 모니터링용 상태 확인. DB·파일 저장소·AD 점검은 각 모듈이 추가될 때 붙인다.
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy", version }));

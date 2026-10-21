@@ -6,5 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Portal.Core\Portal.Core.csproj" />
     <ProjectReference Include="..\Portal.Data\Portal.Data.csproj" />
+    <ProjectReference Include="..\Portal.Security\Portal.Security.csproj" />
+    <ProjectReference Include="..\Portal.Framework.Web\Portal.Framework.Web.csproj" />
   </ItemGroup>
 </Project>

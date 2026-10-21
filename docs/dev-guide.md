@@ -50,10 +50,14 @@ dotnet tool restore                      # SqlPackage 등 도구 복원
 # 2) 로컬 연결 문자열은 소스가 아닌 사용자 비밀 저장소에
 dotnet user-secrets --project src/Portal.Web set "ConnectionStrings:Portal" "Server=localhost;Database=PORTAL_LOCAL;Integrated Security=True;Encrypt=True;TrustServerCertificate=True"
 
-# 3) 실행 → https://localhost:5001 접속, 초기 관리자 계정으로 로그인(최초 로그인 시 비밀번호 변경)
+# 3) 초기 관리자(sysadmin) 생성: 임시 비밀번호가 한 번만 출력됨. 다시 실행하면 비밀번호 재설정
+dotnet run --project src/Portal.Web -- init-admin
+
+# 4) 실행 → https://localhost:5001 접속, sysadmin으로 로그인(최초 로그인 시 비밀번호 변경)
+dotnet dev-certs https --trust           # 로컬 HTTPS 인증서 (세션·CSRF 쿠키는 HTTPS에서만 동작)
 dotnet run --project src/Portal.Web
 
-# 4) 테스트
+# 5) 테스트
 dotnet test
 ```
 
@@ -271,7 +275,7 @@ SP 오류 번호 대역: `FW` 50001\~50999, `BRD` 51000\~51999, `RPT` 52000\~529
 | --- | --- | --- | --- |
 | 단위 | `tests/Portal.UnitTests/<모듈>/` | Service에 업무 규칙을 추가·변경할 때 | DB 없이, `Portal.Testing`의 Fake(`FakeSpExecutor`, `FakeCurrentUser`, `FakeTimeProvider`, `FakePortalConfig`)로 의존성 교체 |
 | SP 통합 | `tests/Portal.IntegrationTests/<모듈>/` | SP를 추가·변경할 때 (SP당 1개 이상) | 테스트마다 트랜잭션을 열고 끝나면 롤백. 데이터는 테스트 안에서 만듦 |
-| 웹 통합 | `tests/Portal.IntegrationTests/Web/` | 권한·인증·API 응답 형식에 영향을 주는 변경 | `PortalWebFactory` + 테스트 인증 핸들러로 사용자·역할·회사 지정 |
+| 웹 통합 | `tests/Portal.IntegrationTests/Web/` | 권한·인증·API 응답 형식에 영향을 주는 변경 | `PortalWebFactory`가 실제 파이프라인을 띄우고 DB만 `FakeSpExecutor`로 바꿈. `SignIn(사용자, ["프로그램:기능"])`으로 세션·권한 지정 (DB 없이 실행) |
 | 회사 격리 | SP 통합 테스트 안 | 회사 소유 데이터를 다루는 모든 목록·단건 SP | 협력사 A 사용자로 협력사 B 데이터가 0건인지 확인 |
 
 **이름과 형식**: 테스트 이름은 `대상_상황_기대결과`(예: `SaveAsync_중복코드_DUP_CODE오류`), 본문은 준비(Arrange) → 실행(Act) → 확인(Assert) 순서로 씁니다. 시간·난수·외부 서비스에 의존하는 테스트는 만들지 않습니다.

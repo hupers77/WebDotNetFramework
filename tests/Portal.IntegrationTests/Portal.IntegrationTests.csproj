@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
     SQL Server 대상 통합 테스트. 테스트 DB에 DACPAC을 먼저 배포해야 한다(db/ops/local-setup.ps1 또는 CI).
+    Web/ 폴더의 웹 통합 테스트는 DB 대신 FakeSpExecutor를 쓰므로 Category=Integration이 아니며 DB 없이도 돈다.
     연결 문자열은 환경 변수 PORTAL_TEST_DB, 없으면 로컬 기본값(PORTAL_LOCAL, Windows 통합 인증).
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
@@ -16,6 +18,9 @@
     <ProjectReference Include="..\..\src\Portal.Core\Portal.Core.csproj" />
     <ProjectReference Include="..\..\src\Portal.Data\Portal.Data.csproj" />
     <ProjectReference Include="..\..\src\Portal.Security\Portal.Security.csproj" />
+    <ProjectReference Include="..\..\src\Portal.Infrastructure\Portal.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Portal.Framework.Web\Portal.Framework.Web.csproj" />
+    <ProjectReference Include="..\..\src\Portal.Web\Portal.Web.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

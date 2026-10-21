@@ -1,0 +1,32 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var user = Context.Features.Get<PortalUserFeature>()?.User;
+    var notice = TempData[TempDataKeys.Notice] as string;
+}
+<!DOCTYPE html>
+<html lang="@CurrentUser.LangCd">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+    <title>@ViewData["Title"] - @L["SITE.NAME"]</title>
+    <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
+    <script type="module" src="~/js/fw.js" asp-append-version="true"></script>
+</head>
+<body>
+    <header class="top">
+        <a class="site-name" href="~/">@L["SITE.NAME"]</a>
+        <span class="user">@user?.UserNm</span>
+        <form method="post" asp-controller="Account" asp-action="Logout">
+            <button type="submit">@L["BTN.LOGOUT"]</button>
+        </form>
+    </header>
+    <main class="content">
+        @if (notice is not null)
+        {
+            <p class="notice" role="status">@L[notice]</p>
+        }
+        @RenderBody()
+    </main>
+</body>
+</html>
