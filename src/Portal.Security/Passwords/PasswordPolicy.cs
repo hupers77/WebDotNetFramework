@@ -112,4 +112,7 @@ public static class PasswordMessageKeys
 
     /// <summary>최대 길이 초과. 인자: 최대 길이.</summary>
     public const string TooLong = "VAL.PWD_TOO_LONG";
+
+    /// <summary>새 비밀번호와 확인 값 불일치 (화면에서 검사).</summary>
+    public const string ConfirmMismatch = "VAL.PWD_CONFIRM_MISMATCH";
 }

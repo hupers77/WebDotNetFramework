@@ -9,5 +9,6 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Portal.UnitTests" />
+    <InternalsVisibleTo Include="Portal.IntegrationTests" />
   </ItemGroup>
 </Project>

@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\src\Portal.Data\Portal.Data.csproj" />
     <ProjectReference Include="..\..\src\Portal.Security\Portal.Security.csproj" />
     <ProjectReference Include="..\..\src\Portal.Infrastructure\Portal.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Portal.Framework.Web\Portal.Framework.Web.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

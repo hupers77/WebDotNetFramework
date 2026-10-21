@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 웹 공통: 인증 핸들러, 권한 필터, 기본 Controller, 보안 헤더, 접근 기록, 이후 Tag Helper·공통 View/JS -->
+  <ItemGroup>
+    <ProjectReference Include="..\Portal.Core\Portal.Core.csproj" />
+    <ProjectReference Include="..\Portal.Data\Portal.Data.csproj" />
+    <ProjectReference Include="..\Portal.Security\Portal.Security.csproj" />
+    <ProjectReference Include="..\Portal.Infrastructure\Portal.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Portal.UnitTests" />
+    <InternalsVisibleTo Include="Portal.IntegrationTests" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,4 @@
+@{
+    // 로그인 전(로그인·오류 화면)은 메뉴 없는 레이아웃
+    Layout = Context.Features.Get<PortalUserFeature>() is null ? "_AuthLayout" : "_PortalLayout";
+}

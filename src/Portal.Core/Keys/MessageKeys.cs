@@ -21,6 +21,12 @@ public static class MessageKeys
     /// <summary>권한이 없습니다.</summary>
     public const string Forbidden = "MSG.FORBIDDEN";
 
+    /// <summary>로그인이 필요합니다.</summary>
+    public const string LoginRequired = "MSG.LOGIN_REQUIRED";
+
+    /// <summary>요청이 너무 많습니다. 잠시 후 다시 시도하세요.</summary>
+    public const string TooManyRequests = "MSG.TOO_MANY_REQUESTS";
+
     /// <summary>일시적인 오류가 발생했습니다. (추적 ID 함께 표시)</summary>
     public const string SystemError = "MSG.SYSTEM_ERROR";
 

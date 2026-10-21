@@ -1,0 +1,16 @@
+-- 다국어 문구 전체 (모든 언어). 웹서버가 시작할 때와 캐시 버전(LANG)이 바뀔 때 읽어 메모리에 둔다.
+-- 결과: RES_KEY, LANG_CD, RES_TEXT
+CREATE PROCEDURE [FW].[USP_LANG_RESOURCE_GET_LIST]
+  @P_USER_ID    VARCHAR(30),
+  @P_LANG_CD    VARCHAR(5),
+  @P_CLIENT_IP  VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  SELECT R.[RES_KEY], R.[LANG_CD], R.[RES_TEXT]
+    FROM [FW].[TB_LANG_RESOURCE] R
+    JOIN [FW].[TB_LANG] L ON L.[LANG_CD] = R.[LANG_CD]
+   WHERE L.[USE_YN] = 'Y'
+   ORDER BY R.[RES_KEY], R.[LANG_CD];
+END

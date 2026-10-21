@@ -1,0 +1,28 @@
+/* 1단계 최소 스타일. 테마 변수·공통 컴포넌트는 레이아웃 작업(2단계)에서 확장한다. 명도 대비 4.5:1 이상 유지 */
+:root {
+    --fw-primary: #1d4ed8;
+    --fw-text: #1f2937;
+    --fw-muted: #4b5563;
+    --fw-bg: #f3f4f6;
+    --fw-error: #b91c1c;
+    --fw-notice: #1e40af;
+    font-family: "Segoe UI", "Malgun Gothic", "Microsoft YaHei", sans-serif;
+    color: var(--fw-text);
+}
+
+body { margin: 0; background: var(--fw-bg); }
+body.auth { display: flex; min-height: 100vh; align-items: center; justify-content: center; }
+.auth-box { background: #fff; padding: 2rem; width: min(22rem, 90vw); border-radius: 6px; }
+.site-name { font-weight: 600; color: var(--fw-text); text-decoration: none; }
+.top { display: flex; gap: 1rem; align-items: center; padding: .5rem 1rem; background: #fff; border-bottom: 1px solid #d1d5db; }
+.top .user { margin-left: auto; }
+.content { padding: 1rem; }
+.form { display: flex; flex-direction: column; gap: .4rem; max-width: 22rem; }
+.form input { padding: .45rem; border: 1px solid #6b7280; border-radius: 4px; }
+button { padding: .45rem .9rem; border: 1px solid #6b7280; border-radius: 4px; background: #fff; cursor: pointer; }
+button.primary { background: var(--fw-primary); border-color: var(--fw-primary); color: #fff; margin-top: .6rem; }
+:focus-visible { outline: 2px solid var(--fw-primary); outline-offset: 2px; }
+.error { color: var(--fw-error); }
+.error::before { content: "⚠ "; }
+.notice { color: var(--fw-notice); }
+.hint { color: var(--fw-muted); font-size: .875rem; }

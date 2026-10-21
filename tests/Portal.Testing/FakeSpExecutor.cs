@@ -19,8 +19,19 @@ public sealed class FakeSpExecutor : ISpExecutor
 {
     private readonly Dictionary<string, Func<IReadOnlyDictionary<string, object?>, object?>> _results = new(StringComparer.Ordinal);
 
-    /// <summary>실행된 SP 호출 순서대로.</summary>
-    public List<SpCall> Calls { get; } = [];
+    private readonly List<SpCall> _calls = [];
+
+    /// <summary>실행된 SP 호출 순서대로 (웹 테스트처럼 여러 요청이 동시에 불러도 되도록 복사본을 준다).</summary>
+    public IReadOnlyList<SpCall> Calls
+    {
+        get
+        {
+            lock (_calls)
+            {
+                return [.. _calls];
+            }
+        }
+    }
 
     /// <summary>커밋된 트랜잭션 수.</summary>
     public int CommitCount { get; private set; }
@@ -35,7 +46,11 @@ public sealed class FakeSpExecutor : ISpExecutor
     /// <summary>파라미터에 따라 결과를 만든다.</summary>
     public FakeSpExecutor Returns(string spName, Func<IReadOnlyDictionary<string, object?>, object?> factory)
     {
-        _results[spName] = factory;
+        lock (_calls)
+        {
+            _results[spName] = factory;
+        }
+
         return this;
     }
 
@@ -92,8 +107,14 @@ public sealed class FakeSpExecutor : ISpExecutor
     private object? Invoke(string spName, object? parameters)
     {
         var values = ToDictionary(parameters);
-        Calls.Add(new SpCall(spName, values));
-        return _results.TryGetValue(spName, out var factory) ? factory(values) : null;
+        Func<IReadOnlyDictionary<string, object?>, object?>? factory;
+        lock (_calls)
+        {
+            _calls.Add(new SpCall(spName, values));
+            _results.TryGetValue(spName, out factory);
+        }
+
+        return factory?.Invoke(values);
     }
 
     private static Dictionary<string, object?> ToDictionary(object? parameters)

@@ -1,0 +1,8 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = L[Model.TitleKey];
+}
+<h1>@L[Model.TitleKey]</h1>
+<p>@L[Model.MessageKey]</p>
+<p class="hint">@L["LBL.TRACE_ID"]: <code>@Model.TraceId</code></p>
+<p><a href="~/">@L["BTN.HOME"]</a></p>

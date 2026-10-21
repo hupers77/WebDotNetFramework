@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="@CurrentUser.LangCd">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - @L["SITE.NAME"]</title>
+    <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
+</head>
+<body class="auth">
+    <main class="auth-box">
+        <p class="site-name">@L["SITE.NAME"]</p>
+        @RenderBody()
+    </main>
+</body>
+</html>
