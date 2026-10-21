@@ -1,0 +1,81 @@
+# 개발 표준 가이드 4장 코딩 규칙. 빌드(EnforceCodeStyleInBuild)에서 검사한다.
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{json,xml,csproj,props,targets,yml,yaml}]
+indent_size = 2
+
+[*.sql]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+
+[*.cs]
+# using / 네임스페이스
+dotnet_sort_system_directives_first = true
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+
+# var, 식 본문
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_prefer_braces = when_multiline:suggestion
+
+# 명명 규칙: 인터페이스 I 접두어, private 필드 _camelCase, 타입·멤버 PascalCase
+dotnet_naming_rule.interfaces_prefixed_i.symbols = interface_symbols
+dotnet_naming_rule.interfaces_prefixed_i.style = prefix_i_style
+dotnet_naming_rule.interfaces_prefixed_i.severity = warning
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+dotnet_naming_style.prefix_i_style.required_prefix = I
+dotnet_naming_style.prefix_i_style.capitalization = pascal_case
+
+dotnet_naming_rule.private_fields_underscore.symbols = private_field_symbols
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel_style
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_symbols.private_field_symbols.applicable_kinds = field
+dotnet_naming_symbols.private_field_symbols.applicable_accessibilities = private
+dotnet_naming_symbols.private_field_symbols.required_modifiers =
+dotnet_naming_style.underscore_camel_style.required_prefix = _
+dotnet_naming_style.underscore_camel_style.capitalization = camel_case
+
+dotnet_naming_rule.const_fields_pascal.symbols = const_field_symbols
+dotnet_naming_rule.const_fields_pascal.style = pascal_style
+dotnet_naming_rule.const_fields_pascal.severity = warning
+dotnet_naming_symbols.const_field_symbols.applicable_kinds = field
+dotnet_naming_symbols.const_field_symbols.required_modifiers = const
+dotnet_naming_style.pascal_style.capitalization = pascal_case
+
+dotnet_naming_rule.static_readonly_pascal.symbols = static_readonly_symbols
+dotnet_naming_rule.static_readonly_pascal.style = pascal_style
+dotnet_naming_rule.static_readonly_pascal.severity = warning
+dotnet_naming_symbols.static_readonly_symbols.applicable_kinds = field
+dotnet_naming_symbols.static_readonly_symbols.required_modifiers = static, readonly
+
+# 분석기 조정
+# CA1716: 'Shared', 'Error' 등 예약어 유사 이름 - 업무 용어와 충돌이 잦아 제외
+dotnet_diagnostic.CA1716.severity = none
+# CA1848: LoggerMessage 소스 생성기 강제는 과도함 - 메시지 템플릿 사용만 강제(CA2254)
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA2254.severity = warning
+# CA1062: Nullable 참조 형식으로 대체
+dotnet_diagnostic.CA1062.severity = none
+# 보안 규칙은 오류로 유지 (CA2100: SQL 명령 문자열 검토, CA3xxx: 보안)
+dotnet_diagnostic.CA2100.severity = error
+
+[tests/**.cs]
+# 테스트 이름은 '대상_상황_기대결과'(한글 허용) - 밑줄 규칙 제외
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1515.severity = none
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA1861.severity = none
+# xUnit1051: Fake 기반 단위 테스트는 취소가 의미 없어 TestContext 토큰 전달을 강제하지 않음
+dotnet_diagnostic.xUnit1051.severity = none

@@ -1,0 +1,18 @@
+# OSS/외부 패키지 허용 목록 (설계서 2장). 한 줄에 패키지 ID 하나, '#' 이후는 주석.
+# Directory.Packages.props의 모든 PackageVersion은 이 목록에 있어야 한다(아키텍처 테스트가 검사).
+# 금지: GPL/AGPL, 매출 기준 유료화 라이선스(QuestPDF, iText, AG Grid Enterprise 등).
+
+# 런타임 - Microsoft (MIT)
+Microsoft.Data.SqlClient            # MIT, DB 접근
+System.Security.Cryptography.Pkcs   # MIT, SqlClient 전이 의존성 보안 패치 고정
+DocumentFormat.OpenXml              # MIT, 엑셀 (2단계)
+
+# 런타임 - OSS 허용 (MIT)
+PDFsharp                            # MIT, PDF 생성 (3단계)
+PDFsharp-MigraDoc                   # MIT, PDF 문서 (3단계)
+
+# 테스트 전용 - 배포물 미포함
+Microsoft.NET.Test.Sdk              # MIT
+xunit.v3                            # Apache 2.0
+xunit.runner.visualstudio           # Apache 2.0
+Microsoft.AspNetCore.Mvc.Testing    # MIT, 웹 통합 테스트
