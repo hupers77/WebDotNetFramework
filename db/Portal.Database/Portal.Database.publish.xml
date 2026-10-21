@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SqlPackage 배포 프로필 (로컬·개발계·운영계 공통). 연결 문자열은 넣지 않고 명령줄 /TargetConnectionString으로 준다.
+  - IgnorePartitionSchemes / IgnoreIndexOptions: 배치(JOB_LOG_PARTITION)가 매월 로그 파티션 경계를 추가하므로,
+    배포 때 파티션 수 차이로 10년치 로그 테이블을 재작성·재구성하지 않게 한다. 인덱스 옵션을 바꿀 때는 별도 스크립트로 적용한다.
+  - BlockOnPossibleDataLoss: 데이터 손실 가능 변경이 있으면 배포를 멈춘다(설계서 17장 운영 배포 절차 1).
+-->
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <BlockOnPossibleDataLoss>True</BlockOnPossibleDataLoss>
+    <DropObjectsNotInSource>False</DropObjectsNotInSource>
+    <IgnorePartitionSchemes>True</IgnorePartitionSchemes>
+    <IgnoreIndexOptions>True</IgnoreIndexOptions>
+    <IgnorePermissions>False</IgnorePermissions>
+    <IgnoreRoleMembership>True</IgnoreRoleMembership>
+    <IgnoreUserSettingsObjects>True</IgnoreUserSettingsObjects>
+    <ScriptDatabaseOptions>True</ScriptDatabaseOptions>
+    <GenerateSmartDefaults>False</GenerateSmartDefaults>
+    <IncludeTransactionalScripts>True</IncludeTransactionalScripts>
+  </PropertyGroup>
+</Project>

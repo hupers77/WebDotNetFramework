@@ -29,4 +29,10 @@ public static class MessageKeys
 
     /// <summary>입력값이 올바르지 않습니다.</summary>
     public const string InvalidInput = "MSG.INVALID_INPUT";
+
+    /// <summary>시스템 코드는 추가하거나 삭제할 수 없습니다.</summary>
+    public const string SystemCode = "MSG.SYSTEM_CODE";
+
+    /// <summary>변경된 내용이 없습니다.</summary>
+    public const string NoChanges = "MSG.NO_CHANGES";
 }

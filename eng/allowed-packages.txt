@@ -11,6 +11,10 @@ DocumentFormat.OpenXml              # MIT, 엑셀 (2단계)
 PDFsharp                            # MIT, PDF 생성 (3단계)
 PDFsharp-MigraDoc                   # MIT, PDF 문서 (3단계)
 
+# 빌드 도구 - Microsoft (배포물 미포함)
+Microsoft.Build.Sql                 # MIT, SQL 프로젝트 SDK (db/Portal.Database.sqlproj의 Sdk 버전)
+Microsoft.SqlPackage                # Microsoft 무료 라이선스, DACPAC 배포 (dotnet-tools.json)
+
 # 테스트 전용 - 배포물 미포함
 Microsoft.NET.Test.Sdk              # MIT
 xunit.v3                            # Apache 2.0

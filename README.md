@@ -15,9 +15,11 @@
 .NET 10 SDK만 있으면 됩니다(`global.json`으로 버전 고정).
 
 ```powershell
-dotnet build Portal.sln      # 분석기 경고도 오류로 처리
-dotnet test Portal.sln       # 단위 + 아키텍처 테스트
-dotnet run --project src/Portal.Web   # https://localhost:5001/health
+dotnet build Portal.sln                                   # 분석기 경고도 오류로 처리
+dotnet test Portal.sln --filter "Category!=Integration"   # 단위 + 아키텍처 테스트 (DB 불필요)
+./db/ops/local-setup.ps1 -Server localhost -Database PORTAL_LOCAL   # 로컬 DB 생성·배포 (SQL Server 2022 Developer)
+dotnet test tests/Portal.IntegrationTests                 # SP·데이터 범위·DB 권한 통합 테스트 (PORTAL_TEST_DB 또는 PORTAL_LOCAL)
+dotnet run --project src/Portal.Web                       # https://localhost:5001/health
 ```
 
 ## 솔루션 구조 (구축 진행 중)
@@ -29,8 +31,12 @@ dotnet run --project src/Portal.Web   # https://localhost:5001/health
 | `src/Portal.Web` | 웹 호스트 (`/health`) | 1단계 |
 | `tests/Portal.Testing` | 테스트 공용 Fake (`FakeSpExecutor`, `FakeCurrentUser`, `FakeTimeProvider`) | 1단계 |
 | `tests/Portal.UnitTests` | 단위 테스트 + 아키텍처 테스트(참조 방향, OSS 허용 목록, 금지 패턴) | 1단계 |
+| `tests/Portal.IntegrationTests` | SQL Server 통합 테스트 (테스트마다 롤백) | 1단계 |
+| `db/Portal.Database` | SQL 프로젝트(DACPAC): FW·LOG 스키마 테이블, 함수, SP, 권한 역할 `portal_app` | 1단계 |
+| `db/seed/FW` | 초기 데이터 `MERGE` 스크립트 (배포 후 자동 실행, 반복 실행 가능) | 1단계 |
+| `db/ops` | 로컬 설치 등 DB 운영 스크립트 | 1단계 |
 
-나머지 프로젝트(Security, Infrastructure, Framework.Web, Modules.*, Worker, db/)는 설계서 15장 로드맵 순서로 추가됩니다.
+나머지 프로젝트(Security, Infrastructure, Framework.Web, Modules.*, Worker)는 설계서 15장 로드맵 순서로 추가됩니다.
 
 ## 규칙을 강제하는 장치
 

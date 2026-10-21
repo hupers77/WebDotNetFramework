@@ -1,5 +1,6 @@
 # GitLab 파이프라인 (설계서 17장). Runner는 Windows 서버의 shell executor(PowerShell)로 등록한다.
 # 이 단계에서는 build / test / security만 정의하고, package·deploy는 배포 자동화 단계에서 추가한다.
+# CI/CD 변수 PORTAL_TEST_DB(Protected + Masked): 통합 테스트 전용 DB 연결 문자열 (Runner 서버의 SQL Server Developer)
 stages:
   - build
   - test
@@ -17,19 +18,29 @@ build:
   stage: build
   script:
     - dotnet build Portal.sln -c $env:CONFIGURATION
+    - dotnet build db/Portal.Database -c $env:CONFIGURATION
   artifacts:
     paths:
       - src/*/bin/
       - src/*/obj/
       - tests/*/bin/
       - tests/*/obj/
+      - db/Portal.Database/bin/
     expire_in: 1 day
 
-test:
+unit-test:
   stage: test
   needs: [build]
   script:
-    - dotnet test Portal.sln -c $env:CONFIGURATION --no-build
+    - dotnet test Portal.sln -c $env:CONFIGURATION --no-build --filter "Category!=Integration"
+
+db-integration:
+  stage: test
+  needs: [build]
+  script:
+    - dotnet tool restore
+    - dotnet sqlpackage /Action:Publish /SourceFile:db/Portal.Database/bin/$env:CONFIGURATION/Portal.Database.dacpac /Profile:db/Portal.Database/Portal.Database.publish.xml /TargetConnectionString:$env:PORTAL_TEST_DB
+    - dotnet test tests/Portal.IntegrationTests -c $env:CONFIGURATION --no-build
 
 security:
   stage: security
