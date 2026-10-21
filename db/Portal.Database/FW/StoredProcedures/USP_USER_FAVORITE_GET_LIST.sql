@@ -1,0 +1,15 @@
+-- 본인 즐겨찾기 메뉴 (메뉴 트리의 즐겨찾기 탭). 권한이 없어진 메뉴는 화면에서 거른다.
+-- 결과: MENU_ID
+CREATE PROCEDURE [FW].[USP_USER_FAVORITE_GET_LIST]
+  @P_USER_ID    VARCHAR(30),
+  @P_LANG_CD    VARCHAR(5),
+  @P_CLIENT_IP  VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  SELECT F.[MENU_ID]
+    FROM [FW].[TB_USER_FAVORITE] F
+   WHERE F.[USER_ID] = @P_USER_ID
+   ORDER BY F.[SORT_NO], F.[REG_DT], F.[MENU_ID];
+END

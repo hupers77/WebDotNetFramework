@@ -11,6 +11,7 @@ using Portal.Data;
 using Portal.Framework.Web.Authentication;
 using Portal.Framework.Web.Context;
 using Portal.Framework.Web.Logging;
+using Portal.Framework.Web.Navigation;
 using Portal.Infrastructure.Localization;
 using Portal.Security.Authentication;
 using Portal.Security.Authorization;
@@ -32,7 +33,36 @@ public sealed class PortalWebFactory : WebApplicationFactory<Program>
         Sp.Returns(LangResources.ListSp, _ => Texts.Select(t => new LangResources.ResourceRow { LangCd = t.Lang, ResKey = t.Key, ResText = t.Text }).ToList());
         Sp.Returns("FW.USP_AUTH_SESSION_CHECK_EXEC", p => _sessions.GetValueOrDefault((string)p["P_SESSION_HASH"]!));
         Sp.Returns("FW.USP_AUTH_GET_PERMISSION", _ => PermissionsOfCurrentUser());
+        Sp.Returns(LangResources.LanguageSp, new List<LangResources.LanguageRow>
+        {
+            new() { LangCd = "ko", LangNm = "한국어", DefaultYn = "Y" },
+            new() { LangCd = "en", LangNm = "English" },
+            new() { LangCd = "zh-CN", LangNm = "简体中文" },
+        });
+        Sp.Returns(MenuCatalog.ListSp, _ => new object[] { Menus.ToList(), MenuNames.ToList() });
     }
+
+    /// <summary>
+    /// 테스트 메뉴: 1 홈(DSH_HOME) / 2 테스트 폴더 → 3 테스트 화면(TST_SCREEN), 4 본사 전용 화면(SYS_X, EMP)
+    /// / 5 협력사 폴더(PARTNER) → 6 협력사 화면(TST_SCREEN) / 7 외부 링크 / 8 잘못된 링크(javascript:).
+    /// </summary>
+    internal static readonly MenuCatalog.MenuRow[] Menus =
+    [
+        new() { MenuId = 1, MenuTypeCd = "PAGE", ProgramId = "DSH_HOME", Url = "/", IconCd = "home", SortNo = 10 },
+        new() { MenuId = 2, MenuTypeCd = "FOLDER", SortNo = 20 },
+        new() { MenuId = 3, ParentMenuId = 2, MenuTypeCd = "PAGE", ProgramId = TestScreensController.ProgramId, Url = "/test-screen/page", SortNo = 10 },
+        new() { MenuId = 4, ParentMenuId = 2, MenuTypeCd = "PAGE", ProgramId = "SYS_X", Url = "/sys/x", SortNo = 20, OpenScopeCd = "EMP" },
+        new() { MenuId = 5, MenuTypeCd = "FOLDER", SortNo = 30, OpenScopeCd = "PARTNER" },
+        new() { MenuId = 6, ParentMenuId = 5, MenuTypeCd = "PAGE", ProgramId = TestScreensController.ProgramId, Url = "/test-screen/page?partner=1", SortNo = 10 },
+        new() { MenuId = 7, MenuTypeCd = "LINK", Url = "https://example.com/manual", SortNo = 40, NewWinYn = "Y" },
+        new() { MenuId = 8, MenuTypeCd = "LINK", Url = "javascript:alert(1)", SortNo = 50 },
+    ];
+
+    internal static readonly MenuCatalog.MenuNameRow[] MenuNames =
+    [
+        .. Menus.Select(m => new MenuCatalog.MenuNameRow { MenuId = m.MenuId, LangCd = "ko", MenuNm = $"메뉴{m.MenuId}" }),
+        .. Menus.Select(m => new MenuCatalog.MenuNameRow { MenuId = m.MenuId, LangCd = "en", MenuNm = $"Menu{m.MenuId}" }),
+    ];
 
     public FakeSpExecutor Sp { get; } = new();
 
@@ -51,14 +81,14 @@ public sealed class PortalWebFactory : WebApplicationFactory<Program>
     ];
 
     /// <summary>세션을 만들고 쿠키에 넣을 토큰을 돌려준다. <paramref name="funcs"/>는 <c>"PROGRAM:FUNC"</c> 형식.</summary>
-    public string SignIn(string userId, string[] funcs, string langCd = "ko", bool passwordChangeRequired = false, string[]? roles = null)
+    public string SignIn(string userId, string[] funcs, string langCd = "ko", bool passwordChangeRequired = false, string[]? roles = null, string userTypeCd = "EMP")
     {
         var (token, hash) = SessionToken.Create();
         _sessions[hash] = new SessionUser
         {
             UserId = userId,
             CompanyCd = "HQ",
-            UserTypeCd = "EMP",
+            UserTypeCd = userTypeCd,
             UserNm = userId,
             LangCd = langCd,
             PwdChgReqYn = passwordChangeRequired ? "Y" : "N",

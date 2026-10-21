@@ -45,3 +45,8 @@ public sealed record PasswordViewModel(int MinLength3Types, int MinLength2Types,
 /// <param name="MessageKey">본문 다국어 키.</param>
 /// <param name="TraceId">추적 ID (관리자 문의용).</param>
 public sealed record ErrorViewModel(int StatusCode, string TitleKey, string MessageKey, string TraceId);
+
+/// <summary>즐겨찾기 변경 요청.</summary>
+/// <param name="MenuId">메뉴 ID.</param>
+/// <param name="Favorite">true면 추가, false면 해제.</param>
+public sealed record FavoriteRequest(int MenuId, bool Favorite);

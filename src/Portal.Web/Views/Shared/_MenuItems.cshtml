@@ -1,0 +1,34 @@
+@model IReadOnlyList<Portal.Framework.Web.Navigation.MenuItem>
+@{
+    var favorites = ViewData["FavoriteIds"] as ISet<int> ?? new HashSet<int>();
+}
+@foreach (var item in Model)
+{
+    if (item.Children.Count > 0)
+    {
+        <li role="treeitem" aria-expanded="false" class="menu-folder" data-menu-id="@item.MenuId">
+            <span class="menu-label icon-@(item.IconCd ?? "folder")" tabindex="-1">@item.Name</span>
+            <ul role="group" hidden>
+                <partial name="_MenuItems" model="item.Children" view-data="ViewData" />
+            </ul>
+        </li>
+    }
+    else
+    {
+        var url = item.Url!.StartsWith('/') ? Url.Content("~" + item.Url) : item.Url;
+        var favorite = favorites.Contains(item.MenuId);
+        <li role="treeitem" class="menu-page" data-menu-id="@item.MenuId">
+            @if (item.NewWindow || item.MenuTypeCd == Portal.Framework.Web.Navigation.MenuTypes.Link)
+            {
+                <a class="menu-label icon-@(item.IconCd ?? "page")" href="@url" target="_blank" rel="noopener noreferrer" tabindex="-1" data-menu-id="@item.MenuId">@item.Name</a>
+            }
+            else
+            {
+                <a class="menu-label icon-@(item.IconCd ?? "page")" href="@url" tabindex="-1" data-menu-id="@item.MenuId" data-tab="Y">@item.Name</a>
+            }
+            <button type="button" class="fav" data-menu-id="@item.MenuId" aria-pressed="@(favorite ? "true" : "false")"
+                    aria-label="@L[favorite ? "BTN.FAVORITE_REMOVE" : "BTN.FAVORITE_ADD"]"
+                    data-label-add="@L["BTN.FAVORITE_ADD"]" data-label-remove="@L["BTN.FAVORITE_REMOVE"]" tabindex="-1">@(favorite ? "★" : "☆")</button>
+        </li>
+    }
+}

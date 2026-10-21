@@ -1,0 +1,15 @@
+-- 사용 중인 언어 목록 (헤더 언어 전환, 다국어 입력 화면). LANG 캐시와 함께 읽는다.
+-- 결과: LANG_CD, LANG_NM, DEFAULT_YN
+CREATE PROCEDURE [FW].[USP_LANG_GET_LIST]
+  @P_USER_ID    VARCHAR(30),
+  @P_LANG_CD    VARCHAR(5),
+  @P_CLIENT_IP  VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  SELECT [LANG_CD], [LANG_NM], [DEFAULT_YN]
+    FROM [FW].[TB_LANG]
+   WHERE [USE_YN] = 'Y'
+   ORDER BY [SORT_NO], [LANG_CD];
+END

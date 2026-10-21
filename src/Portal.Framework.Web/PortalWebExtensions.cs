@@ -16,8 +16,10 @@ using Portal.Data;
 using Portal.Framework.Web.Authentication;
 using Portal.Framework.Web.Authorization;
 using Portal.Framework.Web.Context;
+using Portal.Framework.Web.Layout;
 using Portal.Framework.Web.Logging;
 using Portal.Framework.Web.Mvc;
+using Portal.Framework.Web.Navigation;
 using Portal.Framework.Web.Security;
 using Portal.Infrastructure;
 using Portal.Infrastructure.Caching;
@@ -61,13 +63,20 @@ public static class PortalWebExtensions
             o.Cookie.SameSite = SameSiteMode.Strict;
         });
 
+        services.AddScoped<CurrentPermissions>();
         services.AddScoped<PermissionFilter>();
+        services.AddScoped<ShellResultFilter>();
+        services.AddSingleton<MenuCatalog>();
+        services.AddSingleton<ICacheVersionListener>(sp => sp.GetRequiredService<MenuCatalog>());
+        services.AddScoped<MenuService>();
+        services.AddScoped<UserLanguageService>();
         services.AddControllersWithViews(o =>
         {
             o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
             o.Filters.AddService<PermissionFilter>();
             o.Filters.Add<ApiExceptionFilter>();
             o.Filters.Add<ApiResultFilter>();
+            o.Filters.AddService<ShellResultFilter>();
         });
 
         services.AddRateLimiter(o =>

@@ -15,7 +15,7 @@ namespace Portal.Web.Controllers;
 
 /// <summary>ID/PW 로그인·로그아웃 (설계서 5장). AD SSO는 개발계에서 같은 화면에 붙인다.</summary>
 [AllowAnonymous]
-public sealed class AccountController(AuthService auth) : PortalController
+public sealed class AccountController(AuthService auth, UserLanguageService languages) : PortalController
 {
     // 주소창으로 넘어온 reason은 이 키만 보여 준다 (임의 문구 주입 방지)
     private static readonly string[] ReasonKeys =
@@ -61,6 +61,14 @@ public sealed class AccountController(AuthService auth) : PortalController
         await auth.LogoutAsync(SessionCookie.Read(Request), Request.Headers[HeaderNames.UserAgent].ToString(), HttpContext.RequestAborted);
         SessionCookie.Delete(Response);
         return LocalRedirect(PortalSessionHandler.LoginPath);
+    }
+
+    /// <summary>로그인 화면 언어 선택 (쿠키에만 저장).</summary>
+    [HttpPost]
+    public async Task<IActionResult> Language([FromForm] string lang, [FromForm] string? returnUrl)
+    {
+        await languages.ChangeAsync(lang, HttpContext.RequestAborted);
+        return LocalRedirect(PortalSessionHandler.LoginPath + QueryString.Create("returnUrl", SafeReturnUrl(returnUrl)));
     }
 
     // 다른 사이트로 보내는 오픈 리디렉트를 막는다

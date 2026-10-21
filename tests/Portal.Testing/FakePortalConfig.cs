@@ -18,6 +18,9 @@ public sealed class FakePortalConfig : IPortalConfig
         ["PWD.LOCK_MINUTES"] = "30",
         ["SESSION.IDLE_MINUTES"] = "30",
         ["SESSION.CONCURRENT_POLICY"] = "KICK_OLD",
+        ["UI.TAB_MODE"] = "Y",
+        ["UI.MAX_TABS"] = "10",
+        ["SITE.THEME_COLOR"] = "#1F5FBF",
     };
 
     /// <summary>값을 바꾼다.</summary>

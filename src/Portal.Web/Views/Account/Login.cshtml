@@ -1,4 +1,5 @@
 @model LoginViewModel
+@inject Portal.Infrastructure.Localization.LangResources Lang
 @{
     ViewData["Title"] = L["BTN.LOGIN"];
 }
@@ -14,4 +15,15 @@
     <label for="Password">@L["LBL.PASSWORD"]</label>
     <input id="Password" name="Password" type="password" autocomplete="current-password" maxlength="128" required />
     <button type="submit" class="primary">@L["BTN.LOGIN"]</button>
+</form>
+<form method="post" asp-action="Language" class="lang-form login-lang">
+    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+    <label for="lang-select">@L["LBL.LANGUAGE"]</label>
+    <select id="lang-select" name="lang" data-autosubmit="Y">
+        @foreach (var lang in Lang.Languages)
+        {
+            <option value="@lang.LangCd" selected="@(lang.LangCd == CurrentUser.LangCd)">@lang.LangNm</option>
+        }
+    </select>
+    <noscript><button type="submit">@L["BTN.CONFIRM"]</button></noscript>
 </form>

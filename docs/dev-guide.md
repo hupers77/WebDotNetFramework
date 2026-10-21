@@ -152,7 +152,9 @@ Microsoft .NET 기본 명명 규칙을 따르고, 여기서 정한 규칙은 `.e
 
 **Razor**
 
-- 레이아웃은 `_PortalLayout`만 씁니다. 탭 안에서 열리는 화면은 `_TabLayout`입니다.
+- 화면에서 레이아웃을 지정하지 않습니다. `_ViewStart`가 고릅니다: 로그인 전은 `_AuthLayout`, 탭 안(`?_layout=tab` 또는 iframe 요청)은 `_TabLayout`, 그 밖에는 `_PortalLayout`입니다.
+- 멀티 탭(`UI.TAB_MODE`=Y)이면 주소창으로 화면에 직접 들어와도 프레임워크가 셸(헤더·메뉴·탭)로 감싸고 그 화면을 첫 탭으로 엽니다. 화면 코드는 탭을 의식하지 않고 일반 `View()`를 돌려주면 됩니다.
+- 메뉴에 보이는지는 프로그램의 READ 권한과 메뉴의 공개 범위(전체·임직원·협력사)로 정해집니다. 화면을 메뉴에 올리려면 `TB_PROGRAM`과 `TB_MENU`·`TB_MENU_LANG` 초기 데이터를 함께 추가합니다.
 - 문구는 `@L["키"]`, 버튼은 `<fw-button func="UPDATE" text-key="BTN.SAVE" />`, 코드 선택은 `<fw-select code-group="..." />`를 씁니다.
 - `Html.Raw`는 금지입니다. 게시판 본문처럼 HTML이 필요하면 서버에서 필터를 거친 `SafeHtml` 형식만 출력합니다.
 
@@ -160,7 +162,8 @@ Microsoft .NET 기본 명명 규칙을 따르고, 여기서 정한 규칙은 `.e
 
 - 화면당 JS 파일 하나(`wwwroot/js/<모듈>/<화면>.js`), ES 모듈 형식. 외부 라이브러리를 화면에서 직접 불러오지 않습니다.
 - 인라인 `<script>`와 `onclick=` 속성은 CSP에서 차단되므로 쓰지 않습니다. 이벤트는 `addEventListener`로 겁니다.
-- 서버 호출은 `fw.ajax`만 씁니다(CSRF, 로딩, 오류 처리 자동). `fetch` 직접 호출 금지.
+- 서버 호출은 `fw.ajax`만 씁니다(CSRF, 로딩, 오류 처리 자동). `fetch` 직접 호출 금지. 401이면 로그인 화면으로 이동하고 403이면 권한 안내를 띄우므로, 화면은 `result.success`만 보고 처리합니다.
+- 문구 묶음은 비동기로 읽으므로 `fw.t`는 `await fw.ready` 이후에 씁니다. 짧은 안내는 `fw.notify(문구)`를 씁니다(셸 하단 안내 영역, 스크린리더가 읽음).
 - 사용자 데이터는 `textContent` 또는 그리드 컴포넌트로만 넣고 `innerHTML`에 직접 넣지 않습니다.
 - 메시지는 `fw.t('MSG.SAVED')`, 확인창은 `fw.dialog.confirm`, 날짜·숫자 표시는 `fw.format`을 씁니다(사용자 언어·시간대 자동 반영).
 - 여러 행 저장은 그리드의 `getChanges()`(I/U/D 행)를 보내 TVP 일괄 저장 SP로 처리합니다. 행마다 요청을 보내지 않습니다.

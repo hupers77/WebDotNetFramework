@@ -8,7 +8,7 @@ namespace Portal.Framework.Web.Logging;
 
 /// <summary>
 /// 화면·API 접근 기록 (설계서 9장 '로그·추적', 10년 보관). 응답이 끝난 뒤 대기열에 넣기만 하므로 응답 시간에 영향이 없다.
-/// 정적 파일과 상태 확인은 기록하지 않는다. 쿼리 문자열은 남기지 않는다.
+/// 정적 파일·화면 문구 묶음·상태 확인은 기록하지 않는다. 쿼리 문자열은 남기지 않는다.
 /// </summary>
 public sealed class AccessLogMiddleware(RequestDelegate next, AccessLogBuffer queue, TimeProvider time)
 {
@@ -61,5 +61,6 @@ public sealed class AccessLogMiddleware(RequestDelegate next, AccessLogBuffer qu
 
     internal static bool IsExcluded(PathString path) =>
         path.StartsWithSegments("/css") || path.StartsWithSegments("/js") || path.StartsWithSegments("/lib")
-        || path.StartsWithSegments("/img") || path.StartsWithSegments("/health") || path.Equals("/favicon.ico");
+        || path.StartsWithSegments("/img") || path.StartsWithSegments("/i18n") || path.StartsWithSegments("/health")
+        || path.Equals("/favicon.ico") || path.Equals("/theme.css");
 }

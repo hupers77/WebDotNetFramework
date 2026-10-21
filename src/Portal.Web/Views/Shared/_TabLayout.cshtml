@@ -1,0 +1,27 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject Portal.Infrastructure.Localization.LangResources Lang
+@{
+    var notice = TempData[TempDataKeys.Notice] as string;
+}
+<!DOCTYPE html>
+<html lang="@CurrentUser.LangCd">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+    <meta name="fw-i18n" content="@Url.Content($"~/i18n/{CurrentUser.LangCd}.json?v={Lang.Version}")" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/theme.css" />
+    <script type="module" src="~/js/fw.js" asp-append-version="true"></script>
+</head>
+<body class="in-tab">
+    <main id="main" class="content">
+        @if (notice is not null)
+        {
+            <p class="notice" role="status">@L[notice]</p>
+        }
+        @RenderBody()
+    </main>
+</body>
+</html>

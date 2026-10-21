@@ -1,7 +1,17 @@
+@using Portal.Core.Keys
+@using Portal.Framework.Web.Navigation
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject Portal.Infrastructure.Localization.LangResources Lang
+@inject Portal.Core.Config.IPortalConfig Config
+@inject MenuService Menus
 @{
     var user = Context.Features.Get<PortalUserFeature>()?.User;
     var notice = TempData[TempDataKeys.Notice] as string;
+    var isShell = ViewData["Shell"] is true;
+    var tree = await Menus.GetTreeAsync(cancellationToken: Context.RequestAborted);
+    var favorites = await Menus.GetFavoritesAsync(tree, Context.RequestAborted);
+    ViewData["FavoriteIds"] = favorites.Select(f => f.MenuId).ToHashSet();
+    var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
 }
 <!DOCTYPE html>
 <html lang="@CurrentUser.LangCd">
@@ -9,24 +19,84 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+    <meta name="fw-i18n" content="@Url.Content($"~/i18n/{CurrentUser.LangCd}.json?v={Lang.Version}")" />
+    <meta name="fw-user" content="@user?.UserId" />
     <title>@ViewData["Title"] - @L["SITE.NAME"]</title>
     <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/theme.css" />
     <script type="module" src="~/js/fw.js" asp-append-version="true"></script>
+    <script type="module" src="~/js/fw-shell.js" asp-append-version="true"></script>
 </head>
-<body>
+<body class="portal">
+    <a class="skip-link" href="#main">@L["LBL.SKIP_TO_CONTENT"]</a>
     <header class="top">
+        <button type="button" class="menu-toggle" aria-controls="side" aria-expanded="true" aria-label="@L["BTN.MENU_TOGGLE"]" title="@L["BTN.MENU_TOGGLE"]">☰</button>
         <a class="site-name" href="~/">@L["SITE.NAME"]</a>
-        <span class="user">@user?.UserNm</span>
-        <form method="post" asp-controller="Account" asp-action="Logout">
-            <button type="submit">@L["BTN.LOGOUT"]</button>
+        <div class="menu-search" role="search">
+            <label for="menu-search" class="sr-only">@L["LBL.MENU_SEARCH"]</label>
+            <input id="menu-search" type="search" placeholder="@L["LBL.MENU_SEARCH"]" autocomplete="off" maxlength="50" />
+        </div>
+        <div class="session" data-idle-minutes="@Config.GetInt(ConfigKeys.SessionIdleMinutes)">
+            <span>@L["LBL.SESSION_REMAIN"]</span>
+            <time id="session-remain" aria-live="off">--:--</time>
+            <button type="button" id="session-extend">@L["BTN.SESSION_EXTEND"]</button>
+        </div>
+        <form method="post" asp-controller="My" asp-action="Language" class="lang-form">
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <label for="lang-select" class="sr-only">@L["LBL.LANGUAGE"]</label>
+            <select id="lang-select" name="lang" data-autosubmit="Y">
+                @foreach (var lang in Lang.Languages)
+                {
+                    <option value="@lang.LangCd" selected="@(lang.LangCd == CurrentUser.LangCd)">@lang.LangNm</option>
+                }
+            </select>
+            <noscript><button type="submit">@L["BTN.CONFIRM"]</button></noscript>
         </form>
+        <details class="user-menu">
+            <summary aria-label="@L["LBL.USER_MENU"]">@user?.UserNm</summary>
+            <ul>
+                <li><a href="~/My/Password" data-tab="Y">@L["BTN.CHANGE_PASSWORD"]</a></li>
+                <li>
+                    <form method="post" asp-controller="Account" asp-action="Logout">
+                        <button type="submit">@L["BTN.LOGOUT"]</button>
+                    </form>
+                </li>
+            </ul>
+        </details>
     </header>
-    <main class="content">
-        @if (notice is not null)
-        {
-            <p class="notice" role="status">@L[notice]</p>
-        }
-        @RenderBody()
-    </main>
+    <div class="body">
+        <nav id="side" class="side" aria-label="@L["LBL.MENU"]">
+            <div class="side-tabs" role="tablist">
+                <button type="button" role="tab" id="side-tab-all" aria-selected="true" aria-controls="side-all">@L["LBL.ALL_MENU"]</button>
+                <button type="button" role="tab" id="side-tab-fav" aria-selected="false" aria-controls="side-fav" tabindex="-1">@L["LBL.FAVORITES"]</button>
+                <button type="button" role="tab" id="side-tab-recent" aria-selected="false" aria-controls="side-recent" tabindex="-1">@L["LBL.RECENT"]</button>
+            </div>
+            <div id="side-all" role="tabpanel" aria-labelledby="side-tab-all">
+                <ul class="menu-tree" role="tree" aria-label="@L["LBL.ALL_MENU"]">
+                    <partial name="_MenuItems" model="tree" view-data="ViewData" />
+                </ul>
+                <p class="menu-empty hint" hidden>@L["LBL.MENU_NO_RESULT"]</p>
+            </div>
+            <div id="side-fav" role="tabpanel" aria-labelledby="side-tab-fav" hidden>
+                <ul class="menu-list" id="favorite-list" data-empty-text="@L["LBL.FAVORITES_EMPTY"]">
+                    @foreach (var item in favorites)
+                    {
+                        <li data-menu-id="@item.MenuId"><a class="menu-label" href="@(item.Url!.StartsWith('/') ? Url.Content("~" + item.Url) : item.Url)" data-menu-id="@item.MenuId" data-tab="@(item.NewWindow || item.MenuTypeCd == MenuTypes.Link ? "N" : "Y")">@item.Name</a></li>
+                    }
+                </ul>
+            </div>
+            <div id="side-recent" role="tabpanel" aria-labelledby="side-tab-recent" hidden>
+                <ul class="menu-list" id="recent-list"></ul>
+            </div>
+        </nav>
+        <main id="main" class="content@(isShell ? " shell" : "")">
+            @if (notice is not null)
+            {
+                <p class="notice" role="status">@L[notice]</p>
+            }
+            @RenderBody()
+        </main>
+    </div>
+    <p id="fw-status" class="toast" role="status" aria-live="polite"></p>
 </body>
 </html>

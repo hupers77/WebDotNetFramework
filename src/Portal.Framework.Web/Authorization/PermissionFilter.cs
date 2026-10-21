@@ -6,7 +6,6 @@ using Portal.Core.Keys;
 using Portal.Framework.Web.Context;
 using Portal.Framework.Web.Mvc;
 using Portal.Security.Authentication;
-using Portal.Security.Authorization;
 
 namespace Portal.Framework.Web.Authorization;
 
@@ -20,7 +19,7 @@ namespace Portal.Framework.Web.Authorization;
 /// <item>프로그램이 없거나 권한이 없으면 403 (기본 거부).</item>
 /// </list>
 /// </summary>
-public sealed class PermissionFilter(PermissionService permissions, PermissionCache cache) : IAsyncAuthorizationFilter
+public sealed class PermissionFilter(CurrentPermissions permissions) : IAsyncAuthorizationFilter
 {
     /// <summary>비밀번호 변경 프로그램 (변경 강제 중에도 열린다).</summary>
     public const string PasswordProgram = "MY_PWD_CHG";
@@ -64,8 +63,8 @@ public sealed class PermissionFilter(PermissionService permissions, PermissionCa
             return;
         }
 
-        user.Permissions ??= await cache.GetOrLoadAsync(user.User.UserId, () => permissions.GetCurrentAsync(http.RequestAborted));
-        if (!user.Permissions.Can(programId, funcCd))
+        var granted = await permissions.GetAsync(http.RequestAborted);
+        if (!granted.Can(programId, funcCd))
         {
             context.Result = new ForbidResult();
         }
