@@ -24,3 +24,11 @@ public sealed class FuncAttribute(string funcCd) : Attribute
 /// <summary>로그인만 되어 있으면 쓸 수 있는 Action (로그아웃 등). 비밀번호 변경 강제 중에도 허용된다.</summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class AuthenticatedOnlyAttribute : Attribute;
+
+/// <summary>
+/// 프로그램을 요청 데이터(첨부 묶음의 <c>PROGRAM_ID</c> 등)에서 찾아 Action이 직접 권한을 확인한다(<c>PortalController.DemandAnyFuncAsync</c>).
+/// 권한 필터는 로그인과 비밀번호 변경 강제만 확인하므로, 이 표시가 붙은 Action은 반드시 권한을 확인해야 한다.
+/// 공통 기능(첨부 파일)에만 쓰고, 업무 화면은 <see cref="ProgramAttribute"/>를 쓴다.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public sealed class ProgramFromDataAttribute : Attribute;

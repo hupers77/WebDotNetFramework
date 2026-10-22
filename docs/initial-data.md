@@ -155,7 +155,7 @@ Oct 21, 2026 · @사랑나무아빠
 | `SESSION.CONCURRENT_POLICY` | KICK\_OLD | STRING | N | KICK\_OLD / DENY\_NEW / ALLOW |
 | `USER.DORMANT_DAYS` | 365 | INT | N | 미접속 휴면 전환 |
 | `FILE.MAX_SIZE_MB` | 20 | INT | N | 파일 1개 최대 크기 |
-| `FILE.MAX_COUNT` | 10 | INT | N | 한 번에 첨부 가능한 수 |
+| `FILE.MAX_COUNT` | 10 | INT | N | 첨부 묶음 하나의 최대 파일 수 |
 | `UI.TAB_MODE` | Y | BOOL | N | 멀티 탭 사용 |
 | `UI.MAX_TABS` | 10 | INT | N | 최대 탭 수 |
 | `UI.PAGE_SIZE` | 50 | INT | N | 그리드 기본 행 수 |

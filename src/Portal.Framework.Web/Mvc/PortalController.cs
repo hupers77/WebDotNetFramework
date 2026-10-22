@@ -39,4 +39,16 @@ public abstract class PortalController : Controller
             throw new PermissionDeniedException(programId, func);
         }
     }
+
+    /// <summary>
+    /// 프로그램의 기능 중 하나라도 있는지 확인한다(<c>[ProgramFromData]</c> Action용). 없으면 <see cref="PermissionDeniedException"/>(403).
+    /// </summary>
+    protected async Task DemandAnyFuncAsync(string programId, params string[] funcs)
+    {
+        var granted = await HttpContext.RequestServices.GetRequiredService<CurrentPermissions>().GetAsync(HttpContext.RequestAborted);
+        if (!funcs.Any(f => granted.Can(programId, f)))
+        {
+            throw new PermissionDeniedException(programId, funcs[0]);
+        }
+    }
 }

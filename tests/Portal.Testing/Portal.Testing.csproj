@@ -3,5 +3,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Portal.Core\Portal.Core.csproj" />
     <ProjectReference Include="..\..\src\Portal.Data\Portal.Data.csproj" />
+    <ProjectReference Include="..\..\src\Portal.Infrastructure\Portal.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

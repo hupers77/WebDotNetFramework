@@ -414,7 +414,22 @@ USING (VALUES
   (N'VAL.CONFIG_BOOL', N'zh-CN', N'{0}：只能输入Y或N。', N'MSG'),
   (N'VAL.CONFIG_JSON', N'ko', N'{0}: 올바른 JSON 형식이 아닙니다.', N'MSG'),
   (N'VAL.CONFIG_JSON', N'en', N'{0}: The value is not valid JSON.', N'MSG'),
-  (N'VAL.CONFIG_JSON', N'zh-CN', N'{0}：不是有效的JSON格式。', N'MSG')
+  (N'VAL.CONFIG_JSON', N'zh-CN', N'{0}：不是有效的JSON格式。', N'MSG'),
+  (N'MSG.FILE_EXT_DENIED', N'ko', N'허용되지 않는 파일 형식입니다.', N'MSG'),
+  (N'MSG.FILE_EXT_DENIED', N'en', N'This file type is not allowed.', N'MSG'),
+  (N'MSG.FILE_EXT_DENIED', N'zh-CN', N'不允许的文件类型。', N'MSG'),
+  (N'MSG.FILE_TOO_LARGE', N'ko', N'파일 크기는 {0}MB 이하여야 합니다.', N'MSG'),
+  (N'MSG.FILE_TOO_LARGE', N'en', N'Files must be {0} MB or smaller.', N'MSG'),
+  (N'MSG.FILE_TOO_LARGE', N'zh-CN', N'文件大小不能超过{0}MB。', N'MSG'),
+  (N'MSG.FILE_COUNT_EXCEEDED', N'ko', N'첨부할 수 있는 파일 수를 넘었습니다.', N'MSG'),
+  (N'MSG.FILE_COUNT_EXCEEDED', N'en', N'You have reached the maximum number of attachments.', N'MSG'),
+  (N'MSG.FILE_COUNT_EXCEEDED', N'zh-CN', N'已超过可附加的文件数量。', N'MSG'),
+  (N'MSG.FILE_CONTENT_MISMATCH', N'ko', N'파일 내용이 확장자와 맞지 않습니다.', N'MSG'),
+  (N'MSG.FILE_CONTENT_MISMATCH', N'en', N'The file content does not match its extension.', N'MSG'),
+  (N'MSG.FILE_CONTENT_MISMATCH', N'zh-CN', N'文件内容与扩展名不符。', N'MSG'),
+  (N'MSG.FILE_EMPTY', N'ko', N'빈 파일은 올릴 수 없습니다.', N'MSG'),
+  (N'MSG.FILE_EMPTY', N'en', N'Empty files cannot be uploaded.', N'MSG'),
+  (N'MSG.FILE_EMPTY', N'zh-CN', N'不能上传空文件。', N'MSG')
 ) AS S ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE])
    ON T.[RES_KEY] = S.[RES_KEY] AND T.[LANG_CD] = S.[LANG_CD]
 WHEN NOT MATCHED THEN INSERT ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE]) VALUES (S.[RES_KEY], S.[LANG_CD], S.[RES_TEXT], S.[RES_TYPE]);

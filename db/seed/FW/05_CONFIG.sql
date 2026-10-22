@@ -21,7 +21,7 @@ USING (VALUES
   (N'SESSION.CONCURRENT_POLICY', N'KICK_OLD', N'STRING', N'N', N'SESSION', N'KICK_OLD / DENY_NEW / ALLOW', N'N'),
   (N'USER.DORMANT_DAYS', N'365', N'INT', N'N', N'USER', N'미접속 휴면 전환(일)', N'N'),
   (N'FILE.MAX_SIZE_MB', N'20', N'INT', N'N', N'FILE', N'파일 1개 최대 크기(MB)', N'N'),
-  (N'FILE.MAX_COUNT', N'10', N'INT', N'N', N'FILE', N'한 번에 첨부 가능한 수', N'N'),
+  (N'FILE.MAX_COUNT', N'10', N'INT', N'N', N'FILE', N'첨부 묶음 하나의 최대 파일 수', N'N'),
   (N'UI.TAB_MODE', N'Y', N'BOOL', N'N', N'UI', N'멀티 탭 사용', N'N'),
   (N'UI.MAX_TABS', N'10', N'INT', N'N', N'UI', N'최대 탭 수', N'N'),
   (N'UI.PAGE_SIZE', N'50', N'INT', N'N', N'UI', N'그리드 기본 행 수', N'N'),

@@ -75,8 +75,10 @@ public sealed class PermissionMatrixTests(DbFixture fixture, PortalWebFactory we
         foreach (var action in Actions())
         {
             var metadata = action.EndpointMetadata;
-            if (metadata.OfType<IAllowAnonymous>().Any() || metadata.OfType<AuthenticatedOnlyAttribute>().Any())
+            if (metadata.OfType<IAllowAnonymous>().Any() || metadata.OfType<AuthenticatedOnlyAttribute>().Any()
+                || metadata.OfType<ProgramFromDataAttribute>().Any())
             {
+                // 프로그램을 데이터에서 찾는 Action(첨부)은 권한을 Action이 확인하고, FileControllerTests가 검증한다
                 continue;
             }
 
