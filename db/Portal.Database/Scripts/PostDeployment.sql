@@ -11,3 +11,4 @@ GO
 :r ../../seed/FW/07_MENU.sql
 :r ../../seed/FW/08_LANG_RESOURCE.sql
 :r ../../seed/FW/09_CACHE_LOG.sql
+:r ../../seed/FW/10_MSG_TEMPLATE.sql

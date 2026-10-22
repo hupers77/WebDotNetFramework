@@ -117,6 +117,24 @@ public sealed class PartnerJoinTests(DbFixture fixture)
         Assert.Equal(2, await db.ScalarAsync<int>("SELECT COUNT(*) FROM FW.TB_PARTNER_JOIN_REQ WHERE USER_ID = 'it.ptn.kim'"));
     }
 
+    [Fact]
+    public async Task 승인반려_결과안내메일을_같은트랜잭션으로_대기열에()
+    {
+        await using var db = await fixture.BeginAsync();
+        await SeedPartnerAsync(db);
+        await RequestAsync(db, "it.ptn.ok");
+        await RequestAsync(db, "it.ptn.no");
+        await NewApprove(db).ApproveAsync(Process(await FindAsync(db, "it.ptn.ok")), Ct);
+        await NewApprove(db).RejectAsync(Process(await FindAsync(db, "it.ptn.no"), "소속 확인 불가"), Ct);
+
+        var rows = await db.ColumnAsync<string>(
+            "SELECT CONCAT(TEMPLATE_ID, '|', ISNULL(TO_USER_ID, '-'), '|', LANG_CD, '|', STAT_CD, '|', JSON_VALUE(PARAMS_JSON, '$.USER_ID'), '|', ISNULL(JSON_VALUE(PARAMS_JSON, '$.REJECT_REASON'), '-'))"
+            + " FROM FW.TB_MSG_QUEUE WHERE JSON_VALUE(PARAMS_JSON, '$.USER_ID') LIKE 'it.ptn.%' ORDER BY MSG_ID");
+        Assert.Equal(["TPL_PARTNER_APPROVED|it.ptn.ok|ko|READY|it.ptn.ok|-", "TPL_PARTNER_REJECTED|-|ko|READY|it.ptn.no|소속 확인 불가"], rows);
+        var emails = await db.ColumnAsync<byte[]>("SELECT TO_EMAIL_ENC FROM FW.TB_MSG_QUEUE WHERE JSON_VALUE(PARAMS_JSON, '$.USER_ID') LIKE 'it.ptn.%'");
+        Assert.All(emails, e => Assert.Equal("kim@partner.example.com", Protector.Unprotect(e)));
+    }
+
     [Theory]
     [InlineData("111-22-33333", "PARTNER", "2099-12-31")] // 등록되지 않은 번호
     [InlineData(BizRegNo, "HQ", "2099-12-31")]             // 본사 회사
