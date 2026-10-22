@@ -360,6 +360,7 @@ USING (VALUES
   (N'POST', N'/Sys/User/Save', N'SYS_USER_MGT', N'UPDATE'),
   (N'POST', N'/Sys/User/Unlock', N'SYS_USER_MGT', N'UPDATE'),
   (N'POST', N'/Sys/User/ResetMfa', N'SYS_USER_MGT', N'UPDATE'),
+  (N'POST', N'/Sys/User/Export', N'SYS_USER_MGT', N'EXPORT'),
   (N'GET', N'/Sys/Dept', N'SYS_DEPT_MGT', N'READ'),
   (N'GET', N'/Sys/Dept/List', N'SYS_DEPT_MGT', N'READ'),
   (N'GET', N'/Sys/Dept/Roles', N'SYS_DEPT_MGT', N'READ'),

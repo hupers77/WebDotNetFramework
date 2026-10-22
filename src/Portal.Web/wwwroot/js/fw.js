@@ -3,7 +3,8 @@
 //   응답은 { success, data, error: { code, message }, traceId } 그대로 돌려준다.
 // - fw.t: 화면 문구. 레이아웃의 <meta name="fw-i18n">이 가리키는 언어별 묶음을 읽는다(브라우저 캐시). await fw.ready 이후에 쓴다.
 // - fw.notify: 화면 아래 안내 문구 (스크린리더가 읽는 role=status).
-// - fw.dialog.confirm / alert: 확인·알림 대화상자 (네이티브 <dialog>, Esc는 취소). 브라우저 confirm()은 쓰지 않는다.
+// - fw.dialog.confirm / alert / prompt: 확인·알림·입력 대화상자 (네이티브 <dialog>, Esc는 취소). 브라우저 confirm()·prompt()는 쓰지 않는다.
+// - fw.download: POST로 파일을 받아 저장 (개인정보 다운로드처럼 사유를 함께 보낼 때).
 // - fw.format.dateTime: 서버의 UTC 일시를 사용자 언어 형식·브라우저 시간대로 보여 준다. fw.format.fileSize: 파일 크기.
 // - 편집 그리드는 fw-grid.js(Grid), 첨부는 fw-file.js(FileBox)를 불러 쓴다.
 
@@ -61,8 +62,11 @@ function touch() {
     }
 }
 
-/** 대화상자. 확인을 누르면 true, 취소·Esc면 false. 포커스는 확인 버튼에서 시작하고 닫히면 원래 위치로 돌아간다. */
-function openDialog(message, withCancel) {
+/**
+ * 대화상자. 확인을 누르면 { ok: true, value }, 취소·Esc면 { ok: false }. 포커스는 확인 버튼(입력칸이 있으면 입력칸)에서 시작하고 닫히면 원래 위치로 돌아간다.
+ * input을 주면 여러 줄 입력칸을 넣는다 ({ label, maxLength, required }). required면 빈 값으로는 확인되지 않는다.
+ */
+function openDialog(message, withCancel, input) {
     return new Promise((resolve) => {
         const opener = document.activeElement;
         const dialog = document.createElement('dialog');
@@ -73,35 +77,55 @@ function openDialog(message, withCancel) {
         dialog.setAttribute('aria-describedby', text.id);
         const form = document.createElement('form');
         form.method = 'dialog';
+        let field = null;
+        if (input) {
+            const label = document.createElement('label');
+            label.htmlFor = `${text.id}-input`;
+            label.textContent = input.label ?? '';
+            field = document.createElement('textarea');
+            field.id = label.htmlFor;
+            field.rows = 3;
+            field.maxLength = input.maxLength ?? 200;
+            field.required = input.required !== false;
+            form.append(label, field);
+        }
+
+        const buttons = document.createElement('div');
+        buttons.className = 'fw-dialog-buttons';
         const ok = document.createElement('button');
         ok.value = 'ok';
         ok.className = 'primary';
         ok.textContent = t('BTN.CONFIRM');
-        form.append(ok);
+        buttons.append(ok);
         if (withCancel) {
             const cancel = document.createElement('button');
             cancel.value = 'cancel';
             cancel.textContent = t('BTN.CANCEL');
-            form.append(cancel);
+            cancel.formNoValidate = true;
+            buttons.append(cancel);
         }
 
+        form.append(buttons);
         dialog.append(text, form);
         dialog.addEventListener('close', () => {
-            resolve(dialog.returnValue === 'ok');
+            resolve({ ok: dialog.returnValue === 'ok', value: field?.value.trim() });
             dialog.remove();
             opener?.focus?.();
         });
         document.body.append(dialog);
         dialog.showModal();
-        ok.focus();
+        (field ?? ok).focus();
     });
 }
 
 const dialog = {
     /** 확인 대화상자 (예: await fw.dialog.confirm(fw.t('CNF.SAVE'))). */
-    confirm: (message) => openDialog(message, true),
+    confirm: (message) => openDialog(message, true).then((r) => r.ok),
     /** 알림 대화상자. */
     alert: (message) => openDialog(message, false).then(() => undefined),
+    /** 입력 대화상자 (예: 다운로드 사유). 확인하면 입력값(앞뒤 공백 제거), 취소·Esc면 null. */
+    prompt: (message, { label, maxLength = 200, required = true } = {}) =>
+        openDialog(message, true, { label, maxLength, required }).then((r) => (r.ok ? r.value : null)),
 };
 
 let pending = 0;
@@ -111,7 +135,8 @@ async function send(url, init) {
     pending++;
     document.documentElement.classList.add('fw-loading');
     try {
-        const response = await fetch(url, { ...init, credentials: 'same-origin' });
+        const { saveFile: _, ...request } = init;
+        const response = await fetch(url, { ...request, credentials: 'same-origin' });
 
         if (response.status === 401) {
             const back = encodeURIComponent(window.top.location.pathname + window.top.location.search);
@@ -119,7 +144,14 @@ async function send(url, init) {
             return { success: false, error: { code: 'MSG.LOGIN_REQUIRED', message: t('MSG.LOGIN_REQUIRED') } };
         }
 
-        const result = response.headers.get('Content-Type')?.includes('json')
+        const json = response.headers.get('Content-Type')?.includes('json');
+        if (init.saveFile && response.ok && !json) {
+            await saveFile(response);
+            touch();
+            return { success: true };
+        }
+
+        const result = json
             ? await response.json()
             : { success: false, error: { code: 'MSG.SYSTEM_ERROR', message: t('MSG.SYSTEM_ERROR') } };
         if (!result.success && response.status === 403) {
@@ -144,6 +176,34 @@ function ajax(url, { method = 'GET', body } = {}) {
     }
 
     return send(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+}
+
+/** 응답 본문을 Content-Disposition의 파일 이름으로 저장한다. */
+async function saveFile(response) {
+    const disposition = response.headers.get('Content-Disposition') ?? '';
+    const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
+    const name = encoded ? decodeURIComponent(encoded) : (/filename="?([^";]+)"?/i.exec(disposition)?.[1] ?? 'download');
+    const href = URL.createObjectURL(await response.blob());
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = name;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 1000);
+}
+
+/**
+ * POST로 파일을 받아 저장한다. 다운로드 사유처럼 주소(방문 기록·서버 로그)에 남기면 안 되는 값을 보낼 때 쓴다.
+ * 성공하면 { success: true }, 실패하면 fw.ajax와 같은 오류 응답을 돌려준다(오류 안내는 부른 쪽이 한다).
+ */
+function download(url, body) {
+    return send(url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json', 'X-CSRF-TOKEN': meta('csrf-token'), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body ?? {}),
+        saveFile: true,
+    });
 }
 
 /** 파일 하나를 멀티파트로 올린다 (첨부 부품 fw-file.js가 쓴다). 응답 형식은 fw.ajax와 같다. */
@@ -194,5 +254,5 @@ const format = {
     },
 };
 
-export const fw = { ajax, upload, meta, t, notify, ready, dialog, format };
+export const fw = { ajax, upload, download, meta, t, notify, ready, dialog, format };
 window.fw = fw;

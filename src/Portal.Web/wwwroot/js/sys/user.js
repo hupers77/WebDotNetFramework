@@ -2,6 +2,7 @@
 // 왼쪽 사용자 목록에서 고르면 오른쪽에서 이름·상태·부서·사용 기한·역할을 고치고, 잠금 해제·2단계 인증 초기화를 한다.
 // 역할 선택지는 서버가 이 사용자에게 줄 수 있는지(회사 유형, SYS_ADMIN)를 함께 주므로 줄 수 없는 역할은 잠근다. 저장할 때 SP가 다시 확인한다.
 // 자기 자신의 상태·부서·역할·잠금·2단계 인증은 바꿀 수 없다. 버튼은 서버가 권한으로 그린다(fw-button). 부서 선택지는 같은 회사의 사용 중 부서다.
+// 엑셀은 지금 검색 조건의 사용자 전체를 받는다. 이름이 개인정보라서 사유를 묻고, 서버가 개인정보 접속기록에 남긴 뒤 파일을 준다.
 import { fw } from '../fw.js';
 
 await fw.ready;
@@ -10,10 +11,10 @@ const $ = (selector) => document.querySelector(selector);
 const root = $('#user-screen');
 const urls = {
     list: root.dataset.urlList, roles: root.dataset.urlRoles, depts: root.dataset.urlDepts, save: root.dataset.urlSave,
-    unlock: root.dataset.urlUnlock, resetMfa: root.dataset.urlResetMfa,
+    unlock: root.dataset.urlUnlock, resetMfa: root.dataset.urlResetMfa, export: root.dataset.urlExport,
 };
 const me = root.dataset.me;
-const buttons = { save: $('#user-save'), unlock: $('#user-unlock'), mfa: $('#user-mfa-reset') };
+const buttons = { save: $('#user-save'), unlock: $('#user-unlock'), mfa: $('#user-mfa-reset'), export: $('#user-export') };
 const list = $('#user-list');
 const detail = $('#user-detail');
 const inputs = { nm: $('#user-nm'), stat: $('#user-stat'), dept: $('#user-dept'), end: $('#user-end') };
@@ -177,15 +178,18 @@ function showDetail(row) {
     loadRoles(row.userId);
 }
 
-async function load(pageNo = 1, keepId = null) {
-    const query = new URLSearchParams({
+function searchValues() {
+    return {
         keyword: $('#user-keyword').value.trim(),
         companyCd: $('#user-company-filter')?.value ?? '',
         userTypeCd: $('#user-type-filter')?.value ?? '',
         userStatCd: $('#user-stat-filter').value,
         lockYn: $('#user-locked-filter').checked ? 'Y' : '',
-        pageNo,
-    });
+    };
+}
+
+async function load(pageNo = 1, keepId = null) {
+    const query = new URLSearchParams({ ...searchValues(), pageNo });
     const result = await fw.ajax(`${urls.list}?${query}`);
     if (!result.success) {
         fw.notify(result.error.message);
@@ -247,6 +251,19 @@ async function reset(url, confirmKey, doneKey) {
     await load(page.pageNo, current.userId);
 }
 
+async function exportExcel() {
+    const reason = await fw.dialog.prompt(fw.t('CNF.PII_DOWNLOAD'), { label: fw.t('LBL.PII_REASON'), maxLength: 200 });
+    if (reason === null) {
+        return;
+    }
+
+    const search = Object.fromEntries(Object.entries(searchValues()).map(([k, v]) => [k, v || null]));
+    const result = await fw.download(urls.export, { search, reason });
+    if (!result.success) {
+        fw.notify(result.error.message);
+    }
+}
+
 $('#user-search').addEventListener('submit', (e) => {
     e.preventDefault();
     load(1);
@@ -289,5 +306,6 @@ $('#user-next').addEventListener('click', () => load(page.pageNo + 1));
 buttons.save?.addEventListener('click', save);
 buttons.unlock?.addEventListener('click', () => reset(urls.unlock, 'CNF.USER_UNLOCK', 'MSG.USER_UNLOCKED'));
 buttons.mfa?.addEventListener('click', () => reset(urls.resetMfa, 'CNF.USER_MFA_RESET', 'MSG.USER_MFA_RESET'));
+buttons.export?.addEventListener('click', exportExcel);
 
 await load();

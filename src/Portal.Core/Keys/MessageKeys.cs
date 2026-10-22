@@ -41,4 +41,7 @@ public static class MessageKeys
 
     /// <summary>변경된 내용이 없습니다.</summary>
     public const string NoChanges = "MSG.NO_CHANGES";
+
+    /// <summary>개인정보 다운로드·마스킹 해제 사유를 입력하세요.</summary>
+    public const string PiiReasonRequired = "MSG.PII_REASON_REQUIRED";
 }
