@@ -17,6 +17,7 @@ builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.ICompanyAdminService, P
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IUserAdminService, Portal.Web.Areas.Sys.Services.UserAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IRoleAuthService, Portal.Web.Areas.Sys.Services.RoleAuthService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IRoleAdminService, Portal.Web.Areas.Sys.Services.RoleAdminService>();
+builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IProgramAdminService, Portal.Web.Areas.Sys.Services.ProgramAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IDeptAdminService, Portal.Web.Areas.Sys.Services.DeptAdminService>();
 
 var app = builder.Build();
