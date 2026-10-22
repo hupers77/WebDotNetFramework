@@ -202,7 +202,8 @@ public sealed class MsgSendSpTests(DbFixture fixture)
             if (i == 1)
             {
                 Assert.Equal("READY|1|addr|params|SMTP_1", await StateAsync(db, id));
-                Assert.InRange(await db.ScalarAsync<int>("SELECT DATEDIFF(SECOND, SYSUTCDATETIME(), NEXT_TRY_DT) FROM FW.TB_MSG_QUEUE WHERE MSG_ID = @M", ("@M", id)), 290, 300);
+                // NEXT_TRY_DT는 DATETIME2(0)라 초 단위로 반올림된다(최대 +0.5초)
+                Assert.InRange(await db.ScalarAsync<int>("SELECT DATEDIFF(MILLISECOND, SYSUTCDATETIME(), NEXT_TRY_DT) FROM FW.TB_MSG_QUEUE WHERE MSG_ID = @M", ("@M", id)), 290_000, 301_000);
             }
         }
 
