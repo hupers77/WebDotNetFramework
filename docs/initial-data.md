@@ -187,21 +187,22 @@ Oct 21, 2026 · @사랑나무아빠
 | `AD.BASE_DN` | (입력) | STRING | N | 동기화 대상 OU |
 | `AD.BIND_PASSWORD` | (입력) | SECRET | N | 동기화 계정 비밀번호 (gMSA 사용 시 불필요) |
 | `APPROVAL.GATEWAY` | NONE | STRING | Y | 전자결재 연동 구현 이름 (업무 개발 시 지정) |
-| `NOTIFY.POLL_SECONDS` | 60 | INT | N | 알림 확인 주기 |
+| `NOTIFY.POLL_SECONDS` | 60 | INT | N | 알림 확인 주기 (헤더 배지, 세션을 연장하지 않는 요청) |
+| `NOTIFY.KEEP_DAYS` | 90 | INT | N | 포털 알림 보관 기간(일, 읽었는지와 상관없이) |
 | `SYS.MAINTENANCE_MODE` | N | BOOL | N | Y면 관리자만 접속 |
 
 서버마다 다른 값(DB 연결 문자열, 파일 저장 루트, 활성 모듈, 로그 파일 경로, Data Protection 키 폴더)은 이 표가 아니라 `appsettings.{환경}.json`에 둡니다.
 
 ## 7. 기본 배치 작업·메시지 템플릿
 
-배치 작업은 `TB_JOB`에 등록하고 Portal.Worker가 실행합니다(`db/seed/FW/11_JOB.sql`). 주기는 Cron 식(분 시 일 월 요일)이며 한국 시간 기준이고, 백업 작업(02:00\~03:00)과 겹치지 않게 배치했습니다. 실패하면 `PORTAL_ADMIN` 역할 사용자에게 메일(`TPL_JOB_FAILED`)이 가고, 같은 작업이 연속으로 실패하면 다시 성공할 때까지는 한 번만 보냅니다(포털 알림은 알림함 기능에서 추가). 작업은 그 기능을 만드는 변경에서 시드에 추가합니다.
+배치 작업은 `TB_JOB`에 등록하고 Portal.Worker가 실행합니다(`db/seed/FW/11_JOB.sql`). 주기는 Cron 식(분 시 일 월 요일)이며 한국 시간 기준이고, 백업 작업(02:00\~03:00)과 겹치지 않게 배치했습니다. 실패하면 `PORTAL_ADMIN` 역할 사용자에게 메일(`TPL_JOB_FAILED`)이 가고, 같은 작업이 연속으로 실패하면 다시 성공할 때까지는 한 번만 보냅니다. 같은 내용이 포털 알림함에도 들어갑니다. 작업은 그 기능을 만드는 변경에서 시드에 추가합니다.
 
 | 작업 ID | 내용 | 주기 (Cron) | 상태 |
 | --- | --- | --- | --- |
 | `JOB_MAIL_SEND` | 메일 큐 발송, 실패 시 3회 재시도 | 1분마다 (`* * * * *`) | 등록됨 (클래스 `MailSend`) |
 | `JOB_SESSION_CLEANUP` | 시간이 지난 세션 종료, 끝난 지 30일 지난 세션 행 삭제 | 10분마다 (`*/10 * * * *`) | 등록됨 (SP `FW.USP_JOB_SESSION_CLEANUP_EXEC`) |
 | `JOB_TEMP_CLEANUP` | 확정되지 않은 첨부(하루 지남)·삭제한 지 30일 지난 첨부를 저장소에서 삭제 | 매일 05:00 (`0 5 * * *`) | 등록됨 (클래스 `FileCleanup`) |
-| `JOB_DATA_CLEANUP` | 처리한 가입 신청 이메일(30일), 발송 끝난 메일 대기열(90일), 작업 이력(365일) 삭제 | 매일 05:10 (`10 5 * * *`) | 등록됨 (SP `FW.USP_JOB_DATA_CLEANUP_EXEC`) |
+| `JOB_DATA_CLEANUP` | 처리한 가입 신청 이메일(30일), 발송 끝난 메일 대기열(90일), 작업 이력(365일), 포털 알림(90일) 삭제 | 매일 05:10 (`10 5 * * *`) | 등록됨 (SP `FW.USP_JOB_DATA_CLEANUP_EXEC`) |
 | `JOB_AD_SYNC` | AD 조직·사용자 동기화, 퇴사자 잠금 | 매일 04:00 | 3단계 |
 | `JOB_USER_DORMANT` | 미접속 계정 휴면 전환 (30일 전 사전 안내) | 매일 04:30 | 예정 |
 | `JOB_PARTNER_EXPIRE` | 계약 종료일 지난 협력사 계정 잠금 (7일 전 사전 안내) | 매일 04:30 | 예정 |
@@ -213,7 +214,7 @@ Oct 21, 2026 · @사랑나무아빠
 
 | 템플릿 ID | 용도 | 채널 |
 | --- | --- | --- |
-| `TPL_PARTNER_SIGNUP_REQ` | 협력사 가입 신청 접수 (담당 부서에게) | 메일, 포털 |
+| `TPL_PARTNER_SIGNUP_REQ` | 협력사 가입 신청 접수 (승인 권한 `SYS_PARTNER_APPROVE:APPROVE`이 있는 사용자에게, 알림을 누르면 협력사 계정 승인 화면) | 메일, 포털 |
 | `TPL_PARTNER_APPROVED` | 계정 승인 완료 및 최초 로그인 안내 | 메일 |
 | `TPL_PARTNER_REJECTED` | 가입 반려 안내 | 메일 |
 | `TPL_PWD_RESET` | 비밀번호 초기화 링크 (30분 유효) | 메일 |
@@ -222,9 +223,9 @@ Oct 21, 2026 · @사랑나무아빠
 | `TPL_DORMANT_NOTICE` | 휴면 전환 예정 | 메일 |
 | `TPL_ACCOUNT_EXPIRE` | 협력사 계정 만료 예정 | 메일 |
 | `TPL_ACCOUNT_LOCKED` | 로그인 실패로 계정 잠김 | 메일 |
-| `TPL_JOB_FAILED` | 배치 작업 실패 (관리자에게) | 메일, 포털 |
+| `TPL_JOB_FAILED` | 배치 작업 실패 (관리자에게, 알림을 누르면 스케줄 관리 화면) | 메일, 포털 |
 | `TPL_BOARD_REPLY` | 내 글에 답글·댓글 | 포털 |
 
 템플릿 본문의 치환 변수는 `{{USER_NM}}`, `{{SITE_NM}}`, `{{LINK}}`, `{{EXPIRE_DT}}`처럼 쓰고, 치환값은 HTML 인코딩되어 들어갑니다. 메일 본문에 비밀번호 자체는 넣지 않습니다.
 
-템플릿은 그 기능을 만드는 변경에서 `db/seed/FW/10_MSG_TEMPLATE.sql`에 추가합니다(현재: `TPL_PARTNER_APPROVED`, `TPL_PARTNER_REJECTED`, `TPL_JOB_FAILED`). 템플릿마다 메일(`MAIL_YN`)·포털(`PORTAL_YN`) 채널을 켜고 끌 수 있고, `USE_YN = 'N'`이면 쌓지 않습니다. `{{SITE_NM}}`(받는 사람 언어의 사이트명)과 `{{LINK}}`(포털 주소)는 발송 작업이 채우고, 나머지 치환값은 업무 SP가 JSON으로 넘깁니다. 받는 사람 언어의 문구가 없으면 기본 언어 문구로 보냅니다.
+템플릿은 그 기능을 만드는 변경에서 `db/seed/FW/10_MSG_TEMPLATE.sql`에 추가합니다(현재: `TPL_PARTNER_SIGNUP_REQ`, `TPL_PARTNER_APPROVED`, `TPL_PARTNER_REJECTED`, `TPL_JOB_FAILED`). 템플릿마다 메일(`MAIL_YN`)·포털(`PORTAL_YN`) 채널을 켜고 끌 수 있고, `USE_YN = 'N'`이면 쌓지 않습니다. 포털 알림은 받는 사람이 포털 사용자일 때만 쌓이고, 제목은 템플릿 제목(앞의 [사이트명] 제외), 내용은 본문에서 글자만 남긴 것이며, 볼 때 보는 사람의 화면 언어로 만듭니다. `LINK_PROGRAM_ID`를 정하면 알림을 눌렀을 때 그 화면을 탭으로 엽니다. `{{SITE_NM}}`(받는 사람 언어의 사이트명)과 `{{LINK}}`(포털 주소)는 발송 작업이 채우고, 나머지 치환값은 업무 SP가 JSON으로 넘깁니다. 받는 사람 언어의 문구가 없으면 기본 언어 문구로 보냅니다.

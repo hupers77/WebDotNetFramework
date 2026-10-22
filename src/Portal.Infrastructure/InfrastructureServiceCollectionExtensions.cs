@@ -29,6 +29,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<FileService>();
         services.AddSingleton<IMailTransport, SmtpMailTransport>();
         services.AddScoped<MailQueueSender>();
+        services.AddScoped<NotificationService>();
         return services;
     }
 }

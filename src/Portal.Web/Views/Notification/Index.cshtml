@@ -1,0 +1,43 @@
+@model NotificationViewModel
+@using Portal.Web.Controllers
+@inject Portal.Framework.Web.Navigation.MenuCatalog Menus
+@{
+    var title = Menus.ProgramTitle(NotificationController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/my/notification.js" asp-append-version="true"></script>
+}
+<h1 id="noti-heading">@title</h1>
+<div id="noti-screen"
+     data-url-list="@Url.Content("~/My/Notification/List")"
+     data-url-read="@Url.Content("~/My/Notification/Read")"
+     data-url-delete="@Url.Content("~/My/Notification/Delete")">
+    <div class="toolbar">
+        <label><input id="noti-unread" type="checkbox" /> @L["LBL.UNREAD_ONLY"]</label>
+        <span id="noti-total" class="hint" aria-live="polite"></span>
+        <span class="toolbar-spacer"></span>
+        <button type="button" id="noti-read-all">@L["BTN.READ_ALL"]</button>
+        <fw-button func="DELETE" text-key="BTN.DELETE" id="noti-delete" />
+    </div>
+    <p class="hint">@L["MY.NOTI.KEEP_HINT", Model.KeepDays]</p>
+    <div class="grid-wrap">
+        <table class="fw-grid noti-grid" aria-labelledby="noti-heading">
+            <thead>
+                <tr>
+                    <th scope="col" class="col-check"><input type="checkbox" id="noti-check-all" aria-label="@L["LBL.ROW_SELECT"]" /></th>
+                    <th scope="col">@L["LBL.TITLE"]</th>
+                    <th scope="col">@L["LBL.CONTENT"]</th>
+                    <th scope="col">@L["LBL.RECEIVED_DT"]</th>
+                </tr>
+            </thead>
+            <tbody id="noti-body"></tbody>
+        </table>
+    </div>
+    <p id="noti-empty" class="hint" hidden>@L["MY.NOTI.EMPTY"]</p>
+    <div class="pager">
+        <button type="button" id="noti-prev">@L["BTN.PREV"]</button>
+        <span id="noti-page" aria-live="polite"></span>
+        <button type="button" id="noti-next">@L["BTN.NEXT"]</button>
+    </div>
+</div>

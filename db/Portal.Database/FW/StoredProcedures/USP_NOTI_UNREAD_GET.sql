@@ -1,0 +1,15 @@
+-- 내 안 읽은 알림 수 (헤더 배지, 1분마다). 프로그램: MY_NOTIFICATION. 많아도 100까지만 센다(배지는 99+로 보인다).
+-- 결과: UNREAD_CNT
+CREATE PROCEDURE [FW].[USP_NOTI_UNREAD_GET]
+  @P_USER_ID      VARCHAR(30),
+  @P_LANG_CD      VARCHAR(5),
+  @P_CLIENT_IP    VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  SELECT COUNT(*) AS [UNREAD_CNT]
+    FROM (SELECT TOP (100) 1 AS [X]
+            FROM [FW].[TB_NOTIFICATION]
+           WHERE [USER_ID] = @P_USER_ID AND [READ_DT] IS NULL) A;
+END

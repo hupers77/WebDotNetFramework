@@ -40,7 +40,7 @@ public sealed class PortalSessionHandler(
             return AuthenticateResult.NoResult();
         }
 
-        var check = await auth.CheckSessionAsync(token, Context.RequestAborted);
+        var check = await auth.CheckSessionAsync(token, extend: !RequestKind.IsBackground(Request), Context.RequestAborted);
         if (check.User is not { } user)
         {
             SessionCookie.Delete(Response);

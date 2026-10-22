@@ -1,6 +1,7 @@
 -- 협력사 계정 가입 신청 (로그인 전 화면). 비밀번호 규칙·이메일 형식은 애플리케이션이 확인하고 해시·암호문만 넘긴다.
 -- 회사는 사업자등록번호로 찾는다: 사용 중이고 계약 기간 안인 협력사 한 곳이어야 한다(없으면 담당 부서에 회사 등록을 요청한다).
 -- 희망 ID는 기존 계정, 처리 대기 중인 신청과 겹칠 수 없다(대소문자 구분 없음).
+-- 승인 권한(SYS_PARTNER_APPROVE:APPROVE)이 있는 사용자에게 TPL_PARTNER_SIGNUP_REQ 알림(포털·메일)을 같은 트랜잭션으로 보낸다.
 -- 결과: AFFECTED_CNT, NEW_KEY(신청 번호)
 CREATE PROCEDURE [FW].[USP_PARTNER_JOIN_SAVE]
   @P_BIZ_REG_NO   VARCHAR(20),
@@ -60,6 +61,24 @@ BEGIN
       @P_TABLE_NM = 'FW.TB_PARTNER_JOIN_REQ', @P_ACTION_CD = 'I', @P_ROW_KEY = @ROW_KEY,
       @P_BEFORE_JSON = NULL, @P_AFTER_JSON = @AFTER,
       @P_USER_ID = NULL, @P_LANG_CD = @P_LANG_CD, @P_CLIENT_IP = @P_CLIENT_IP;
+
+    -- 승인 담당자 알림 (신청자 이름·이메일은 넣지 않는다)
+    DECLARE @PARAMS NVARCHAR(4000) = (SELECT C.[COMPANY_NM], LTRIM(RTRIM(@P_REQ_USER_ID)) AS [USER_ID]
+                                        FROM [FW].[TB_COMPANY] C WHERE C.[COMPANY_CD] = @COMPANY_CD
+                                         FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+    DECLARE @TO_USER_ID VARCHAR(30);
+    DECLARE APPROVERS CURSOR LOCAL FAST_FORWARD FOR
+      SELECT [USER_ID] FROM [FW].[UFN_FUNC_USERS]('SYS_PARTNER_APPROVE', 'APPROVE');
+    OPEN APPROVERS;
+    FETCH NEXT FROM APPROVERS INTO @TO_USER_ID;
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+      EXEC [FW].[USP_MSG_QUEUE_SAVE] @P_TEMPLATE_ID = 'TPL_PARTNER_SIGNUP_REQ', @P_TO_USER_ID = @TO_USER_ID, @P_PARAMS_JSON = @PARAMS,
+           @P_RESULT_YN = 'N', @P_USER_ID = NULL, @P_LANG_CD = @P_LANG_CD, @P_CLIENT_IP = @P_CLIENT_IP;
+      FETCH NEXT FROM APPROVERS INTO @TO_USER_ID;
+    END
+    CLOSE APPROVERS;
+    DEALLOCATE APPROVERS;
 
     COMMIT;
 

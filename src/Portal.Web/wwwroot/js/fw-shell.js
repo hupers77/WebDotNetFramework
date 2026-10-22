@@ -591,6 +591,78 @@ function initSession() {
     setInterval(tick, 1000);
 }
 
+// ---------- 탭으로 화면 열기 (탭 안 화면에서 window.top.fwShell.openUrl) ----------
+function openUrl(url, title) {
+    const menuId = findMenuByUrl(url);
+    const label = menuId ? $(`a.menu-label[data-menu-id="${menuId}"]`, tree)?.textContent.trim() : '';
+    rememberRecent(menuId);
+    if (tabs) {
+        tabs.open(url, label || title, menuId);
+    } else {
+        window.location.assign(url);
+    }
+}
+
+shell.openUrl = openUrl;
+
+// ---------- 알림 배지 ----------
+// 안 읽은 알림 수를 주기마다 센다. 사용자가 한 요청이 아니므로 세션을 연장하지 않고(X-Portal-Background),
+// 세션 타이머도 건드리지 않는다(fw.ajax를 쓰지 않는다). 탭이 숨겨져 있으면 세지 않는다.
+function initNotifications() {
+    const bell = $('#noti-bell');
+    if (!bell) {
+        return;
+    }
+
+    const badge = $('.noti-badge', bell);
+    const seconds = Math.max(15, Number(bell.dataset.pollSeconds) || 60);
+    let timer = null;
+    const render = (count) => {
+        badge.hidden = count === 0;
+        badge.textContent = count > 99 ? '99+' : String(count);
+        const label = count > 0 ? fw.t('LBL.NOTI_UNREAD_CNT', count > 99 ? '99+' : count) : fw.t('LBL.NOTIFICATIONS');
+        bell.setAttribute('aria-label', label);
+        bell.title = label;
+    };
+    const refresh = async () => {
+        if (document.hidden) {
+            return;
+        }
+
+        try {
+            const response = await fetch(bell.dataset.urlUnread, {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json', 'X-Portal-Background': '1' },
+            });
+            if (response.status === 401) {
+                // 세션이 끝났다: 세션 타이머가 로그인 화면으로 보낸다
+                clearInterval(timer);
+                return;
+            }
+
+            const result = response.ok ? await response.json() : null;
+            if (result?.success) {
+                render(result.data.count);
+            }
+        } catch {
+            // 네트워크 오류는 다음 주기에 다시 센다
+        }
+    };
+
+    shell.refreshNotifications = refresh;
+    bell.addEventListener('click', (e) => {
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) {
+            return;
+        }
+
+        e.preventDefault();
+        openUrl(bell.getAttribute('href'), fw.t('LBL.NOTIFICATIONS'));
+    });
+    document.addEventListener('visibilitychange', refresh);
+    refresh();
+    timer = setInterval(refresh, seconds * 1000);
+}
+
 // ---------- 시작 ----------
 await fw.ready;
 initTree();
@@ -601,6 +673,7 @@ renderRecent();
 initLinks();
 initSideToggle();
 initSession();
+initNotifications();
 
 const tabRoot = $('#fw-tabs');
 if (tabRoot) {
