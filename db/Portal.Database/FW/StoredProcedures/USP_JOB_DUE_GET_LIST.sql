@@ -1,0 +1,20 @@
+-- 스케줄러(Portal.Worker)가 지금 실행할 작업을 찾는다: 예약 시각이 지났거나 수동 실행을 요청한 작업,
+-- 그리고 다음 예약 시각을 아직 계산하지 않은 작업(NEXT_RUN_DT IS NULL, 주기가 있는 것). 실행 중인 작업은 빼되, 멈춘 지 TIMEOUT_MIN이 지났으면 넣는다.
+-- 결과: JOB_ID, JOB_TYPE_CD, JOB_TARGET, CRON_EXPR, TIMEOUT_MIN, NEXT_RUN_DT, RUN_REQ_YN
+CREATE PROCEDURE [FW].[USP_JOB_DUE_GET_LIST]
+  @P_USER_ID       VARCHAR(30) = NULL,
+  @P_LANG_CD       VARCHAR(5),
+  @P_CLIENT_IP     VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  DECLARE @NOW DATETIME2(0) = SYSUTCDATETIME();
+
+  SELECT [JOB_ID], [JOB_TYPE_CD], [JOB_TARGET], [CRON_EXPR], [TIMEOUT_MIN], [NEXT_RUN_DT], [RUN_REQ_YN]
+    FROM [FW].[TB_JOB]
+   WHERE [USE_YN] = 'Y'
+     AND ([RUNNING_YN] = 'N' OR [LOCK_DT] < DATEADD(MINUTE, -[TIMEOUT_MIN], @NOW))
+     AND ([RUN_REQ_YN] = 'Y' OR [NEXT_RUN_DT] <= @NOW OR ([NEXT_RUN_DT] IS NULL AND [CRON_EXPR] IS NOT NULL))
+   ORDER BY [JOB_ID];
+END

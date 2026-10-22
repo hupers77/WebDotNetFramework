@@ -1,0 +1,20 @@
+-- 다음 예약 실행 시각을 처음 채운다(작업을 새로 등록했거나 주기를 바꿔 NEXT_RUN_DT가 비었을 때). 이미 값이 있으면 바꾸지 않는다.
+-- 결과: AFFECTED_CNT
+CREATE PROCEDURE [FW].[USP_JOB_NEXT_RUN_SAVE]
+  @P_JOB_ID        VARCHAR(30),
+  @P_NEXT_RUN_DT   DATETIME2(0),
+  @P_USER_ID       VARCHAR(30) = NULL,
+  @P_LANG_CD       VARCHAR(5),
+  @P_CLIENT_IP     VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+  SET XACT_ABORT ON;
+
+  UPDATE [FW].[TB_JOB]
+     SET [NEXT_RUN_DT] = @P_NEXT_RUN_DT, [UPD_DT] = SYSUTCDATETIME()
+   WHERE [JOB_ID] = @P_JOB_ID
+     AND [NEXT_RUN_DT] IS NULL;
+
+  SELECT @@ROWCOUNT AS [AFFECTED_CNT];
+END

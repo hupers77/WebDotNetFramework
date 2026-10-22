@@ -1,0 +1,47 @@
+-- 첨부 정리 작업이 파일 행 하나를 지운다. 목록을 받은 뒤 묶음이 확정되었으면 지우지 않는다(정리 대상인지 다시 확인).
+-- 행을 지운 경우에만 작업이 저장소의 파일을 지운다(확정된 첨부의 파일을 잃지 않게). 파일이 모두 지워진 미확정 묶음도 지운다.
+-- 결과: AFFECTED_CNT (0이면 저장소 파일을 지우지 않는다)
+CREATE PROCEDURE [FW].[USP_FILE_CLEANUP_DEL]
+  @P_FILE_ID       BIGINT,
+  @P_USER_ID       VARCHAR(30) = NULL,
+  @P_LANG_CD       VARCHAR(5),
+  @P_CLIENT_IP     VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+  SET XACT_ABORT ON;
+
+  DECLARE @NOW DATETIME2(0) = SYSUTCDATETIME(), @CNT INT, @GROUP_ID BIGINT;
+  DECLARE @KEEP_DAYS INT = ISNULL((SELECT TRY_CAST([CONFIG_VAL] AS INT) FROM [FW].[TB_CONFIG] WHERE [CONFIG_KEY] = 'FILE.DELETED_KEEP_DAYS'), 30);
+
+  BEGIN TRY
+    BEGIN TRAN;
+
+    SELECT @GROUP_ID = [FILE_GROUP_ID] FROM [FW].[TB_FILE] WHERE [FILE_ID] = @P_FILE_ID;
+
+    DELETE F
+      FROM [FW].[TB_FILE] F
+      JOIN [FW].[TB_FILE_GROUP] G WITH (UPDLOCK) ON G.[FILE_GROUP_ID] = F.[FILE_GROUP_ID]
+     WHERE F.[FILE_ID] = @P_FILE_ID
+       AND ((F.[DEL_YN] = 'Y' AND F.[UPD_DT] < DATEADD(DAY, -@KEEP_DAYS, @NOW))
+         OR (G.[CONFIRM_YN] = 'N' AND G.[REG_DT] < DATEADD(DAY, -1, @NOW)));
+
+    SET @CNT = @@ROWCOUNT;
+
+    IF @CNT = 1
+      DELETE G
+        FROM [FW].[TB_FILE_GROUP] G
+       WHERE G.[FILE_GROUP_ID] = @GROUP_ID
+         AND G.[CONFIRM_YN] = 'N'
+         AND NOT EXISTS (SELECT 1 FROM [FW].[TB_FILE] F WHERE F.[FILE_GROUP_ID] = G.[FILE_GROUP_ID]);
+
+    COMMIT;
+  END TRY
+  BEGIN CATCH
+    IF @@TRANCOUNT > 0
+      ROLLBACK;
+    THROW;
+  END CATCH
+
+  SELECT @CNT AS [AFFECTED_CNT];
+END

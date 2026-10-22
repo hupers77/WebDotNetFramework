@@ -23,7 +23,8 @@ USING (VALUES
   (N'JOB_STAT', N'배치 실행 결과', N'Y', N'N', 150),
   (N'MSG_CHANNEL', N'알림 채널', N'Y', N'N', 160),
   (N'LOGIN_RESULT', N'로그인 결과', N'Y', N'N', 170),
-  (N'ICON', N'메뉴 아이콘', N'Y', N'Y', 180)
+  (N'ICON', N'메뉴 아이콘', N'Y', N'Y', 180),
+  (N'JOB_RUN_TYPE', N'배치 실행 구분', N'Y', N'N', 190)
 ) AS S ([GROUP_CD], [GROUP_NM], [SYSTEM_YN], [ALLOW_ADD_YN], [SORT_NO])
    ON T.[GROUP_CD] = S.[GROUP_CD]
 WHEN MATCHED THEN UPDATE SET T.[SYSTEM_YN] = S.[SYSTEM_YN], T.[ALLOW_ADD_YN] = S.[ALLOW_ADD_YN]
@@ -86,7 +87,10 @@ USING (VALUES
   (N'LOGIN_RESULT', N'zh-CN', N'登录结果'),
   (N'ICON', N'ko', N'메뉴 아이콘'),
   (N'ICON', N'en', N'Menu icon'),
-  (N'ICON', N'zh-CN', N'菜单图标')
+  (N'ICON', N'zh-CN', N'菜单图标'),
+  (N'JOB_RUN_TYPE', N'ko', N'배치 실행 구분'),
+  (N'JOB_RUN_TYPE', N'en', N'Job run type'),
+  (N'JOB_RUN_TYPE', N'zh-CN', N'作业运行方式')
 ) AS S ([GROUP_CD], [LANG_CD], [GROUP_NM])
    ON T.[GROUP_CD] = S.[GROUP_CD] AND T.[LANG_CD] = S.[LANG_CD]
 WHEN NOT MATCHED THEN INSERT ([GROUP_CD], [LANG_CD], [GROUP_NM]) VALUES (S.[GROUP_CD], S.[LANG_CD], S.[GROUP_NM]);
@@ -141,14 +145,17 @@ USING (VALUES
   (N'CONFIG_CATEGORY', N'UI', 60),
   (N'CONFIG_CATEGORY', N'SITE', 70),
   (N'CONFIG_CATEGORY', N'MAIL', 80),
-  (N'CONFIG_CATEGORY', N'LOG', 90),
-  (N'CONFIG_CATEGORY', N'SP', 100),
-  (N'CONFIG_CATEGORY', N'PDF', 110),
-  (N'CONFIG_CATEGORY', N'API', 120),
-  (N'CONFIG_CATEGORY', N'AD', 130),
-  (N'CONFIG_CATEGORY', N'APPROVAL', 140),
-  (N'CONFIG_CATEGORY', N'NOTIFY', 150),
-  (N'CONFIG_CATEGORY', N'SYS', 160),
+  (N'CONFIG_CATEGORY', N'MSG', 90),
+  (N'CONFIG_CATEGORY', N'PARTNER', 100),
+  (N'CONFIG_CATEGORY', N'JOB', 110),
+  (N'CONFIG_CATEGORY', N'LOG', 120),
+  (N'CONFIG_CATEGORY', N'SP', 130),
+  (N'CONFIG_CATEGORY', N'PDF', 140),
+  (N'CONFIG_CATEGORY', N'API', 150),
+  (N'CONFIG_CATEGORY', N'AD', 160),
+  (N'CONFIG_CATEGORY', N'APPROVAL', 170),
+  (N'CONFIG_CATEGORY', N'NOTIFY', 180),
+  (N'CONFIG_CATEGORY', N'SYS', 190),
   (N'VAL_TYPE', N'STRING', 10),
   (N'VAL_TYPE', N'INT', 20),
   (N'VAL_TYPE', N'BOOL', 30),
@@ -206,7 +213,9 @@ USING (VALUES
   (N'ICON', N'ops', 70),
   (N'ICON', N'log', 80),
   (N'ICON', N'chart', 90),
-  (N'ICON', N'report', 100)
+  (N'ICON', N'report', 100),
+  (N'JOB_RUN_TYPE', N'SCHEDULE', 10),
+  (N'JOB_RUN_TYPE', N'MANUAL', 20)
 ) AS S ([GROUP_CD], [CODE], [SORT_NO])
    ON T.[GROUP_CD] = S.[GROUP_CD] AND T.[CODE] = S.[CODE]
 WHEN NOT MATCHED THEN INSERT ([GROUP_CD], [CODE], [SORT_NO]) VALUES (S.[GROUP_CD], S.[CODE], S.[SORT_NO]);
@@ -353,6 +362,15 @@ USING (VALUES
   (N'CONFIG_CATEGORY', N'MAIL', N'ko', N'MAIL'),
   (N'CONFIG_CATEGORY', N'MAIL', N'en', N'MAIL'),
   (N'CONFIG_CATEGORY', N'MAIL', N'zh-CN', N'MAIL'),
+  (N'CONFIG_CATEGORY', N'MSG', N'ko', N'MSG'),
+  (N'CONFIG_CATEGORY', N'MSG', N'en', N'MSG'),
+  (N'CONFIG_CATEGORY', N'MSG', N'zh-CN', N'MSG'),
+  (N'CONFIG_CATEGORY', N'PARTNER', N'ko', N'PARTNER'),
+  (N'CONFIG_CATEGORY', N'PARTNER', N'en', N'PARTNER'),
+  (N'CONFIG_CATEGORY', N'PARTNER', N'zh-CN', N'PARTNER'),
+  (N'CONFIG_CATEGORY', N'JOB', N'ko', N'JOB'),
+  (N'CONFIG_CATEGORY', N'JOB', N'en', N'JOB'),
+  (N'CONFIG_CATEGORY', N'JOB', N'zh-CN', N'JOB'),
   (N'CONFIG_CATEGORY', N'LOG', N'ko', N'LOG'),
   (N'CONFIG_CATEGORY', N'LOG', N'en', N'LOG'),
   (N'CONFIG_CATEGORY', N'LOG', N'zh-CN', N'LOG'),
@@ -550,7 +568,13 @@ USING (VALUES
   (N'ICON', N'chart', N'zh-CN', N'chart'),
   (N'ICON', N'report', N'ko', N'report'),
   (N'ICON', N'report', N'en', N'report'),
-  (N'ICON', N'report', N'zh-CN', N'report')
+  (N'ICON', N'report', N'zh-CN', N'report'),
+  (N'JOB_RUN_TYPE', N'SCHEDULE', N'ko', N'예약'),
+  (N'JOB_RUN_TYPE', N'SCHEDULE', N'en', N'Scheduled'),
+  (N'JOB_RUN_TYPE', N'SCHEDULE', N'zh-CN', N'计划'),
+  (N'JOB_RUN_TYPE', N'MANUAL', N'ko', N'수동'),
+  (N'JOB_RUN_TYPE', N'MANUAL', N'en', N'Manual'),
+  (N'JOB_RUN_TYPE', N'MANUAL', N'zh-CN', N'手动')
 ) AS S ([GROUP_CD], [CODE], [LANG_CD], [CODE_NM])
    ON T.[GROUP_CD] = S.[GROUP_CD] AND T.[CODE] = S.[CODE] AND T.[LANG_CD] = S.[LANG_CD]
 WHEN NOT MATCHED THEN INSERT ([GROUP_CD], [CODE], [LANG_CD], [CODE_NM]) VALUES (S.[GROUP_CD], S.[CODE], S.[LANG_CD], S.[CODE_NM]);

@@ -1,0 +1,21 @@
+-- 배치 작업 실행 이력. 실행할 때마다 한 행. 보관 기간(JOB.HIST_KEEP_DAYS)이 지나면 정리 작업이 지운다.
+CREATE TABLE [FW].[TB_JOB_HIST] (
+  [HIST_ID]        BIGINT         IDENTITY (1, 1) NOT NULL,
+  [JOB_ID]         VARCHAR(30)    NOT NULL,
+  [RUN_TYPE_CD]    VARCHAR(10)    NOT NULL,             -- 공통코드 JOB_RUN_TYPE (SCHEDULE/MANUAL)
+  [RUN_USER_ID]    VARCHAR(30)    NULL,                 -- 수동 실행을 요청한 사용자
+  [HOST_NM]        VARCHAR(64)    NULL,                 -- 실행한 Worker 서버
+  [START_DT]       DATETIME2(0)   NOT NULL,
+  [END_DT]         DATETIME2(0)   NULL,
+  [RESULT_CD]      VARCHAR(10)    NOT NULL,             -- 공통코드 JOB_STAT
+  [PROCESSED_CNT]  INT            NULL,
+  [RESULT_MSG]     NVARCHAR(1000) NULL,                 -- 실패 사유 등. 개인정보는 넣지 않는다
+  CONSTRAINT [PK_TB_JOB_HIST] PRIMARY KEY CLUSTERED ([HIST_ID]),
+  CONSTRAINT [FK_TB_JOB_HIST_TB_JOB] FOREIGN KEY ([JOB_ID]) REFERENCES [FW].[TB_JOB] ([JOB_ID]),
+  CONSTRAINT [CK_TB_JOB_HIST_RUN_TYPE] CHECK ([RUN_TYPE_CD] IN ('SCHEDULE', 'MANUAL')),
+  CONSTRAINT [CK_TB_JOB_HIST_RESULT] CHECK ([RESULT_CD] IN ('RUNNING', 'SUCCESS', 'FAILED', 'SKIPPED'))
+);
+GO
+CREATE INDEX [IX_TB_JOB_HIST_JOB] ON [FW].[TB_JOB_HIST] ([JOB_ID], [START_DT] DESC);
+GO
+CREATE INDEX [IX_TB_JOB_HIST_START] ON [FW].[TB_JOB_HIST] ([START_DT]);
