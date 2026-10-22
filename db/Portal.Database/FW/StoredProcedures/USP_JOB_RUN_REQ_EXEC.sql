@@ -1,0 +1,44 @@
+-- 배치 작업 수동 실행 요청. 프로그램: SYS_JOB_MGT (EXEC 권한)
+-- 요청만 남기고(RUN_REQ_YN) Portal.Worker가 다음 확인(15초 안)에서 실행한다. 실행 중이면 끝난 뒤 한 번 더 실행한다.
+-- 사용하지 않는 작업은 실행할 수 없다. 감사 로그를 남긴다.
+-- 결과: AFFECTED_CNT
+CREATE PROCEDURE [FW].[USP_JOB_RUN_REQ_EXEC]
+  @P_JOB_ID       VARCHAR(30),
+  @P_USER_ID      VARCHAR(30),
+  @P_LANG_CD      VARCHAR(5),
+  @P_CLIENT_IP    VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+  SET XACT_ABORT ON;
+
+  DECLARE @USE_YN CHAR(1);
+
+  BEGIN TRY
+    BEGIN TRAN;
+
+    SELECT @USE_YN = [USE_YN] FROM [FW].[TB_JOB] WITH (UPDLOCK) WHERE [JOB_ID] = @P_JOB_ID;
+    IF @USE_YN IS NULL
+      THROW 50004, 'MSG.NOT_FOUND', 1;
+    IF @USE_YN = 'N'
+      THROW 50003, 'MSG.JOB_NOT_IN_USE', 1;
+
+    UPDATE [FW].[TB_JOB]
+       SET [RUN_REQ_YN] = 'Y', [RUN_REQ_ID] = @P_USER_ID, [UPD_DT] = SYSUTCDATETIME()
+     WHERE [JOB_ID] = @P_JOB_ID;
+
+    EXEC [LOG].[USP_AUDIT_WRITE]
+      @P_TABLE_NM = 'FW.TB_JOB', @P_ACTION_CD = 'U', @P_ROW_KEY = @P_JOB_ID,
+      @P_BEFORE_JSON = NULL, @P_AFTER_JSON = N'{"RUN_REQ_YN":"Y"}',
+      @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD, @P_CLIENT_IP = @P_CLIENT_IP;
+
+    COMMIT;
+  END TRY
+  BEGIN CATCH
+    IF @@TRANCOUNT > 0
+      ROLLBACK;
+    THROW;
+  END CATCH
+
+  SELECT 1 AS [AFFECTED_CNT];
+END

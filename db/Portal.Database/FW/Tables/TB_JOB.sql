@@ -1,5 +1,6 @@
 -- 배치 작업 (설계서 13장 스케줄러). Portal.Worker가 주기(Cron)마다, 또는 스케줄 관리 화면의 수동 실행 요청으로 실행한다.
 -- JOB_TYPE_CD = CLASS면 JOB_TARGET은 IScheduledJob 구현의 이름, SP면 실행할 SP 이름(FW.USP_JOB_..._EXEC 형식만 허용)이다.
+-- 화면 저장의 동시성은 EDIT_VER로 확인한다(Worker가 실행 상태 컬럼을 수시로 바꾸므로 ROW_VER로는 확인할 수 없다).
 -- 실행 중(RUNNING_YN = 'Y')인 작업은 다른 Worker가 가져가지 않는다. 잠근 지 TIMEOUT_MIN이 지나면 멈춘 것으로 보고 다시 실행한다.
 CREATE TABLE [FW].[TB_JOB] (
   [JOB_ID]         VARCHAR(30)    NOT NULL,
@@ -18,6 +19,7 @@ CREATE TABLE [FW].[TB_JOB] (
   [LAST_HIST_ID]   BIGINT         NULL,
   [LAST_RUN_DT]    DATETIME2(0)   NULL,
   [LAST_RESULT_CD] VARCHAR(10)    NULL,                 -- 공통코드 JOB_STAT
+  [EDIT_VER]       INT            NOT NULL CONSTRAINT [DF_TB_JOB_EDIT_VER] DEFAULT (1),  -- 스케줄 관리 화면에서 저장할 때마다 1 증가
   [REG_ID]         VARCHAR(30)    NOT NULL CONSTRAINT [DF_TB_JOB_REG_ID] DEFAULT ('SYSTEM'),
   [REG_DT]         DATETIME2(0)   NOT NULL CONSTRAINT [DF_TB_JOB_REG_DT] DEFAULT (SYSUTCDATETIME()),
   [UPD_ID]         VARCHAR(30)    NOT NULL CONSTRAINT [DF_TB_JOB_UPD_ID] DEFAULT ('SYSTEM'),

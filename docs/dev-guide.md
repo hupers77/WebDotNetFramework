@@ -380,7 +380,7 @@ MR을 올릴 때 아래 체크리스트를 MR 본문에 붙이고 해당 항목�
 | 대시보드 위젯 추가 | 데이터 SP 작성 → 위젯 관리에 등록 | SP만 |
 | 레포트 추가 | 데이터 SP + Razor 템플릿 작성 → 레포트 관리에 등록 | SP + 템플릿 |
 | 배치 작업 추가 | DB만 다루면 `FW.USP_JOB_<대상>_EXEC` SP(결과 행 `PROCESSED_CNT`, 많은 행은 5000건씩 나눠 처리)를, 파일·외부 연동이 필요하면 `IScheduledJob` 구현(Portal.Worker에 `AddScoped<IScheduledJob, 내작업>()`으로 등록)을 만들고, `db/seed/FW/11_JOB.sql`에 작업 ID·주기(Cron, 한국 시간)·제한 시간을 추가합니다. 같은 작업은 Worker가 여러 대여도 동시에 돌지 않고, 놓친 예약은 한 번만 실행합니다. 결과 메시지에는 개인정보를 넣지 않습니다 | SP 또는 클래스 |
-| 배치 작업 즉시 실행·주기 변경 | 운영 > 스케줄 관리(화면 준비 전에는 DBA가 `UPDATE FW.TB_JOB SET RUN_REQ_YN = 'Y' WHERE JOB_ID = '작업ID'`로 수동 실행, 주기를 바꾸면 `NEXT_RUN_DT = NULL`도 함께). 15초 안에 시작하고 결과는 `FW.TB_JOB_HIST`에 남습니다 | 없음 |
+| 배치 작업 즉시 실행·주기 변경 | 운영 > 스케줄 관리(`SYS_JOB_MGT`, `PORTAL_ADMIN`)에서 작업을 골라 주기·제한 시간·사용 여부·설명을 저장하거나 [지금 실행]을 누릅니다. 실행 대상(SP·클래스)은 화면에서 바꾸지 않고 배포로만 바꿉니다. 주기를 바꾸거나 다시 사용하면 다음 실행 시각을 새로 계산하고, 실행은 15초 안에 시작합니다. 결과는 같은 화면의 실행 이력(`FW.TB_JOB_HIST`)에서 보고, 변경·실행 요청은 감사 로그에 남습니다 | 없음 |
 | Portal.Worker 설치 | 웹과 같은 연결 문자열, Data Protection 키 폴더(`Portal:DataProtection:KeyPath`), 첨부 저장소(`Portal:File:StorageRoot`)를 `appsettings.Production.json`에 넣고 `sc.exe create PortalWorker binPath= "...\Portal.Worker.exe" start= delayed-auto`로 서비스를 등록합니다. 시간대는 `Portal:Scheduler:TimeZone`(기본 Asia/Seoul) | 없음 |
 | 외부 API 클라이언트 추가 | 연계 관리 > API 클라이언트 (비밀값은 발급 시 1회만 표시) | 없음 |
 | 새 언어 추가 | `TB_LANG`에 행 추가 → 다국어 관리에서 엑셀로 일괄 번역 입력 | 없음 |

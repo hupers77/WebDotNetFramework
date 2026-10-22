@@ -1,0 +1,69 @@
+@{
+    var title = Menus.ProgramTitle(JobController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/job.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="job-screen" class="md-layout"
+     data-url-list="@Url.Action("List")"
+     data-url-history="@Url.Action("History")"
+     data-url-save="@Url.Action("Save")"
+     data-url-run="@Url.Action("Run")">
+    <section class="md-master" aria-labelledby="job-list-heading">
+        <h2 id="job-list-heading">@L["LBL.JOB_LIST"]</h2>
+        <form id="job-search" class="search-bar" role="search">
+            <label for="job-keyword">@L["LBL.KEYWORD"]</label>
+            <input id="job-keyword" type="search" maxlength="100" autocomplete="off" />
+            <button type="submit">@L["BTN.SEARCH"]</button>
+        </form>
+        <p id="job-total" class="hint" aria-live="polite"></p>
+        <ul id="job-list" class="pick-list" role="listbox" aria-labelledby="job-list-heading"></ul>
+    </section>
+    <section class="md-detail" aria-labelledby="job-heading">
+        <h2 id="job-heading">@L["LBL.JOB_DETAIL"]</h2>
+        <p id="job-hint" class="hint">@L["SYS.JOB.SELECT"]</p>
+        <div id="job-detail" hidden>
+            <dl class="detail-list">
+                <dt>@L["LBL.JOB_ID"]</dt><dd data-field="jobId"></dd>
+                <dt>@L["LBL.JOB_NM"]</dt><dd data-field="jobNm"></dd>
+                <dt>@L["LBL.JOB_TARGET"]</dt><dd data-field="target"></dd>
+                <dt>@L["LBL.NEXT_RUN"]</dt><dd data-field="nextRun"></dd>
+                <dt>@L["LBL.LAST_RUN"]</dt><dd data-field="lastRun" aria-live="polite"></dd>
+            </dl>
+            <p class="hint">@L["SYS.JOB.TARGET_HINT"]</p>
+            <form id="job-form" class="form" novalidate>
+                <label for="job-cron">@L["LBL.CRON"]</label>
+                <input id="job-cron" maxlength="100" autocomplete="off" spellcheck="false" aria-describedby="job-cron-hint" />
+                <p id="job-cron-hint" class="hint">@L["SYS.JOB.CRON_HINT"]</p>
+                <label for="job-timeout">@L["LBL.TIMEOUT_MIN"]</label>
+                <input id="job-timeout" type="number" min="1" max="1440" step="1" required />
+                <label><input id="job-use" type="checkbox" /> @L["LBL.USE_YN"]</label>
+                <label for="job-desc">@L["LBL.DESCRIPTION"]</label>
+                <textarea id="job-desc" rows="2" maxlength="500"></textarea>
+            </form>
+            <div class="toolbar">
+                <fw-button func="EXEC" text-key="BTN.RUN_NOW" id="job-run" />
+                <fw-button func="UPDATE" text-key="BTN.SAVE" id="job-save" class="primary" />
+            </div>
+            <h3 id="hist-heading">@L["LBL.RUN_HIST"] <span class="hint">@L["SYS.JOB.HIST_HINT"]</span></h3>
+            <div class="grid-wrap">
+                <table class="fw-grid" aria-labelledby="hist-heading">
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["LBL.START_DT"]</th>
+                            <th scope="col">@L["LBL.END_DT"]</th>
+                            <th scope="col">@L["LBL.RUN_TYPE"]</th>
+                            <th scope="col">@L["LBL.RESULT"]</th>
+                            <th scope="col">@L["LBL.PROCESSED_CNT"]</th>
+                            <th scope="col">@L["LBL.RESULT_MSG"]</th>
+                            <th scope="col">@L["LBL.HOST"]</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hist-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>

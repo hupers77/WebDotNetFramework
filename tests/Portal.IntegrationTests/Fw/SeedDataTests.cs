@@ -43,6 +43,7 @@ public sealed class SeedDataTests(DbFixture fixture)
     [InlineData(typeof(AuthMessageKeys))]
     [InlineData(typeof(PasswordMessageKeys))]
     [InlineData(typeof(PartnerJoinMessageKeys))]
+    [InlineData(typeof(Portal.Web.Areas.Sys.Models.JobMessageKeys))]
     public async Task 메시지키_상수가모두3개언어로있음(Type keys)
     {
         await using var db = await fixture.BeginAsync();
