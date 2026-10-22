@@ -1,0 +1,31 @@
+@model MfaViewModel
+@{
+    ViewData["Title"] = L["LBL.MFA_TITLE"];
+}
+<h1>@L["LBL.MFA_TITLE"]</h1>
+@if (Model.Enroll is { } enroll)
+{
+    <section class="mfa-enroll" aria-labelledby="mfa-enroll-heading">
+        <h2 id="mfa-enroll-heading">@L["LBL.MFA_ENROLL"]</h2>
+        <p class="hint">@L["MFA.ENROLL_GUIDE"]</p>
+        <div class="mfa-qr">@enroll.QrSvg</div>
+        <p class="hint">@L["MFA.KEY_GUIDE"]</p>
+        <p><code class="mfa-key">@enroll.SecretKey</code></p>
+        <p><a href="@enroll.KeyUri">@L["MFA.OPEN_APP"]</a></p>
+    </section>
+}
+else
+{
+    <p class="hint">@L["MFA.CODE_GUIDE"]</p>
+}
+@if (Model.MessageKey is not null)
+{
+    <p class="error" role="alert">@L[Model.MessageKey]</p>
+}
+<form method="post" asp-action="Mfa" class="form">
+    <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+    <label for="Code">@L["LBL.MFA_CODE"]</label>
+    <input id="Code" name="Code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required autofocus />
+    <button type="submit" class="primary">@L["BTN.CONFIRM"]</button>
+</form>
+<p><a asp-action="Login">@L["BTN.BACK_TO_LOGIN"]</a></p>

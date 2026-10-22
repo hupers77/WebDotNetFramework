@@ -1,12 +1,14 @@
 -- 로그인 성공 처리: 실패 횟수·잠금 초기화, 중복 로그인 정책 적용, 세션 생성, 로그인 로그 기록.
 -- 세션 키는 애플리케이션이 만든 무작위 값의 SHA-256(64자 16진수)만 받는다. 원문은 쿠키에만 있다.
 -- 중복 로그인(SESSION.CONCURRENT_POLICY): KICK_OLD = 기존 세션 종료(KICKED), DENY_NEW = 새 로그인 거부, ALLOW = 허용
+-- 2단계 인증으로 들어오면 확인한 TOTP 시간 단계(@P_MFA_STEP)를 받아, 이미 쓴 단계 이하이면 거부한다(코드 재사용 방지).
 -- 결과: EXPIRE_DT, KICKED_CNT
 CREATE PROCEDURE [FW].[USP_AUTH_LOGIN_SUCCESS_EXEC]
   @P_LOGIN_USER_ID  VARCHAR(30),
   @P_SESSION_HASH   CHAR(64),
   @P_AUTH_METHOD_CD VARCHAR(10),
   @P_USER_AGENT     NVARCHAR(300) = NULL,
+  @P_MFA_STEP       BIGINT        = NULL,
   @P_USER_ID        VARCHAR(30),
   @P_LANG_CD        VARCHAR(5),
   @P_CLIENT_IP      VARCHAR(45)   = NULL
@@ -31,8 +33,13 @@ BEGIN
 
     -- 사용자 행을 먼저 갱신(잠금)해 같은 사용자의 동시 로그인을 직렬화한다
     UPDATE [FW].[TB_USER]
-       SET [LOGIN_FAIL_CNT] = 0, [LOCK_YN] = 'N', [LOCK_DT] = NULL, [LAST_LOGIN_DT] = @NOW
-     WHERE [USER_ID] = @P_LOGIN_USER_ID;
+       SET [LOGIN_FAIL_CNT] = 0, [LOCK_YN] = 'N', [LOCK_DT] = NULL, [LAST_LOGIN_DT] = @NOW,
+           [MFA_LAST_STEP] = ISNULL(@P_MFA_STEP, [MFA_LAST_STEP])
+     WHERE [USER_ID] = @P_LOGIN_USER_ID
+       AND (@P_MFA_STEP IS NULL OR [MFA_LAST_STEP] IS NULL OR [MFA_LAST_STEP] < @P_MFA_STEP);
+
+    IF @@ROWCOUNT = 0
+      THROW 50011, 'AUTH.MFA_INVALID', 1;
 
     IF @POLICY = 'DENY_NEW'
        AND EXISTS (SELECT 1 FROM [FW].[TB_USER_SESSION]

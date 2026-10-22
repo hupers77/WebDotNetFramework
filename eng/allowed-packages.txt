@@ -8,6 +8,7 @@ System.Security.Cryptography.Pkcs   # MIT, SqlClient 전이 의존성 보안 패
 DocumentFormat.OpenXml              # MIT, 엑셀 (2단계)
 
 # 런타임 - OSS 허용 (MIT)
+QRCoder                             # MIT, 2단계 인증 등록 QR (1.6.0: 의존성 없음)
 PDFsharp                            # MIT, PDF 생성 (3단계)
 PDFsharp-MigraDoc                   # MIT, PDF 문서 (3단계)
 

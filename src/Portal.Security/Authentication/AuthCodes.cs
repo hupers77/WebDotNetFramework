@@ -26,6 +26,12 @@ public static class AuthMessageKeys
 
     /// <summary>비밀번호 변경 완료.</summary>
     public const string PasswordChanged = "AUTH.PWD_CHANGED";
+
+    /// <summary>2단계 인증 코드가 틀렸거나 이미 쓴 코드.</summary>
+    public const string MfaInvalid = "AUTH.MFA_INVALID";
+
+    /// <summary>2단계 인증 대기 시간이 지나 비밀번호부터 다시 입력해야 함.</summary>
+    public const string MfaExpired = "AUTH.MFA_EXPIRED";
 }
 
 /// <summary>로그인 결과 코드 (공통코드 <c>LOGIN_RESULT</c>). 로그인 로그와 세션 종료 사유에 쓴다.</summary>
@@ -42,6 +48,9 @@ public static class LoginResultCodes
 
     /// <summary>사용할 수 없는 계정.</summary>
     public const string FailExpired = "FAIL_EXPIRED";
+
+    /// <summary>2단계 인증 실패.</summary>
+    public const string FailMfa = "FAIL_MFA";
 
     /// <summary>허용되지 않은 IP.</summary>
     public const string FailIp = "FAIL_IP";
@@ -67,6 +76,9 @@ public static class AuthMethods
 {
     /// <summary>포털 ID/PW.</summary>
     public const string Form = "FORM";
+
+    /// <summary>포털 ID/PW + 2단계 인증(TOTP).</summary>
+    public const string FormMfa = "FORM_MFA";
 }
 
 /// <summary>인증 SP 이름.</summary>
@@ -81,7 +93,11 @@ internal static class AuthSp
     public const string PasswordChange = "FW.USP_AUTH_PWD_CHANGE_EXEC";
     public const string AdminInit = "FW.USP_AUTH_ADMIN_INIT_EXEC";
     public const string GetPermission = "FW.USP_AUTH_GET_PERMISSION";
+    public const string MfaSave = "FW.USP_AUTH_MFA_SAVE_EXEC";
 
     /// <summary>중복 로그인 거부 오류 번호 (USP_AUTH_LOGIN_SUCCESS_EXEC).</summary>
     public const int ConcurrentDeniedError = 50010;
+
+    /// <summary>이미 쓴 TOTP 단계 (USP_AUTH_LOGIN_SUCCESS_EXEC).</summary>
+    public const int MfaReplayError = 50011;
 }

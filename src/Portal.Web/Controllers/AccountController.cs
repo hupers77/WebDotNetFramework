@@ -12,23 +12,32 @@ using Portal.Framework.Web.Authorization;
 using Portal.Framework.Web.Context;
 using Portal.Framework.Web.Mvc;
 using Portal.Security.Authentication;
+using Portal.Security.Mfa;
 using Portal.Security.Passwords;
+using Portal.Web.Infrastructure;
 using Portal.Web.Models;
 
 namespace Portal.Web.Controllers;
 
-/// <summary>ID/PW 로그인·로그아웃, 협력사 가입 신청 (설계서 5장). AD SSO는 3단계에서 같은 화면에 붙인다.</summary>
+/// <summary>
+/// ID/PW 로그인·로그아웃, 2단계 인증(TOTP), 협력사 가입 신청 (설계서 5장). AD SSO는 3단계에서 같은 화면에 붙인다.
+/// 2단계 인증 대상은 비밀번호를 확인하면 대기표 쿠키를 받고 <see cref="Mfa(string?)"/> 화면에서 코드를 입력한다.
+/// </summary>
 [AllowAnonymous]
 public sealed class AccountController(
     AuthService auth,
     UserLanguageService languages,
     PartnerJoinService joins,
+    MfaTicketProtector tickets,
     IPortalConfig config,
     IPortalLocalizer localizer) : PortalController
 {
     // 주소창으로 넘어온 reason은 이 키만 보여 준다 (임의 문구 주입 방지)
     private static readonly string[] ReasonKeys =
-        [AuthMessageKeys.SessionExpired, AuthMessageKeys.SessionKicked, AuthMessageKeys.Expired, MessageKeys.LoginRequired];
+        [AuthMessageKeys.SessionExpired, AuthMessageKeys.SessionKicked, AuthMessageKeys.Expired, MessageKeys.LoginRequired, AuthMessageKeys.MfaExpired];
+
+    /// <summary>2단계 인증 대기표 쿠키. 코드 입력 화면에만 쓰므로 SameSite=Strict.</summary>
+    internal const string MfaCookie = "__Host-portal-mfa";
 
     /// <summary>로그인 화면.</summary>
     [HttpGet]
@@ -52,15 +61,49 @@ public sealed class AccountController(
                 new LoginRequest(form.UserId.Trim(), form.Password, Request.Headers[HeaderNames.UserAgent].ToString()),
                 HttpContext.RequestAborted);
 
-        if (!result.Succeeded || result.SessionToken is null)
+        if (result is { MfaRequired: true, UserId: { } userId })
         {
-            return View(new LoginViewModel(form.UserId, form.ReturnUrl, result.MessageKey ?? MessageKeys.LoginFailed));
+            // 처음 등록하는 계정은 새 비밀키를 대기표에만 담는다 (코드를 확인해야 DB에 저장)
+            WriteTicket(new MfaTicket(userId, result.MfaEnrolled ? null : Totp.NewSecret()));
+            return RedirectToAction(nameof(Mfa), new { returnUrl = SafeReturnUrl(form.ReturnUrl) });
         }
 
-        SessionCookie.Write(Response, result.SessionToken);
-        return result.PasswordChangeRequired
-            ? LocalRedirect(PermissionFilter.PasswordPath)
-            : LocalRedirect(SafeReturnUrl(form.ReturnUrl));
+        return SignedIn(result, form.UserId, form.ReturnUrl);
+    }
+
+    /// <summary>2단계 인증 화면. 처음이면 인증 앱 등록 안내(QR·등록 키)를 함께 보여 준다.</summary>
+    [HttpGet]
+    public IActionResult Mfa(string? returnUrl)
+    {
+        var ticket = tickets.Unprotect(Request.Cookies[MfaCookie]);
+        return ticket is null
+            ? LocalRedirect(PortalSessionHandler.LoginPath + QueryString.Create("reason", AuthMessageKeys.MfaExpired))
+            : View(MfaModel(ticket, returnUrl, null));
+    }
+
+    /// <summary>
+    /// 2단계 인증 코드 확인. 맞으면 세션을 만들고, 틀리면 다시 입력받는다(틀린 횟수는 비밀번호 실패와 함께 세어 잠근다).
+    /// 대기표가 만료되었거나 계정을 쓸 수 없게 되었으면 로그인 화면으로 돌아간다.
+    /// </summary>
+    [HttpPost, ActionName(nameof(Mfa)), EnableRateLimiting(PortalWebExtensions.LoginRateLimitPolicy)]
+    public async Task<IActionResult> MfaVerify([FromForm] MfaForm form)
+    {
+        var ticket = tickets.Unprotect(Request.Cookies[MfaCookie]);
+        if (ticket is null)
+        {
+            return View(nameof(Login), new LoginViewModel(null, form.ReturnUrl, AuthMessageKeys.MfaExpired));
+        }
+
+        var result = await auth.VerifyMfaAsync(
+            new MfaVerifyRequest(ticket, form.Code, Request.Headers[HeaderNames.UserAgent].ToString()),
+            HttpContext.RequestAborted);
+        if (!result.Succeeded && result.MessageKey == AuthMessageKeys.MfaInvalid)
+        {
+            return View(nameof(Mfa), MfaModel(ticket, form.ReturnUrl, result.MessageKey));
+        }
+
+        Response.Cookies.Delete(MfaCookie, TicketCookieOptions());
+        return SignedIn(result, ticket.UserId, form.ReturnUrl);
     }
 
     /// <summary>로그아웃. 세션이 이미 끝났어도 쿠키를 지우고 로그인 화면으로 보낸다.</summary>
@@ -114,6 +157,50 @@ public sealed class AccountController(
         await languages.ChangeAsync(lang, HttpContext.RequestAborted);
         return LocalRedirect(PortalSessionHandler.LoginPath + QueryString.Create("returnUrl", SafeReturnUrl(returnUrl)));
     }
+
+    // 로그인 결과: 성공이면 세션 쿠키를 쓰고 이동, 실패면 로그인 화면에 메시지
+    private IActionResult SignedIn(LoginResult result, string? userId, string? returnUrl)
+    {
+        if (!result.Succeeded || result.SessionToken is null)
+        {
+            return View(nameof(Login), new LoginViewModel(userId, returnUrl, result.MessageKey ?? MessageKeys.LoginFailed));
+        }
+
+        SessionCookie.Write(Response, result.SessionToken);
+        return result.PasswordChangeRequired
+            ? LocalRedirect(PermissionFilter.PasswordPath)
+            : LocalRedirect(SafeReturnUrl(returnUrl));
+    }
+
+    private MfaViewModel MfaModel(MfaTicket ticket, string? returnUrl, string? messageKey)
+    {
+        MfaEnrollInfo? enroll = null;
+        if (ticket.PendingSecret is { } secret)
+        {
+            var issuer = config.GetString(ConfigKeys.SiteName) is { Length: > 0 } name ? name : "Portal";
+            var uri = Totp.KeyUri(issuer, ticket.UserId, secret);
+            var key = string.Join(' ', Totp.ToBase32(secret).Chunk(4).Select(c => new string(c)));
+            enroll = new MfaEnrollInfo(key, uri, QrSvg.Render(uri, localizer["MFA.QR_LABEL"]));
+        }
+
+        return new MfaViewModel(SafeReturnUrl(returnUrl), messageKey, enroll);
+    }
+
+    private void WriteTicket(MfaTicket ticket)
+    {
+        var options = TicketCookieOptions();
+        options.MaxAge = MfaTicketProtector.Lifetime;
+        Response.Cookies.Append(MfaCookie, tickets.Protect(ticket), options);
+    }
+
+    private static CookieOptions TicketCookieOptions() => new()
+    {
+        Secure = true,
+        HttpOnly = true,
+        SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict,
+        Path = "/",
+        IsEssential = true,
+    };
 
     private JoinViewModel JoinModel(JoinForm form, string? error) =>
         new(form, config.GetInt(ConfigKeys.PwdMinLen3types), config.GetInt(ConfigKeys.PwdMinLen2types), error);

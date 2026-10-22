@@ -1,4 +1,4 @@
--- 로그인 실패 처리: 실패 횟수 증가, 설정 횟수(PWD.LOCK_COUNT) 도달 시 잠금, 로그인 로그 기록.
+-- 로그인 실패 처리: 비밀번호·2단계 인증 코드가 틀리면(FAIL_PWD, FAIL_MFA) 실패 횟수 증가, 설정 횟수(PWD.LOCK_COUNT) 도달 시 잠금, 로그인 로그 기록.
 -- 없는 ID도 로그만 남긴다(입력값 30자까지). 자동 해제 시간이 지난 잠금은 횟수를 새로 센다.
 -- 결과: LOCK_YN (이번 실패로 잠겼거나 이미 잠긴 상태면 'Y')
 CREATE PROCEDURE [FW].[USP_AUTH_LOGIN_FAIL_EXEC]
@@ -26,7 +26,7 @@ BEGIN
     BEGIN TRAN;
 
     -- 비밀번호 오류만 횟수에 넣는다 (IP 차단·만료 계정은 비밀번호가 맞았던 경우다)
-    IF @P_LOGIN_RESULT_CD = 'FAIL_PWD'
+    IF @P_LOGIN_RESULT_CD IN ('FAIL_PWD', 'FAIL_MFA')
     BEGIN
       UPDATE [FW].[TB_USER]
          SET [LOGIN_FAIL_CNT] = CASE

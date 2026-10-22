@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Portal.Core.Keys;
 using Portal.IntegrationTests.Infrastructure;
 using Portal.Security.Authentication;
 using Portal.Security.Authorization;
+using Portal.Security.Mfa;
 using Portal.Security.Passwords;
 using Portal.Testing;
 
@@ -12,8 +15,15 @@ internal static class AuthTestContext
 {
     public static readonly Pbkdf2PasswordHasher Hasher = new();
 
-    public static AuthService NewAuth(TestDb db, FakePortalConfig? config = null) =>
-        new(db.Sp, Hasher, config ?? new FakePortalConfig(), db.User, TimeProvider.System, NullLogger<AuthService>.Instance);
+    /// <summary>테스트끼리 같은 키를 쓴다 (한 테스트에서 등록한 비밀키를 다시 읽을 수 있게).</summary>
+    public static readonly DataProtectionMfaSecretProtector MfaSecrets = new(new EphemeralDataProtectionProvider());
+
+    public static AuthService NewAuth(TestDb db, FakePortalConfig? config = null, TimeProvider? time = null) =>
+        new(db.Sp, Hasher, config ?? new FakePortalConfig(), db.User, time ?? TimeProvider.System, MfaSecrets, NullLogger<AuthService>.Instance);
+
+    /// <summary>2단계 인증을 끈 설정 (비밀번호 단계만 보는 테스트).</summary>
+    public static FakePortalConfig PasswordOnly() =>
+        new FakePortalConfig().Set(ConfigKeys.AuthPartnerMfa, "N").Set(ConfigKeys.AuthAdminMfa, "N");
 
     public static PasswordService NewPassword(TestDb db, FakePortalConfig? config = null)
     {

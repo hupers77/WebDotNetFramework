@@ -46,6 +46,7 @@ Oct 21, 2026 · @사랑나무아빠
 | HTML→PDF | Microsoft Edge Headless (`--print-to-pdf`) | 무료 (런타임) | 레포트 HTML을 그대로 PDF화, 서버에 Edge 설치 필요 |
 | UI 기반 | Bootstrap 5.3 | MIT (OSS 허용) | 레이아웃/폼 스타일만, jQuery 미사용 |
 | 차트 | Chart.js 4.x | MIT (OSS 허용) | 대시보드 위젯 |
+| QR 코드 | QRCoder 1.6 | MIT (OSS 허용) | 2단계 인증(TOTP) 앱 등록, 의존성 없음 |
 | 그리드/트리/탭 | 자체 Vanilla JS 컴포넌트 | 자체 | 가상 스크롤 그리드, 메뉴 트리, MDI 탭 |
 | DB 프로젝트 | SQL Server Data Tools(.sqlproj) | 무료 (Microsoft) | 테이블/SP 형상 관리, DACPAC 배포 |
 
@@ -130,7 +131,7 @@ Portal.sln
 3. 실패 시 실패 횟수 증가, 설정값(기본 5회) 초과 시 계정 잠금. 오류 메시지는 "ID 또는 비밀번호가 올바르지 않습니다"로 동일하게 표시
 4. 성공 시 세션 ID 재발급(세션 고정 방지), 중복 로그인 정책 적용, 로그인 이력 기록
 5. 최초 로그인 또는 비밀번호 만료(기본 90일) 시 변경 화면으로 강제 이동
-6. (선택) 2단계 인증: TOTP(RFC 6238, 자체 구현) 또는 이메일 OTP. 관리자 계정은 필수 적용 권장
+6. 2단계 인증: TOTP(RFC 6238, 자체 구현, 인증 앱 사용). 협력사(`AUTH.PARTNER_MFA`)와 관리자 역할(SYS_ADMIN·PORTAL_ADMIN·SECURITY_AUDITOR, `AUTH.ADMIN_MFA`)에 기본 적용합니다. 비밀번호가 맞으면 세션 대신 5분짜리 암호화 대기표 쿠키를 주고, 코드를 확인하면 세션을 만듭니다. 첫 로그인에서 QR로 인증 앱을 등록하며(비밀키는 Data Protection으로 암호화 저장), 한 번 쓴 코드는 다시 받지 않고, 틀린 코드도 로그인 실패 횟수에 넣어 잠급니다. 이메일 OTP는 메일 모듈 이후 검토합니다
 
 **AD SSO 로그인**
 

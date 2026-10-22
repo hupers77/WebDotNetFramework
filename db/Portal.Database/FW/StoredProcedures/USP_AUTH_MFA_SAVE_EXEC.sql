@@ -1,0 +1,46 @@
+-- 2단계 인증(TOTP) 등록. 비밀번호 확인을 마친 로그인 도중에 첫 코드를 확인한 뒤 부른다(로그인 전이라 @P_USER_ID는 비어 있다).
+-- 이미 등록한 계정은 덮어쓰지 않는다(다시 등록하려면 관리자가 초기화한다). 확인에 쓴 시간 단계를 함께 저장해 같은 코드로 로그인하지 못하게 한다.
+-- 감사 로그에는 등록 사실만 남기고 비밀키는 기록하지 않는다.
+-- 결과: AFFECTED_CNT
+CREATE PROCEDURE [FW].[USP_AUTH_MFA_SAVE_EXEC]
+  @P_LOGIN_USER_ID  VARCHAR(30),
+  @P_MFA_SECRET_ENC VARBINARY(256),
+  @P_MFA_STEP       BIGINT,
+  @P_USER_ID        VARCHAR(30) = NULL,
+  @P_LANG_CD        VARCHAR(5),
+  @P_CLIENT_IP      VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+  SET XACT_ABORT ON;
+
+  IF @P_MFA_SECRET_ENC IS NULL OR @P_MFA_STEP IS NULL
+    THROW 50005, 'MSG.INVALID_INPUT', 1;
+
+  BEGIN TRY
+    BEGIN TRAN;
+
+    UPDATE [FW].[TB_USER]
+       SET [MFA_SECRET_ENC] = @P_MFA_SECRET_ENC, [MFA_LAST_STEP] = @P_MFA_STEP,
+           [UPD_ID] = @P_LOGIN_USER_ID, [UPD_DT] = SYSUTCDATETIME()
+     WHERE [USER_ID] = @P_LOGIN_USER_ID
+       AND [MFA_SECRET_ENC] IS NULL;
+
+    IF @@ROWCOUNT = 0
+      THROW 50002, 'MSG.CONCURRENCY', 1;
+
+    EXEC [LOG].[USP_AUDIT_WRITE]
+      @P_TABLE_NM = 'FW.TB_USER', @P_ACTION_CD = 'U', @P_ROW_KEY = @P_LOGIN_USER_ID,
+      @P_BEFORE_JSON = NULL, @P_AFTER_JSON = N'{"MFA_ENROLLED":true}',
+      @P_USER_ID = @P_LOGIN_USER_ID, @P_LANG_CD = @P_LANG_CD, @P_CLIENT_IP = @P_CLIENT_IP;
+
+    COMMIT;
+
+    SELECT 1 AS [AFFECTED_CNT];
+  END TRY
+  BEGIN CATCH
+    IF @@TRANCOUNT > 0
+      ROLLBACK;
+    THROW;
+  END CATCH
+END

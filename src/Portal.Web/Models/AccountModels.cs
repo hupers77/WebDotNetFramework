@@ -80,3 +80,25 @@ public sealed class JoinForm
 /// <param name="ErrorMessage">번역된 오류 메시지.</param>
 /// <param name="Done">신청을 마쳤는지 (완료 안내만 보인다).</param>
 public sealed record JoinViewModel(JoinForm Form, int MinLength3Types, int MinLength2Types, string? ErrorMessage, bool Done = false);
+
+/// <summary>2단계 인증 코드 입력.</summary>
+public sealed class MfaForm
+{
+    /// <summary>인증 앱에 보이는 6자리 코드.</summary>
+    public string? Code { get; set; }
+
+    /// <summary>로그인 후 돌아갈 같은 사이트 경로.</summary>
+    public string? ReturnUrl { get; set; }
+}
+
+/// <summary>2단계 인증 화면 표시 정보.</summary>
+/// <param name="ReturnUrl">로그인 후 돌아갈 경로.</param>
+/// <param name="MessageKey">오류 메시지 키.</param>
+/// <param name="Enroll">처음 등록이면 등록 키와 QR. 이미 등록했으면 null.</param>
+public sealed record MfaViewModel(string? ReturnUrl, string? MessageKey, MfaEnrollInfo? Enroll);
+
+/// <summary>인증 앱 등록 정보.</summary>
+/// <param name="SecretKey">직접 입력할 등록 키 (Base32, 4자씩 띄움).</param>
+/// <param name="KeyUri">휴대폰에서 바로 여는 <c>otpauth://</c> 링크.</param>
+/// <param name="QrSvg">QR 코드 SVG 마크업 (서버가 만든 값).</param>
+public sealed record MfaEnrollInfo(string SecretKey, string KeyUri, Microsoft.AspNetCore.Html.IHtmlContent QrSvg);

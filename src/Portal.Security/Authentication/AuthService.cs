@@ -5,6 +5,7 @@ using Portal.Core.Context;
 using Portal.Core.Errors;
 using Portal.Core.Keys;
 using Portal.Data;
+using Portal.Security.Mfa;
 using Portal.Security.Network;
 using Portal.Security.Passwords;
 
@@ -14,6 +15,9 @@ namespace Portal.Security.Authentication;
 /// ID/PW 로그인, 세션 확인, 로그아웃 (설계서 5장). 쿠키 발급과 화면 이동은 웹 계층이 한다.
 /// 비밀번호가 틀렸을 때는 ID가 없는 경우와 같은 메시지·같은 계산량으로 응답해 계정 존재 여부를 숨긴다.
 /// 잠김·만료·IP 차단은 비밀번호가 맞았을 때만 알려 준다.
+/// 2단계 인증 대상(협력사 <c>AUTH.PARTNER_MFA</c>, 관리자 역할 <c>AUTH.ADMIN_MFA</c>)은 비밀번호가 맞아도 세션을 만들지 않고
+/// <see cref="LoginResult.MfaRequired"/>를 돌려준다. 코드를 확인하면(<see cref="VerifyMfaAsync"/>) 세션을 만든다.
+/// 틀린 코드도 로그인 실패로 세어 같은 횟수에서 잠근다.
 /// </summary>
 public sealed partial class AuthService(
     ISpExecutor sp,
@@ -21,6 +25,7 @@ public sealed partial class AuthService(
     IPortalConfig config,
     ICurrentUser currentUser,
     TimeProvider time,
+    IMfaSecretProtector mfaSecrets,
     ILogger<AuthService> logger)
 {
     private const int MaxUserIdLength = 30;
@@ -68,19 +73,103 @@ public sealed partial class AuthService(
             return LoginResult.Fail(d.MessageKey);
         }
 
+        if (RequiresMfa(user))
+        {
+            return new LoginResult(false, null, UserId: user.UserId, MfaRequired: true, MfaEnrolled: user.MfaSecretEnc is not null);
+        }
+
+        return await CreateSessionAsync(user, AuthMethods.Form, null, userAgent, cancellationToken);
+    }
+
+    /// <summary>
+    /// 2단계 인증 코드를 확인하고 세션을 만든다. 등록 중이면(대기표에 새 비밀키) 코드가 맞을 때 비밀키를 저장한다.
+    /// 계정 상태(잠김·만료·IP)는 비밀번호 확인 뒤 바뀌었을 수 있어 다시 확인한다.
+    /// </summary>
+    public async Task<LoginResult> VerifyMfaAsync(MfaVerifyRequest request, CancellationToken cancellationToken = default)
+    {
+        var userAgent = Truncate(request.UserAgent, MaxUserAgentLength);
+        var user = await sp.QuerySingleAsync<AuthUser>(AuthSp.GetUser, new { P_LOGIN_USER_ID = request.Ticket.UserId }, cancellationToken);
+        if (user is null)
+        {
+            return LoginResult.Fail(AuthMessageKeys.MfaExpired);
+        }
+
+        if (Deny(user) is { } denied)
+        {
+            await FailAsync(user.UserId, denied.ResultCd, userAgent, cancellationToken);
+            return LoginResult.Fail(denied.MessageKey);
+        }
+
+        var enrolling = user.MfaSecretEnc is null;
+        byte[]? secret;
+        try
+        {
+            secret = enrolling ? request.Ticket.PendingSecret : mfaSecrets.Unprotect(user.MfaSecretEnc!);
+        }
+        catch (System.Security.Cryptography.CryptographicException ex)
+        {
+            // 키 폴더를 잃었거나 바뀌었다: 관리자가 2단계 인증을 초기화해야 다시 등록할 수 있다
+            LogBadMfaSecret(logger, user.UserId, ex);
+            return LoginResult.Fail(AuthMessageKeys.MfaExpired);
+        }
+
+        if (secret is not { Length: Totp.SecretSize })
+        {
+            return LoginResult.Fail(AuthMessageKeys.MfaExpired);
+        }
+
+        var step = Totp.Verify(secret, request.Code, time.GetUtcNow(), user.MfaLastStep);
+        if (step is null)
+        {
+            var failed = await FailAsync(user.UserId, LoginResultCodes.FailMfa, userAgent, cancellationToken, AuthMethods.FormMfa);
+            return LoginResult.Fail(failed?.LockYn == "Y" ? AuthMessageKeys.Locked : AuthMessageKeys.MfaInvalid);
+        }
+
+        if (enrolling)
+        {
+            try
+            {
+                await sp.ExecuteAsync(
+                    AuthSp.MfaSave,
+                    new { P_LOGIN_USER_ID = user.UserId, P_MFA_SECRET_ENC = mfaSecrets.Protect(secret), P_MFA_STEP = step },
+                    cancellationToken);
+            }
+            catch (BizException ex) when (ex.MessageKey == MessageKeys.Concurrency)
+            {
+                // 다른 창에서 먼저 등록했다: 등록한 키의 코드로 다시 입력해야 한다
+                return LoginResult.Fail(AuthMessageKeys.MfaExpired);
+            }
+        }
+
+        return await CreateSessionAsync(user, AuthMethods.FormMfa, enrolling ? null : step, userAgent, cancellationToken);
+    }
+
+    /// <summary>2단계 인증 대상인지: 협력사(<c>AUTH.PARTNER_MFA</c>) 또는 관리자 역할(<c>AUTH.ADMIN_MFA</c>).</summary>
+    private bool RequiresMfa(AuthUser user) =>
+        (user.UserTypeCd == "PARTNER" && config.GetBool(ConfigKeys.AuthPartnerMfa))
+        || (user.AdminYn == "Y" && config.GetBool(ConfigKeys.AuthAdminMfa));
+
+    private async Task<LoginResult> CreateSessionAsync(AuthUser user, string authMethod, long? mfaStep, string? userAgent, CancellationToken cancellationToken)
+    {
         var (token, hash) = SessionToken.Create();
         LoginSession? session;
         try
         {
             session = await sp.QuerySingleAsync<LoginSession>(
                 AuthSp.LoginSuccess,
-                new { P_LOGIN_USER_ID = user.UserId, P_SESSION_HASH = hash, P_AUTH_METHOD_CD = AuthMethods.Form, P_USER_AGENT = userAgent },
+                new { P_LOGIN_USER_ID = user.UserId, P_SESSION_HASH = hash, P_AUTH_METHOD_CD = authMethod, P_USER_AGENT = userAgent, P_MFA_STEP = mfaStep },
                 cancellationToken);
         }
         catch (BizException ex) when (ex.SqlErrorNumber == AuthSp.ConcurrentDeniedError)
         {
             await FailAsync(user.UserId, LoginResultCodes.FailDuplicate, userAgent, cancellationToken);
             return LoginResult.Fail(AuthMessageKeys.ConcurrentDenied);
+        }
+        catch (BizException ex) when (ex.SqlErrorNumber == AuthSp.MfaReplayError)
+        {
+            // 같은 코드가 동시에 두 번 들어왔다
+            await FailAsync(user.UserId, LoginResultCodes.FailMfa, userAgent, cancellationToken, AuthMethods.FormMfa);
+            return LoginResult.Fail(AuthMessageKeys.MfaInvalid);
         }
 
         return new LoginResult(
@@ -161,10 +250,10 @@ public sealed partial class AuthService(
         }
     }
 
-    private Task<LoginFailResult?> FailAsync(string loginId, string resultCd, string? userAgent, CancellationToken cancellationToken) =>
+    private Task<LoginFailResult?> FailAsync(string loginId, string resultCd, string? userAgent, CancellationToken cancellationToken, string authMethod = AuthMethods.Form) =>
         sp.QuerySingleAsync<LoginFailResult>(
             AuthSp.LoginFail,
-            new { P_LOGIN_USER_ID = loginId, P_LOGIN_RESULT_CD = resultCd, P_AUTH_METHOD_CD = AuthMethods.Form, P_USER_AGENT = userAgent },
+            new { P_LOGIN_USER_ID = loginId, P_LOGIN_RESULT_CD = resultCd, P_AUTH_METHOD_CD = authMethod, P_USER_AGENT = userAgent },
             cancellationToken);
 
     private static string? Truncate(string? value, int max) =>
@@ -172,4 +261,7 @@ public sealed partial class AuthService(
 
     [LoggerMessage(Level = LogLevel.Error, Message = "회사 {CompanyCd}의 허용 IP 목록 형식이 잘못되어 로그인을 막았습니다")]
     private static partial void LogBadAllowList(ILogger logger, string companyCd, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "사용자 {UserId}의 2단계 인증 비밀키를 풀 수 없습니다 (Data Protection 키 확인, 관리자가 초기화하면 다시 등록)")]
+    private static partial void LogBadMfaSecret(ILogger logger, string userId, Exception ex);
 }

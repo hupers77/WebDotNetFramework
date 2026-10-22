@@ -64,7 +64,7 @@ public sealed class PasswordAndPermissionTests(DbFixture fixture)
         var bootstrap = new AdminBootstrapService(db.Sp, Hasher);
 
         var (created, temp) = await bootstrap.InitAsync();
-        var login = await NewAuth(db).LoginAsync(new LoginRequest("sysadmin", temp, null));
+        var login = await NewAuth(db, PasswordOnly()).LoginAsync(new LoginRequest("sysadmin", temp, null));
         var (createdAgain, temp2) = await bootstrap.InitAsync();
 
         Assert.True(created);

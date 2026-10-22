@@ -13,16 +13,26 @@ public sealed record LoginRequest(string UserId, string Password, string? UserAg
 /// <param name="UserId">성공 시 DB에 저장된 사용자 ID (대소문자 정규화).</param>
 /// <param name="PasswordChangeRequired">최초 로그인·초기화·만료로 비밀번호 변경 화면으로 보내야 하는지.</param>
 /// <param name="ExpireDt">세션 만료 시각 (UTC).</param>
+/// <param name="MfaRequired">비밀번호는 맞았고 2단계 인증 코드가 필요하다 (세션은 아직 없다).</param>
+/// <param name="MfaEnrolled">인증 앱을 이미 등록했는지. false면 등록부터 한다.</param>
 public sealed record LoginResult(
     bool Succeeded,
     string? MessageKey,
     string? SessionToken = null,
     string? UserId = null,
     bool PasswordChangeRequired = false,
-    DateTime? ExpireDt = null)
+    DateTime? ExpireDt = null,
+    bool MfaRequired = false,
+    bool MfaEnrolled = false)
 {
     internal static LoginResult Fail(string messageKey) => new(false, messageKey);
 }
+
+/// <summary>2단계 인증 코드 확인 요청.</summary>
+/// <param name="Ticket">비밀번호 확인 뒤 받은 대기표.</param>
+/// <param name="Code">인증 앱의 6자리 코드.</param>
+/// <param name="UserAgent">브라우저 정보.</param>
+public sealed record MfaVerifyRequest(Mfa.MfaTicket Ticket, string? Code, string? UserAgent);
 
 /// <summary>세션 확인 결과. <see cref="User"/>가 null이면 로그아웃 상태이고 <see cref="EndReasonCd"/>가 사유다.</summary>
 /// <param name="User">로그인 사용자.</param>
@@ -98,6 +108,12 @@ internal sealed class AuthUser
     public string? AllowIpList { get; set; }
 
     public string AccountStat { get; set; } = "";
+
+    public byte[]? MfaSecretEnc { get; set; }
+
+    public long? MfaLastStep { get; set; }
+
+    public string AdminYn { get; set; } = "N";
 }
 
 /// <summary><c>USP_AUTH_LOGIN_SUCCESS_EXEC</c> 결과.</summary>
