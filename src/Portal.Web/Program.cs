@@ -11,6 +11,7 @@ builder.Services.AddPortalWeb(builder.Configuration);
 // 화면 Service (Area별)
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.ICodeAdminService, Portal.Web.Areas.Sys.Services.CodeAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IConfigAdminService, Portal.Web.Areas.Sys.Services.ConfigAdminService>();
+builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IPartnerApproveService, Portal.Web.Areas.Sys.Services.PartnerApproveService>();
 
 var app = builder.Build();
 

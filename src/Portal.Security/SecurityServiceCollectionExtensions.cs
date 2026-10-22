@@ -12,7 +12,7 @@ namespace Portal.Security;
 public static class SecurityServiceCollectionExtensions
 {
     /// <summary>
-    /// 비밀번호 해시·정책, 로그인, 권한 평가, 설정 비밀값 암호화 서비스를 등록한다. <c>IPortalConfig</c>, <c>ICurrentUser</c>, <c>ISpExecutor</c>가 필요하다.
+    /// 비밀번호 해시·정책, 로그인, 협력사 가입 신청, 권한 평가, 설정 비밀값·개인정보 암호화 서비스를 등록한다. <c>IPortalConfig</c>, <c>ICurrentUser</c>, <c>ISpExecutor</c>가 필요하다.
     /// Data Protection 키 저장 위치는 호스트가 정한다(웹: <c>Portal:DataProtection:KeyPath</c>).
     /// </summary>
     public static IServiceCollection AddPortalSecurity(this IServiceCollection services)
@@ -26,6 +26,8 @@ public static class SecurityServiceCollectionExtensions
         services.TryAddScoped<AdminBootstrapService>();
         services.AddDataProtection();
         services.TryAddSingleton<ISecretProtector, DataProtectionSecretProtector>();
+        services.TryAddSingleton<IPersonalDataProtector, DataProtectionPersonalDataProtector>();
+        services.TryAddScoped<PartnerJoinService>();
         return services;
     }
 }

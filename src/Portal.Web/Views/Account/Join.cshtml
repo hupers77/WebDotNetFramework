@@ -1,0 +1,37 @@
+@model JoinViewModel
+@{
+    ViewData["Title"] = L["LBL.JOIN_TITLE"];
+}
+<h1>@L["LBL.JOIN_TITLE"]</h1>
+@if (Model.Done)
+{
+    <p class="notice" role="status">@L["MSG.JOIN_REQUESTED"]</p>
+    <p><a class="button primary" asp-action="Login">@L["BTN.BACK_TO_LOGIN"]</a></p>
+}
+else
+{
+    <p class="hint">@L["JOIN.GUIDE"]</p>
+    @if (Model.ErrorMessage is not null)
+    {
+        <p class="error" role="alert">@Model.ErrorMessage</p>
+    }
+    <form method="post" asp-action="Join" class="form">
+        <label for="BizRegNo">@L["LBL.BIZ_REG_NO"]</label>
+        <input id="BizRegNo" name="BizRegNo" value="@Model.Form.BizRegNo" inputmode="numeric" autocomplete="off" maxlength="20" required autofocus />
+        <label for="UserId">@L["LBL.USER_ID"]</label>
+        <input id="UserId" name="UserId" value="@Model.Form.UserId" autocomplete="username" maxlength="30" required aria-describedby="id-guide" />
+        <p id="id-guide" class="hint">@L["VAL.USER_ID_FORMAT", Portal.Security.Authentication.PartnerJoinService.UserIdMinLength, Portal.Security.Authentication.PartnerJoinService.UserIdMaxLength]</p>
+        <label for="UserNm">@L["LBL.USER_NM"]</label>
+        <input id="UserNm" name="UserNm" value="@Model.Form.UserNm" autocomplete="name" maxlength="100" required />
+        <label for="Email">@L["LBL.EMAIL"]</label>
+        <input id="Email" name="Email" type="email" value="@Model.Form.Email" autocomplete="email" maxlength="254" required aria-describedby="email-guide" />
+        <p id="email-guide" class="hint">@L["JOIN.EMAIL_GUIDE"]</p>
+        <label for="Password">@L["LBL.PASSWORD"]</label>
+        <input id="Password" name="Password" type="password" autocomplete="new-password" maxlength="128" required aria-describedby="pwd-guide" />
+        <p id="pwd-guide" class="hint">@L["MY.PWD.GUIDE", Model.MinLength3Types, Model.MinLength2Types]</p>
+        <label for="PasswordConfirm">@L["LBL.PASSWORD_CONFIRM"]</label>
+        <input id="PasswordConfirm" name="PasswordConfirm" type="password" autocomplete="new-password" maxlength="128" required />
+        <button type="submit" class="primary">@L["BTN.JOIN"]</button>
+    </form>
+    <p><a asp-action="Login">@L["BTN.BACK_TO_LOGIN"]</a></p>
+}

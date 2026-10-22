@@ -169,6 +169,9 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .pick-list li:hover { background: var(--fw-hover); }
 .pick-list li[aria-selected="true"] { background: var(--fw-current); font-weight: 600; }
 .pick-list li.unused span:first-child { text-decoration: line-through; }
+.detail-list { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0 0 1rem; }
+.detail-list dt { color: var(--fw-muted); }
+.detail-list dd { margin: 0; overflow-wrap: anywhere; }
 
 /* fw.grid */
 .grid-wrap { overflow: auto; max-height: 65vh; border: 1px solid var(--fw-border); border-radius: 4px; }
