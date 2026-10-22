@@ -86,6 +86,25 @@ public sealed class PartnerJoinTests(DbFixture fixture)
     }
 
     [Fact]
+    public async Task 신청하면_승인권한자에게_포털알림과메일_신청자이름과이메일은넣지않는다()
+    {
+        await using var db = await fixture.BeginAsync();
+        await SeedPartnerAsync(db);
+        await db.SeedUserAsync("it.approver", "HQ", "EMP", null, "PORTAL_ADMIN");
+        await db.SeedUserAsync("it.staff", "HQ", "EMP", null, "EMP_USER");
+        await db.ExecAsync("UPDATE FW.TB_USER SET EMAIL_ENC = 0x0A0B WHERE USER_ID IN ('it.approver', 'it.staff')");
+
+        await RequestAsync(db);
+
+        Assert.Equal(["it.approver|{\"COMPANY_NM\":\"IT9001\",\"USER_ID\":\"it.ptn.kim\"}"], await db.ColumnAsync<string>(
+            "SELECT CONCAT(USER_ID, '|', PARAMS_JSON) FROM FW.TB_NOTIFICATION WHERE TEMPLATE_ID = 'TPL_PARTNER_SIGNUP_REQ' AND USER_ID IN ('it.approver', 'it.staff')"));
+        Assert.Equal(["it.approver"], await db.ColumnAsync<string>(
+            "SELECT TO_USER_ID FROM FW.TB_MSG_QUEUE WHERE TEMPLATE_ID = 'TPL_PARTNER_SIGNUP_REQ' AND TO_USER_ID IN ('it.approver', 'it.staff')"));
+        Assert.Equal(0, await db.ScalarAsync<int>(
+            "SELECT COUNT(*) FROM FW.TB_NOTIFICATION WHERE TEMPLATE_ID = 'TPL_PARTNER_SIGNUP_REQ' AND (PARAMS_JSON LIKE N'%김협력%' OR PARAMS_JSON LIKE '%@%')"));
+    }
+
+    [Fact]
     public async Task 승인전에는_로그인할수없다()
     {
         await using var db = await fixture.BeginAsync();

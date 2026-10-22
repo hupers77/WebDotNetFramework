@@ -92,6 +92,8 @@ body.auth { display: flex; min-height: 100vh; align-items: center; justify-conte
 .session.ending { color: var(--fw-warn); font-weight: 600; }
 .session.ending::before { content: "⏱"; }
 .session button { padding: .1rem .5rem; font-size: .8rem; }
+.noti-bell { position: relative; padding: .1rem .35rem; font-size: 1.05rem; text-decoration: none; line-height: 1; }
+.noti-badge { position: absolute; top: -.35rem; right: -.45rem; min-width: 1.1rem; padding: 0 .25rem; border-radius: .6rem; background: var(--fw-error); color: #fff; font-size: .7rem; font-weight: 600; line-height: 1.1rem; text-align: center; }
 .user-menu { position: relative; }
 .user-menu summary { cursor: pointer; list-style: none; padding: .3rem .5rem; border-radius: 4px; white-space: nowrap; }
 .user-menu summary::after { content: " ▾"; }
@@ -161,6 +163,13 @@ h2 { font-size: 1rem; margin: 0 0 .5rem; }
 .search-bar input { flex: 1 1 8rem; min-width: 0; }
 .toolbar { display: flex; gap: .4rem; justify-content: flex-end; margin-bottom: .5rem; }
 .toolbar button.primary { margin-top: 0; }
+.toolbar-spacer { flex: 1; }
+.pager { display: flex; gap: .5rem; align-items: center; justify-content: center; margin-top: .5rem; }
+.noti-grid tr.unread .noti-title { font-weight: 600; }
+.noti-grid .noti-title button { padding: 0; border: 0; background: none; color: var(--fw-primary); text-align: left; cursor: pointer; font: inherit; }
+.noti-grid .noti-title button:hover { text-decoration: underline; }
+.noti-grid .noti-content { white-space: pre-line; color: var(--fw-muted); }
+.noti-grid .noti-unread-mark { margin-right: .3rem; color: var(--fw-error); font-size: .75rem; font-weight: 600; }
 button:disabled { opacity: .55; cursor: not-allowed; }
 .md-layout { display: grid; grid-template-columns: minmax(14rem, 20rem) 1fr; gap: 1rem; align-items: start; }
 .md-layout > section { background: var(--fw-surface); border: 1px solid var(--fw-border); border-radius: 6px; padding: .75rem; min-width: 0; }

@@ -150,6 +150,9 @@ public static class ConfigKeys
     /// <summary>알림 확인 주기(초).</summary>
     public const string NotifyPollSeconds = "NOTIFY.POLL_SECONDS";
 
+    /// <summary>포털 알림 보관 기간(일). 지나면 정리 작업이 지운다.</summary>
+    public const string NotifyKeepDays = "NOTIFY.KEEP_DAYS";
+
     /// <summary>점검 모드: Y면 관리자만 접속.</summary>
     public const string SysMaintenanceMode = "SYS.MAINTENANCE_MODE";
 }

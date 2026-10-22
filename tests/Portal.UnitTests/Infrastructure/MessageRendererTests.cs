@@ -43,4 +43,22 @@ public sealed class MessageRendererTests
 
         Assert.Equal("{{B}}", MessageRenderer.RenderBody("{{A}}", values));
     }
+
+    [Fact]
+    public void 글자만_문단과줄바꿈은줄로_태그는지우고_엔터티는푼다()
+    {
+        var html = "<p>작업 <strong>A&amp;B</strong>가 실패했습니다.</p><p>사유: &lt;5&gt;<br/>다시 확인</p><p><a href=\"\"></a></p>  ";
+
+        Assert.Equal("작업 A&B가 실패했습니다.\n사유: <5>\n다시 확인", MessageRenderer.ToPlainText(html));
+    }
+
+    [Fact]
+    public void 치환값JSON_문자열숫자null을읽고_객체가아니면비어있다()
+    {
+        var values = MessageRenderer.ParseValues("""{"A":"x","N":3,"Z":null}""");
+
+        Assert.Equal(("x", "3", (string?)null), (values["A"], values["N"], values["Z"]));
+        Assert.Empty(MessageRenderer.ParseValues(null));
+        Assert.Empty(MessageRenderer.ParseValues("[1,2]"));
+    }
 }

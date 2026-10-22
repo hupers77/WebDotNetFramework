@@ -54,6 +54,7 @@ USING (VALUES
   (N'AD.BIND_PASSWORD', NULL, N'SECRET', N'Y', N'AD', N'동기화 계정 비밀번호 (gMSA 사용 시 불필요)', N'N'),
   (N'APPROVAL.GATEWAY', N'NONE', N'STRING', N'N', N'APPROVAL', N'전자결재 연동 구현 이름 (업무 개발 시 지정)', N'Y'),
   (N'NOTIFY.POLL_SECONDS', N'60', N'INT', N'N', N'NOTIFY', N'알림 확인 주기(초)', N'N'),
+  (N'NOTIFY.KEEP_DAYS', N'90', N'INT', N'N', N'NOTIFY', N'포털 알림 보관 기간(일, 읽었는지와 상관없이)', N'N'),
   (N'SYS.MAINTENANCE_MODE', N'N', N'BOOL', N'N', N'SYS', N'Y면 관리자만 접속', N'N')
 ) AS S ([CONFIG_KEY], [CONFIG_VAL], [VAL_TYPE_CD], [ENC_YN], [CATEGORY_CD], [DESCRIPTION], [RESTART_YN])
    ON T.[CONFIG_KEY] = S.[CONFIG_KEY]

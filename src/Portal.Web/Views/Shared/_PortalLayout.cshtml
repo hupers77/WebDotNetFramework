@@ -1,9 +1,11 @@
 @using Portal.Core.Keys
+@using Portal.Web.Controllers
 @using Portal.Framework.Web.Navigation
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @inject Portal.Infrastructure.Localization.LangResources Lang
 @inject Portal.Core.Config.IPortalConfig Config
 @inject MenuService Menus
+@inject Portal.Framework.Web.Authorization.CurrentPermissions Permissions
 @{
     var user = Context.Features.Get<PortalUserFeature>()?.User;
     var notice = TempData[TempDataKeys.Notice] as string;
@@ -12,6 +14,7 @@
     var favorites = await Menus.GetFavoritesAsync(tree, Context.RequestAborted);
     ViewData["FavoriteIds"] = favorites.Select(f => f.MenuId).ToHashSet();
     var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+    var canNotify = user is not null && (await Permissions.GetAsync(Context.RequestAborted)).Can(NotificationController.ProgramId, FuncCodes.Read);
 }
 <!DOCTYPE html>
 <html lang="@CurrentUser.LangCd">
@@ -44,6 +47,14 @@
             <time id="session-remain" aria-live="off">--:--</time>
             <button type="button" id="session-extend">@L["BTN.SESSION_EXTEND"]</button>
         </div>
+        @if (canNotify)
+        {
+            @* 안 읽은 알림 배지: fw-shell.js가 NOTIFY.POLL_SECONDS마다 세션을 연장하지 않는 요청으로 센다 *@
+            <a id="noti-bell" class="noti-bell" href="~/My/Notification" title="@L["LBL.NOTIFICATIONS"]" aria-label="@L["LBL.NOTIFICATIONS"]"
+               data-url-unread="@Url.Content("~/My/Notification/Unread")" data-poll-seconds="@Config.GetInt(ConfigKeys.NotifyPollSeconds)">
+                <span aria-hidden="true">🔔</span><span class="noti-badge" aria-hidden="true" hidden></span>
+            </a>
+        }
         <form method="post" asp-controller="My" asp-action="Language" class="lang-form">
             <input type="hidden" name="returnUrl" value="@returnUrl" />
             <label for="lang-select" class="sr-only">@L["LBL.LANGUAGE"]</label>

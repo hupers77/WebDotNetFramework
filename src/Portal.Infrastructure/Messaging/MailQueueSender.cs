@@ -1,6 +1,5 @@
 using System.Net.Mail;
 using System.Security.Cryptography;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Portal.Core.Config;
 using Portal.Core.Keys;
@@ -123,21 +122,7 @@ public sealed partial class MailQueueSender(
     /// <summary>치환값: 업무 SP가 넘긴 값 + 사이트명(받는 사람 언어) + 포털 주소.</summary>
     private Dictionary<string, string?> Values(QueuedMail row)
     {
-        var values = new Dictionary<string, string?>(StringComparer.Ordinal);
-        using var doc = row.ParamsJson is { Length: > 0 } json ? JsonDocument.Parse(json) : null;
-        if (doc?.RootElement.ValueKind == JsonValueKind.Object)
-        {
-            foreach (var property in doc.RootElement.EnumerateObject())
-            {
-                values[property.Name] = property.Value.ValueKind switch
-                {
-                    JsonValueKind.String => property.Value.GetString(),
-                    JsonValueKind.Null or JsonValueKind.Undefined => null,
-                    _ => property.Value.GetRawText(),
-                };
-            }
-        }
-
+        var values = MessageRenderer.ParseValues(row.ParamsJson);
         var siteName = langs.Get(row.LangCd, ConfigKeys.SiteName, []);
         values["SITE_NM"] = siteName != ConfigKeys.SiteName ? siteName : config.GetString(ConfigKeys.SiteName) ?? "";
         values["LINK"] = config.GetString(ConfigKeys.SiteBaseUrl) is { } baseUrl ? baseUrl.TrimEnd('/') + "/" : "";

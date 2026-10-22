@@ -1,10 +1,12 @@
 -- 요청마다 세션 확인 (인증 미들웨어). 살아 있는 세션이면 비활동 만료 시각을 연장하고 사용자 정보를 돌려준다.
--- 쓰기를 줄이려고 마지막 접근 후 1분이 지났을 때만 갱신한다. 세션이 없거나 끝났으면 END_REASON_CD만 있는 행을 돌려준다
+-- 쓰기를 줄이려고 마지막 접근 후 1분이 지났을 때만 갱신한다. @P_TOUCH_YN = 'N'(헤더 알림 배지처럼 사용자가 하지 않은 백그라운드 요청)이면
+-- 확인만 하고 연장하지 않는다(화면을 켜 두기만 해도 자동 로그아웃이 되지 않는 일이 없도록). 세션이 없거나 끝났으면 END_REASON_CD만 있는 행을 돌려준다
 -- (공통코드 LOGIN_RESULT: KICKED 다른 곳에서 로그인, LOGOUT, TIMEOUT 비활동 만료, DISABLED 계정 잠김·사용 기간 끝남.
 -- 행이 없으면 알 수 없는 세션).
 -- 결과: USER_ID, COMPANY_CD, DEPT_ID, USER_TYPE_CD, USER_NM, LANG_CD, TIMEZONE_ID, PWD_CHG_REQ_YN, PWD_CHG_DT, EXPIRE_DT, END_REASON_CD
 CREATE PROCEDURE [FW].[USP_AUTH_SESSION_CHECK_EXEC]
   @P_SESSION_HASH CHAR(64),
+  @P_TOUCH_YN     CHAR(1)     = 'Y',
   @P_USER_ID      VARCHAR(30),
   @P_LANG_CD      VARCHAR(5),
   @P_CLIENT_IP    VARCHAR(45) = NULL
@@ -50,7 +52,7 @@ BEGIN
     RETURN;
   END
 
-  IF @LAST_ACCESS_DT < DATEADD(MINUTE, -1, @NOW)
+  IF @P_TOUCH_YN = 'Y' AND @LAST_ACCESS_DT < DATEADD(MINUTE, -1, @NOW)
   BEGIN
     SET @EXPIRE_DT = DATEADD(MINUTE, @IDLE_MINUTES, @NOW);
     UPDATE [FW].[TB_USER_SESSION]

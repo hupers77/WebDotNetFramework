@@ -182,14 +182,24 @@ public sealed partial class AuthService(
     }
 
     /// <summary>요청마다 세션을 확인하고 비활동 만료 시각을 연장한다.</summary>
-    public async Task<SessionCheckResult> CheckSessionAsync(string? token, CancellationToken cancellationToken = default)
+    public Task<SessionCheckResult> CheckSessionAsync(string? token, CancellationToken cancellationToken = default) =>
+        CheckSessionAsync(token, extend: true, cancellationToken);
+
+    /// <summary>
+    /// 세션 확인. <paramref name="extend"/>가 false면 비활동 만료 시각을 늘리지 않는다
+    /// (헤더 알림 배지처럼 사용자가 하지 않은 백그라운드 요청이 자동 로그아웃을 막지 않도록).
+    /// </summary>
+    public async Task<SessionCheckResult> CheckSessionAsync(string? token, bool extend, CancellationToken cancellationToken = default)
     {
         if (!SessionToken.IsWellFormed(token))
         {
             return new SessionCheckResult(null, null);
         }
 
-        var row = await sp.QuerySingleAsync<SessionUser>(AuthSp.SessionCheck, new { P_SESSION_HASH = SessionToken.Hash(token!) }, cancellationToken);
+        var row = await sp.QuerySingleAsync<SessionUser>(
+            AuthSp.SessionCheck,
+            new { P_SESSION_HASH = SessionToken.Hash(token!), P_TOUCH_YN = extend ? "Y" : "N" },
+            cancellationToken);
         return row switch
         {
             null => new SessionCheckResult(null, null),

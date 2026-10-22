@@ -1,8 +1,10 @@
--- 메일 대기열에 메시지를 쌓는다. 업무 SP 안에서 EXEC로 부르면 그 업무와 같은 트랜잭션으로 저장된다(업무가 롤백되면 메일도 사라진다).
+-- 메시지를 보낸다: 메일 대기열(TB_MSG_QUEUE)과 포털 알림함(TB_NOTIFICATION)에 쌓는다.
+-- 업무 SP 안에서 EXEC로 부르면 그 업무와 같은 트랜잭션으로 저장된다(업무가 롤백되면 메일·알림도 사라진다).
 -- 받는 사람: @P_TO_USER_ID를 주면 사용자의 업무 이메일·언어를 쓰고, 계정이 없는 사람은 @P_TO_EMAIL_ENC·@P_TO_LANG_CD로 준다.
--- 템플릿을 쓰지 않거나(USE_YN = 'N'), 메일 채널이 아니거나, 받는 주소가 없으면 쌓지 않고 0건으로 끝낸다(업무는 계속 진행).
+-- 메일: 템플릿의 메일 채널(MAIL_YN = 'Y')이 켜져 있고 받는 주소가 있을 때. 포털 알림: 포털 채널(PORTAL_YN = 'Y')이 켜져 있고 받는 사람이 사용 중인 포털 사용자일 때.
+-- 템플릿을 쓰지 않거나(USE_YN = 'N') 보낼 채널이 없으면 쌓지 않고 0건으로 끝낸다(업무는 계속 진행).
 -- 다른 SP에서 부를 때는 @P_RESULT_YN = 'N'으로 결과 행을 내지 않는다(부른 SP의 결과 행과 섞이지 않게).
--- 결과(@P_RESULT_YN = 'Y'): AFFECTED_CNT, NEW_KEY(MSG_ID)
+-- 결과(@P_RESULT_YN = 'Y'): AFFECTED_CNT(쌓은 메일 + 알림 수), NEW_KEY(MSG_ID, 메일을 쌓지 않았으면 NULL)
 CREATE PROCEDURE [FW].[USP_MSG_QUEUE_SAVE]
   @P_TEMPLATE_ID   VARCHAR(30),
   @P_TO_USER_ID    VARCHAR(30)    = NULL,
@@ -21,7 +23,7 @@ BEGIN
   IF @P_PARAMS_JSON IS NOT NULL AND ISJSON(@P_PARAMS_JSON) = 0
     THROW 50005, 'MSG.INVALID_INPUT', 1;
 
-  DECLARE @EMAIL_ENC VARBINARY(512) = @P_TO_EMAIL_ENC, @TO_LANG VARCHAR(5) = @P_TO_LANG_CD, @MSG_ID BIGINT = NULL;
+  DECLARE @EMAIL_ENC VARBINARY(512) = @P_TO_EMAIL_ENC, @TO_LANG VARCHAR(5) = @P_TO_LANG_CD, @MSG_ID BIGINT = NULL, @NOTI_CNT INT = 0;
 
   IF @P_TO_USER_ID IS NOT NULL
     SELECT @EMAIL_ENC = ISNULL(@EMAIL_ENC, [EMAIL_ENC]), @TO_LANG = ISNULL(@TO_LANG, [LANG_CD])
@@ -41,6 +43,17 @@ BEGIN
     SET @MSG_ID = SCOPE_IDENTITY();
   END
 
+  IF @P_TO_USER_ID IS NOT NULL
+     AND EXISTS (SELECT 1 FROM [FW].[TB_MSG_TEMPLATE] WHERE [TEMPLATE_ID] = @P_TEMPLATE_ID AND [USE_YN] = 'Y' AND [PORTAL_YN] = 'Y')
+  BEGIN
+    INSERT INTO [FW].[TB_NOTIFICATION] ([USER_ID], [TEMPLATE_ID], [PARAMS_JSON], [REG_ID])
+    SELECT U.[USER_ID], @P_TEMPLATE_ID, @P_PARAMS_JSON, ISNULL(@P_USER_ID, 'SYSTEM')
+      FROM [FW].[TB_USER] U
+     WHERE U.[USER_ID] = @P_TO_USER_ID AND U.[USER_STAT_CD] = 'ACTIVE';
+
+    SET @NOTI_CNT = @@ROWCOUNT;
+  END
+
   IF @P_RESULT_YN = 'Y'
-    SELECT CASE WHEN @MSG_ID IS NULL THEN 0 ELSE 1 END AS [AFFECTED_CNT], CAST(@MSG_ID AS VARCHAR(20)) AS [NEW_KEY];
+    SELECT CASE WHEN @MSG_ID IS NULL THEN 0 ELSE 1 END + @NOTI_CNT AS [AFFECTED_CNT], CAST(@MSG_ID AS VARCHAR(20)) AS [NEW_KEY];
 END

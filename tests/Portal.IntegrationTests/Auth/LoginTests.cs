@@ -216,6 +216,25 @@ public sealed class LoginTests(DbFixture fixture)
     }
 
     [Fact]
+    public async Task 세션확인_백그라운드요청은_연장하지않고_만료되면끝난다()
+    {
+        await using var db = await fixture.BeginAsync();
+        await SeedLoginUserAsync(db, "it.hong", Pwd);
+        AsAnonymous(db);
+        var auth = NewAuth(db);
+        var login = await auth.LoginAsync(Req("it.hong"));
+        await db.ExecAsync("UPDATE FW.TB_USER_SESSION SET LAST_ACCESS_DT = DATEADD(MINUTE, -10, LAST_ACCESS_DT), EXPIRE_DT = DATEADD(MINUTE, -10, EXPIRE_DT) WHERE USER_ID = 'it.hong'");
+        var before = await db.ScalarAsync<string>("SELECT CONCAT(CONVERT(VARCHAR(19), LAST_ACCESS_DT, 120), '|', CONVERT(VARCHAR(19), EXPIRE_DT, 120)) FROM FW.TB_USER_SESSION WHERE USER_ID = 'it.hong'");
+
+        var check = await auth.CheckSessionAsync(login.SessionToken, extend: false);
+
+        Assert.Equal("it.hong", check.User!.UserId);
+        Assert.Equal(before, await db.ScalarAsync<string>("SELECT CONCAT(CONVERT(VARCHAR(19), LAST_ACCESS_DT, 120), '|', CONVERT(VARCHAR(19), EXPIRE_DT, 120)) FROM FW.TB_USER_SESSION WHERE USER_ID = 'it.hong'"));
+        await db.ExecAsync("UPDATE FW.TB_USER_SESSION SET EXPIRE_DT = DATEADD(SECOND, -1, SYSUTCDATETIME()) WHERE USER_ID = 'it.hong'");
+        Assert.Equal(LoginResultCodes.Timeout, (await auth.CheckSessionAsync(login.SessionToken, extend: false)).EndReasonCd);
+    }
+
+    [Fact]
     public async Task 로그아웃_세션종료_로그_두번해도오류없음()
     {
         await using var db = await fixture.BeginAsync();

@@ -28,6 +28,8 @@ public sealed class FakePortalConfig : IPortalConfig
         ["MAIL.ENABLED"] = "N",
         ["MAIL.SMTP_PORT"] = "587",
         ["MAIL.SMTP_SSL"] = "Y",
+        ["NOTIFY.POLL_SECONDS"] = "60",
+        ["NOTIFY.KEEP_DAYS"] = "90",
     };
 
     /// <summary>값을 바꾼다.</summary>

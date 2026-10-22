@@ -8,7 +8,7 @@ namespace Portal.Framework.Web.Logging;
 
 /// <summary>
 /// 화면·API 접근 기록 (설계서 9장 '로그·추적', 10년 보관). 응답이 끝난 뒤 대기열에 넣기만 하므로 응답 시간에 영향이 없다.
-/// 정적 파일·화면 문구 묶음·상태 확인은 기록하지 않는다. 쿼리 문자열은 남기지 않는다.
+/// 정적 파일·화면 문구 묶음·상태 확인과 <see cref="SkipAccessLogAttribute"/>를 붙인 자동 반복 요청은 기록하지 않는다. 쿼리 문자열은 남기지 않는다.
 /// </summary>
 public sealed class AccessLogMiddleware(RequestDelegate next, AccessLogBuffer queue, TimeProvider time)
 {
@@ -42,21 +42,29 @@ public sealed class AccessLogMiddleware(RequestDelegate next, AccessLogBuffer qu
         finally
         {
             var metadata = context.GetEndpoint()?.Metadata;
-            var path = context.Request.PathBase + context.Request.Path;
-            queue.Enqueue(new AccessLogEntry
+            if (metadata?.GetMetadata<SkipAccessLogAttribute>() is null)
             {
-                LogDt = startedAt,
-                UserId = currentUser.UserId,
-                ProgramId = metadata?.GetMetadata<ProgramAttribute>()?.ProgramId,
-                FuncCd = metadata?.GetMetadata<FuncAttribute>()?.FuncCd,
-                HttpMethod = context.Request.Method,
-                RequestPath = path.Value is { Length: > MaxPathLength } p ? p[..MaxPathLength] : path.Value ?? "/",
-                StatusCode = failedStatus ?? (short)context.Response.StatusCode,
-                ElapsedMs = (int)time.GetElapsedTime(started).TotalMilliseconds,
-                ClientIp = currentUser.ClientIp,
-                TraceId = Activity.Current?.Id ?? context.TraceIdentifier,
-            });
+                Enqueue(context, currentUser, metadata, startedAt, started, failedStatus);
+            }
         }
+    }
+
+    private void Enqueue(HttpContext context, ICurrentUser currentUser, EndpointMetadataCollection? metadata, DateTime startedAt, long started, short? failedStatus)
+    {
+        var path = context.Request.PathBase + context.Request.Path;
+        queue.Enqueue(new AccessLogEntry
+        {
+            LogDt = startedAt,
+            UserId = currentUser.UserId,
+            ProgramId = metadata?.GetMetadata<ProgramAttribute>()?.ProgramId,
+            FuncCd = metadata?.GetMetadata<FuncAttribute>()?.FuncCd,
+            HttpMethod = context.Request.Method,
+            RequestPath = path.Value is { Length: > MaxPathLength } p ? p[..MaxPathLength] : path.Value ?? "/",
+            StatusCode = failedStatus ?? (short)context.Response.StatusCode,
+            ElapsedMs = (int)time.GetElapsedTime(started).TotalMilliseconds,
+            ClientIp = currentUser.ClientIp,
+            TraceId = Activity.Current?.Id ?? context.TraceIdentifier,
+        });
     }
 
     internal static bool IsExcluded(PathString path) =>
