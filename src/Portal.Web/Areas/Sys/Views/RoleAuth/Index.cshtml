@@ -1,0 +1,49 @@
+@* 역할별 권한 (표준 화면 6 권한 매트릭스): 왼쪽 역할 목록, 오른쪽 화면 × 기능 체크표. *@
+@model RoleAuthIndexModel
+@{
+    var title = Menus.ProgramTitle(RoleAuthController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/role-auth.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="role-auth-screen" class="md-layout"
+     data-url-roles="@Url.Action("Roles")"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")"
+     data-funcs="@System.Text.Json.JsonSerializer.Serialize(Model.Funcs.Select(f => new { code = f.Code, name = f.Name }))">
+    <section class="md-master" aria-labelledby="role-list-heading">
+        <h2 id="role-list-heading">@L["LBL.ROLE_LIST"]</h2>
+        <ul id="role-list" class="pick-list" role="listbox" aria-labelledby="role-list-heading"></ul>
+    </section>
+    <section class="md-detail" aria-labelledby="role-auth-heading">
+        <h2 id="role-auth-heading">@L["LBL.ROLE_AUTH"]</h2>
+        <p id="role-auth-hint" class="hint">@L["SYS.ROLE_AUTH.SELECT"]</p>
+        <div id="role-auth-detail" hidden>
+            <p id="role-auth-desc" class="hint"></p>
+            <p id="role-auth-lock" class="hint" hidden></p>
+            <p class="hint">@L["SYS.ROLE_AUTH.HINT"]</p>
+            <div class="toolbar">
+                <label for="role-auth-filter">@L["LBL.KEYWORD"]</label>
+                <input id="role-auth-filter" type="search" maxlength="100" autocomplete="off" />
+                <span class="toolbar-spacer"></span>
+                <fw-button func="UPDATE" text-key="BTN.SAVE" id="role-auth-save" class="primary" />
+            </div>
+            <div class="grid-wrap">
+                <table class="fw-grid role-auth-grid" aria-labelledby="role-auth-heading">
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["LBL.PROGRAM"]</th>
+                            @foreach (var (code, name) in Model.Funcs)
+                            {
+                                <th scope="col" data-func="@code">@name</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody id="role-auth-rows"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>

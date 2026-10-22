@@ -236,3 +236,8 @@ button:disabled { opacity: .55; cursor: not-allowed; }
     .site-name { display: none; }
     .md-layout { grid-template-columns: 1fr; }
 }
+
+/* 역할별 권한 표 */
+.role-auth-grid td { text-align: center; }
+.role-auth-grid tbody th { font-weight: normal; white-space: normal; }
+.role-auth-grid tr.group-row th { background: var(--fw-hover); font-weight: 600; }
