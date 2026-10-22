@@ -122,12 +122,13 @@ Oct 21, 2026 · @사랑나무아빠
 | `MENU_TYPE` | 메뉴 유형 | FOLDER, PAGE, LINK, POPUP |
 | `OPEN_SCOPE` | 공개 대상 | ALL: 모든 회사, EMP: 본사, PARTNER: 협력사 |
 | `BOARD_TYPE` | 게시판 유형 | NORMAL: 일반, NOTICE: 공지, FAQ, ARCHIVE: 자료실, QNA: 문의 |
-| `CONFIG_CATEGORY` | 설정 분류 | AUTH, PWD, SESSION, USER, FILE, UI, SITE, MAIL, LOG, SP, PDF, API, AD, APPROVAL, NOTIFY, SYS |
+| `CONFIG_CATEGORY` | 설정 분류 | AUTH, PWD, SESSION, USER, FILE, UI, SITE, MAIL, MSG, PARTNER, JOB, LOG, SP, PDF, API, AD, APPROVAL, NOTIFY, SYS |
 | `VAL_TYPE` | 설정값 형식 | STRING, INT, BOOL, JSON, SECRET |
 | `FILE_EXT` | 업로드 허용 확장자 | pdf, xlsx, xls, docx, doc, pptx, ppt, hwp, hwpx, txt, csv, jpg, jpeg, png, gif, zip |
 | `GRANT_TYPE` | 개인 권한 유형 | GRANT: 추가 허용, DENY: 차단 |
 | `APPROVAL_STAT` | 결재 상태 | DRAFT: 작성, REQUESTED: 상신, APPROVED: 승인, REJECTED: 반려, CANCELED: 회수 |
 | `JOB_STAT` | 배치 실행 결과 | RUNNING, SUCCESS, FAILED, SKIPPED |
+| `JOB_RUN_TYPE` | 배치 실행 구분 | SCHEDULE: 예약, MANUAL: 수동 |
 | `MSG_CHANNEL` | 알림 채널 | PORTAL: 포털 알림, MAIL: 메일 |
 | `LOGIN_RESULT` | 로그인 결과·세션 종료 사유 | SUCCESS, FAIL\_PWD(없는 ID 포함), FAIL\_LOCKED, FAIL\_EXPIRED, FAIL\_MFA, FAIL\_IP, FAIL\_DUP: 중복 로그인 거부, LOGOUT, KICKED: 중복 로그인 종료, TIMEOUT: 비활동 만료, DISABLED: 로그인 중 계정 잠김·만료 |
 | `ICON` | 메뉴 아이콘 | home, user, board, chart, report, setting, link 등 (자체 SVG 아이콘 세트 이름) |
@@ -153,9 +154,11 @@ Oct 21, 2026 · @사랑나무아빠
 | `PWD.LOCK_MINUTES` | 30 | INT | N | 자동 해제 시간 (0 = 관리자 해제만) |
 | `SESSION.IDLE_MINUTES` | 30 | INT | N | 비활동 만료 |
 | `SESSION.CONCURRENT_POLICY` | KICK\_OLD | STRING | N | KICK\_OLD / DENY\_NEW / ALLOW |
+| `SESSION.KEEP_DAYS` | 30 | INT | N | 끝난 세션 행 보관 기간(일). 로그인 기록은 따로 10년 보관 |
 | `USER.DORMANT_DAYS` | 365 | INT | N | 미접속 휴면 전환 |
 | `FILE.MAX_SIZE_MB` | 20 | INT | N | 파일 1개 최대 크기 |
 | `FILE.MAX_COUNT` | 10 | INT | N | 첨부 묶음 하나의 최대 파일 수 |
+| `FILE.DELETED_KEEP_DAYS` | 30 | INT | N | 삭제한 첨부를 저장소에서 지우기까지 기간(일) |
 | `UI.TAB_MODE` | Y | BOOL | N | 멀티 탭 사용 |
 | `UI.MAX_TABS` | 10 | INT | N | 최대 탭 수 |
 | `UI.PAGE_SIZE` | 50 | INT | N | 그리드 기본 행 수 |
@@ -169,6 +172,9 @@ Oct 21, 2026 · @사랑나무아빠
 | `MAIL.SMTP_SSL` | Y | BOOL | N | SMTP 암호화(STARTTLS) 사용 |
 | `MAIL.SMTP_PASSWORD` | (입력) | SECRET | N | SMTP 계정 비밀번호 |
 | `MAIL.FROM` | (입력) | STRING | N | 보내는 주소 |
+| `MSG.KEEP_DAYS` | 90 | INT | N | 발송을 마친 메일 대기열 보관 기간(일) |
+| `PARTNER.JOIN_KEEP_DAYS` | 30 | INT | N | 처리한 가입 신청의 이메일 보관 기간(일) |
+| `JOB.HIST_KEEP_DAYS` | 365 | INT | N | 배치 작업 실행 이력 보관 기간(일) |
 | `LOG.RETENTION_YEARS` | 10 | INT | N | 접속기록·감사 로그 보관 기간 |
 | `LOG.ERROR_RETENTION_DAYS` | 365 | INT | N | 오류 로그 보관 기간 |
 | `LOG.SLOW_SP_MS` | 1000 | INT | N | 느린 SP 기준 |
@@ -188,19 +194,20 @@ Oct 21, 2026 · @사랑나무아빠
 
 ## 7. 기본 배치 작업·메시지 템플릿
 
-설치 시 Portal.Worker에 등록되는 배치 작업은 9개이고, 실패하면 `PORTAL_ADMIN`에게 메일과 포털 알림이 갑니다. 시각은 모두 한국 시간이며 백업 작업(02:00\~03:00)과 겹치지 않게 배치했습니다.
+배치 작업은 `TB_JOB`에 등록하고 Portal.Worker가 실행합니다(`db/seed/FW/11_JOB.sql`). 주기는 Cron 식(분 시 일 월 요일)이며 한국 시간 기준이고, 백업 작업(02:00\~03:00)과 겹치지 않게 배치했습니다. 실패하면 `PORTAL_ADMIN` 역할 사용자에게 메일(`TPL_JOB_FAILED`)이 가고, 같은 작업이 연속으로 실패하면 다시 성공할 때까지는 한 번만 보냅니다(포털 알림은 알림함 기능에서 추가). 작업은 그 기능을 만드는 변경에서 시드에 추가합니다.
 
-| 작업 ID | 내용 | 주기 |
-| --- | --- | --- |
-| `JOB_AD_SYNC` | AD 조직·사용자 동기화, 퇴사자 잠금 | 매일 04:00 |
-| `JOB_USER_DORMANT` | 미접속 계정 휴면 전환 (30일 전 사전 안내) | 매일 04:30 |
-| `JOB_PARTNER_EXPIRE` | 계약 종료일 지난 협력사 계정 잠금 (7일 전 사전 안내) | 매일 04:30 |
-| `JOB_PWD_EXPIRE_NOTICE` | 비밀번호 만료 7일 전 안내 | 매일 08:00 |
-| `JOB_MAIL_SEND` | 메일 큐 발송, 실패 시 3회 재시도 | 1분마다 |
-| `JOB_LOG_PARTITION` | 다음 달 로그 파티션 생성, 1년 지난 파티션 읽기 전용 전환, 보관 기간 지난 파티션 삭제 | 매월 1일 05:00 |
-| `JOB_LOG_INTEGRITY` | 접속기록 해시 체인 무결성 점검 | 매월 1일 06:00 |
-| `JOB_TEMP_CLEANUP` | 임시 파일·만료된 다운로드 파일·연결 없는 첨부 정리 | 매일 05:00 |
-| `JOB_SESSION_CLEANUP` | 만료 세션 정리 | 10분마다 |
+| 작업 ID | 내용 | 주기 (Cron) | 상태 |
+| --- | --- | --- | --- |
+| `JOB_MAIL_SEND` | 메일 큐 발송, 실패 시 3회 재시도 | 1분마다 (`* * * * *`) | 등록됨 (클래스 `MailSend`) |
+| `JOB_SESSION_CLEANUP` | 시간이 지난 세션 종료, 끝난 지 30일 지난 세션 행 삭제 | 10분마다 (`*/10 * * * *`) | 등록됨 (SP `FW.USP_JOB_SESSION_CLEANUP_EXEC`) |
+| `JOB_TEMP_CLEANUP` | 확정되지 않은 첨부(하루 지남)·삭제한 지 30일 지난 첨부를 저장소에서 삭제 | 매일 05:00 (`0 5 * * *`) | 등록됨 (클래스 `FileCleanup`) |
+| `JOB_DATA_CLEANUP` | 처리한 가입 신청 이메일(30일), 발송 끝난 메일 대기열(90일), 작업 이력(365일) 삭제 | 매일 05:10 (`10 5 * * *`) | 등록됨 (SP `FW.USP_JOB_DATA_CLEANUP_EXEC`) |
+| `JOB_AD_SYNC` | AD 조직·사용자 동기화, 퇴사자 잠금 | 매일 04:00 | 3단계 |
+| `JOB_USER_DORMANT` | 미접속 계정 휴면 전환 (30일 전 사전 안내) | 매일 04:30 | 예정 |
+| `JOB_PARTNER_EXPIRE` | 계약 종료일 지난 협력사 계정 잠금 (7일 전 사전 안내) | 매일 04:30 | 예정 |
+| `JOB_PWD_EXPIRE_NOTICE` | 비밀번호 만료 7일 전 안내 | 매일 08:00 | 예정 |
+| `JOB_LOG_PARTITION` | 다음 달 로그 파티션 생성, 1년 지난 파티션 읽기 전용 전환, 보관 기간 지난 파티션 삭제 | 매월 1일 05:00 | 예정 |
+| `JOB_LOG_INTEGRITY` | 접속기록 해시 체인 무결성 점검 | 매월 1일 06:00 | 예정 |
 
 **메시지 템플릿 (`TB_MSG_TEMPLATE`, 3개 언어)**
 
@@ -220,4 +227,4 @@ Oct 21, 2026 · @사랑나무아빠
 
 템플릿 본문의 치환 변수는 `{{USER_NM}}`, `{{SITE_NM}}`, `{{LINK}}`, `{{EXPIRE_DT}}`처럼 쓰고, 치환값은 HTML 인코딩되어 들어갑니다. 메일 본문에 비밀번호 자체는 넣지 않습니다.
 
-템플릿은 그 기능을 만드는 변경에서 `db/seed/FW/10_MSG_TEMPLATE.sql`에 추가합니다(현재: `TPL_PARTNER_APPROVED`, `TPL_PARTNER_REJECTED`). 템플릿마다 메일(`MAIL_YN`)·포털(`PORTAL_YN`) 채널을 켜고 끌 수 있고, `USE_YN = 'N'`이면 쌓지 않습니다. `{{SITE_NM}}`(받는 사람 언어의 사이트명)과 `{{LINK}}`(포털 주소)는 발송 작업이 채우고, 나머지 치환값은 업무 SP가 JSON으로 넘깁니다. 받는 사람 언어의 문구가 없으면 기본 언어 문구로 보냅니다.
+템플릿은 그 기능을 만드는 변경에서 `db/seed/FW/10_MSG_TEMPLATE.sql`에 추가합니다(현재: `TPL_PARTNER_APPROVED`, `TPL_PARTNER_REJECTED`, `TPL_JOB_FAILED`). 템플릿마다 메일(`MAIL_YN`)·포털(`PORTAL_YN`) 채널을 켜고 끌 수 있고, `USE_YN = 'N'`이면 쌓지 않습니다. `{{SITE_NM}}`(받는 사람 언어의 사이트명)과 `{{LINK}}`(포털 주소)는 발송 작업이 채우고, 나머지 치환값은 업무 SP가 JSON으로 넘깁니다. 받는 사람 언어의 문구가 없으면 기본 언어 문구로 보냅니다.

@@ -45,6 +45,9 @@ public static class ConfigKeys
     /// <summary>중복 로그인 정책: KICK_OLD / DENY_NEW / ALLOW.</summary>
     public const string SessionConcurrentPolicy = "SESSION.CONCURRENT_POLICY";
 
+    /// <summary>끝난 세션 행 보관 기간(일). 세션 정리 작업(SP)이 읽는다.</summary>
+    public const string SessionKeepDays = "SESSION.KEEP_DAYS";
+
     /// <summary>미접속 휴면 전환(일).</summary>
     public const string UserDormantDays = "USER.DORMANT_DAYS";
 
@@ -53,6 +56,9 @@ public static class ConfigKeys
 
     /// <summary>첨부 묶음 하나의 최대 파일 수.</summary>
     public const string FileMaxCount = "FILE.MAX_COUNT";
+
+    /// <summary>삭제한 첨부 파일을 저장소에서 지우기까지 기간(일). 첨부 정리 작업(SP)이 읽는다.</summary>
+    public const string FileDeletedKeepDays = "FILE.DELETED_KEEP_DAYS";
 
     /// <summary>멀티 탭 사용.</summary>
     public const string UiTabMode = "UI.TAB_MODE";
@@ -95,6 +101,15 @@ public static class ConfigKeys
 
     /// <summary>보내는 주소.</summary>
     public const string MailFrom = "MAIL.FROM";
+
+    /// <summary>발송을 마친 메일 대기열 보관 기간(일). 데이터 정리 작업(SP)이 읽는다.</summary>
+    public const string MsgKeepDays = "MSG.KEEP_DAYS";
+
+    /// <summary>처리한 가입 신청의 이메일 보관 기간(일). 데이터 정리 작업(SP)이 읽는다.</summary>
+    public const string PartnerJoinKeepDays = "PARTNER.JOIN_KEEP_DAYS";
+
+    /// <summary>배치 작업 실행 이력 보관 기간(일). 데이터 정리 작업(SP)이 읽는다.</summary>
+    public const string JobHistKeepDays = "JOB.HIST_KEEP_DAYS";
 
     /// <summary>접속기록·감사 로그 보관 기간(년).</summary>
     public const string LogRetentionYears = "LOG.RETENTION_YEARS";

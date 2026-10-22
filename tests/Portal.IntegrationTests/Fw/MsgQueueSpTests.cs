@@ -82,7 +82,7 @@ public sealed class MsgQueueSpTests(DbFixture fixture)
 
         Assert.Equal(6, rows.Count);
         Assert.Equal(0, await db.ScalarAsync<int>(
-            "SELECT COUNT(*) FROM FW.TB_MSG_TEMPLATE_LANG WHERE SUBJECT LIKE '%' + CHAR(10) + '%' OR BODY NOT LIKE '%{{USER_NM}}%'"));
+            "SELECT COUNT(*) FROM FW.TB_MSG_TEMPLATE_LANG WHERE SUBJECT LIKE '%' + CHAR(10) + '%' OR BODY NOT LIKE '%{{%}}%'"));
     }
 
     [Fact]
