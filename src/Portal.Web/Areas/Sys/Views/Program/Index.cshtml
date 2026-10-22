@@ -1,0 +1,71 @@
+@* 프로그램 관리 (표준 화면 3 마스터-디테일): 왼쪽 프로그램 목록, 오른쪽 프로그램 정보와 쓰는 기능. *@
+@model ProgramIndexModel
+@{
+    var title = Menus.ProgramTitle(ProgramController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/program.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="program-screen" class="md-layout"
+     data-url-list="@Url.Action("List")"
+     data-url-funcs="@Url.Action("Funcs")"
+     data-url-create="@Url.Action("Create")"
+     data-url-save="@Url.Action("Save")"
+     data-url-delete="@Url.Action("Delete")"
+     data-funcs="@System.Text.Json.JsonSerializer.Serialize(Model.Funcs.ToDictionary(f => f.Code, f => f.Name))">
+    <section class="md-master" aria-labelledby="program-list-heading">
+        <h2 id="program-list-heading">@L["LBL.PROGRAM_LIST"]</h2>
+        <form id="program-search" class="search-bar" role="search">
+            <label for="program-use-filter">@L["LBL.USE_YN"]</label>
+            <select id="program-use-filter">
+                <option value="">@L["LBL.ALL"]</option>
+                <option value="Y">@L["LBL.IN_USE"]</option>
+                <option value="N">@L["LBL.NOT_IN_USE"]</option>
+            </select>
+            <label for="program-keyword">@L["LBL.KEYWORD"]</label>
+            <input id="program-keyword" type="search" maxlength="100" autocomplete="off" />
+        </form>
+        <div class="toolbar">
+            <p id="program-total" class="hint toolbar-spacer" aria-live="polite"></p>
+            <fw-button func="CREATE" text-key="BTN.NEW" id="program-new" />
+        </div>
+        <ul id="program-list" class="pick-list" role="listbox" aria-labelledby="program-list-heading"></ul>
+    </section>
+    <section class="md-detail" aria-labelledby="program-heading">
+        <h2 id="program-heading">@L["LBL.PROGRAM_DETAIL"]</h2>
+        <p id="program-hint" class="hint">@L["SYS.PROGRAM.SELECT"]</p>
+        <div id="program-detail" hidden>
+            <dl class="detail-list">
+                <dt>@L["LBL.PROGRAM_USAGE"]</dt><dd data-field="usage"></dd>
+                <dt>@L["LBL.UPD_DT"]</dt><dd data-field="upd"></dd>
+            </dl>
+            <form id="program-form" class="form" novalidate>
+                <label for="program-id">@L["LBL.PROGRAM_ID"]</label>
+                <input id="program-id" maxlength="30" autocomplete="off" spellcheck="false" required aria-describedby="program-id-hint" />
+                <p id="program-id-hint" class="hint">@L["SYS.PROGRAM.ID_HINT"]</p>
+                <label for="program-module">@L["LBL.MODULE"]</label>
+                <input id="program-module" maxlength="20" autocomplete="off" spellcheck="false" required />
+                <label for="program-url">@L["LBL.URL"]</label>
+                <input id="program-url" maxlength="300" autocomplete="off" spellcheck="false" required placeholder="/Pur/Vendor" />
+                <label for="program-nm">@L["LBL.PROGRAM_NM"]</label>
+                <input id="program-nm" maxlength="100" autocomplete="off" required aria-describedby="program-nm-hint" />
+                <p id="program-nm-hint" class="hint">@L["SYS.PROGRAM.NM_HINT"]</p>
+                <label><input id="program-pii" type="checkbox" aria-describedby="program-pii-hint" /> @L["LBL.PII_PROGRAM"]</label>
+                <p id="program-pii-hint" class="hint">@L["SYS.PROGRAM.PII_HINT"]</p>
+                <label><input id="program-use" type="checkbox" /> @L["LBL.USE_YN"]</label>
+                <fieldset id="program-funcs" class="role-list">
+                    <legend>@L["LBL.PROGRAM_FUNCS"]</legend>
+                    <p class="hint">@L["SYS.PROGRAM.FUNC_HINT"]</p>
+                    <div id="program-func-list"></div>
+                </fieldset>
+            </form>
+            <div class="toolbar">
+                <fw-button func="DELETE" text-key="BTN.DELETE" id="program-delete" />
+                <fw-button func="CREATE" text-key="BTN.SAVE" id="program-create" class="primary" />
+                <fw-button func="UPDATE" text-key="BTN.SAVE" id="program-save" class="primary" />
+            </div>
+        </div>
+    </section>
+</div>
