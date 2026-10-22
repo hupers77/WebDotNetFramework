@@ -216,3 +216,5 @@ Oct 21, 2026 · @사랑나무아빠
 | `TPL_BOARD_REPLY` | 내 글에 답글·댓글 | 포털 |
 
 템플릿 본문의 치환 변수는 `{{USER_NM}}`, `{{SITE_NM}}`, `{{LINK}}`, `{{EXPIRE_DT}}`처럼 쓰고, 치환값은 HTML 인코딩되어 들어갑니다. 메일 본문에 비밀번호 자체는 넣지 않습니다.
+
+템플릿은 그 기능을 만드는 변경에서 `db/seed/FW/10_MSG_TEMPLATE.sql`에 추가합니다(현재: `TPL_PARTNER_APPROVED`, `TPL_PARTNER_REJECTED`). 템플릿마다 메일(`MAIL_YN`)·포털(`PORTAL_YN`) 채널을 켜고 끌 수 있고, `USE_YN = 'N'`이면 쌓지 않습니다. `{{SITE_NM}}`(받는 사람 언어의 사이트명)과 `{{LINK}}`(포털 주소)는 발송 작업이 채우고, 나머지 치환값은 업무 SP가 JSON으로 넘깁니다. 받는 사람 언어의 문구가 없으면 기본 언어 문구로 보냅니다.
