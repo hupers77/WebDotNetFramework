@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="~/theme.css" />
     <script type="module" src="~/js/fw.js" asp-append-version="true"></script>
     <script type="module" src="~/js/fw-shell.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
 </head>
 <body class="portal">
     <a class="skip-link" href="#main">@L["LBL.SKIP_TO_CONTENT"]</a>

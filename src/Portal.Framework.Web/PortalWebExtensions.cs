@@ -122,6 +122,8 @@ public static class PortalWebExtensions
         app.UseMiddleware<AccessLogMiddleware>();
         app.UseAuthentication();
         app.UseRateLimiter();
+        // 시스템·업무 화면은 Area(/Sys/Code)로, 공통 화면은 기본 경로(/My/Password)로 찾는다
+        app.MapControllerRoute("area", "{area:exists}/{controller=Home}/{action=Index}/{id?}");
         app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
         return app;
     }

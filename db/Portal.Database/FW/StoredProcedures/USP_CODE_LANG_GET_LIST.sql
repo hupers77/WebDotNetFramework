@@ -1,0 +1,17 @@
+-- 공통코드의 언어별 명칭 (그리드에서 3개 언어를 함께 편집). 프로그램: SYS_CODE_MGT
+-- 사용 중인 언어만 내보낸다.
+CREATE PROCEDURE [FW].[USP_CODE_LANG_GET_LIST]
+  @P_GROUP_CD   VARCHAR(30),
+  @P_USER_ID    VARCHAR(30),
+  @P_LANG_CD    VARCHAR(5),
+  @P_CLIENT_IP  VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  SELECT L.[CODE], L.[LANG_CD], L.[CODE_NM]
+    FROM [FW].[TB_CODE_LANG] L
+    JOIN [FW].[TB_LANG] G ON G.[LANG_CD] = L.[LANG_CD] AND G.[USE_YN] = 'Y'
+   WHERE L.[GROUP_CD] = @P_GROUP_CD
+   ORDER BY L.[CODE], G.[SORT_NO];
+END

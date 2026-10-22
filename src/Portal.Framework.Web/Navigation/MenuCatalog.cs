@@ -16,11 +16,23 @@ public sealed class MenuCatalog(IServiceScopeFactory scopeFactory) : ICacheVersi
 
     private volatile FrozenDictionary<string, IReadOnlyList<MenuNode>> _roots = FrozenDictionary<string, IReadOnlyList<MenuNode>>.Empty;
 
+    private volatile FrozenDictionary<string, IReadOnlyDictionary<string, string>> _programNames =
+        FrozenDictionary<string, IReadOnlyDictionary<string, string>>.Empty;
+
     /// <inheritdoc />
     public string CacheKey => CacheKeys.Menu;
 
     /// <summary>메뉴 세트의 최상위 메뉴 (정렬 순서). 없는 세트면 빈 목록.</summary>
     public IReadOnlyList<MenuNode> Roots(string menuSetCd) => _roots.GetValueOrDefault(menuSetCd) ?? [];
+
+    /// <summary>
+    /// 프로그램의 화면 제목 = 그 프로그램을 연 메뉴의 이름 (웹 접근성: 탭 제목·<c>&lt;title&gt;</c>·<c>&lt;h1&gt;</c>에 메뉴명).
+    /// 사용자 언어 → 기본 언어 → 프로그램 ID 순으로 대체한다.
+    /// </summary>
+    public string ProgramTitle(string programId, string langCd) =>
+        _programNames.GetValueOrDefault(programId) is { } names
+            ? names.GetValueOrDefault(langCd) ?? names.GetValueOrDefault(Infrastructure.Localization.LangResources.DefaultLang) ?? programId
+            : programId;
 
     /// <inheritdoc />
     public async Task ReloadAsync(CancellationToken cancellationToken)
@@ -32,7 +44,9 @@ public sealed class MenuCatalog(IServiceScopeFactory scopeFactory) : ICacheVersi
             null,
             async reader => (await reader.ReadAsync<MenuRow>(cancellationToken), await reader.ReadAsync<MenuNameRow>(cancellationToken)),
             cancellationToken);
-        _roots = Build(rows, names);
+        var roots = Build(rows, names);
+        _programNames = IndexPrograms(roots);
+        _roots = roots;
     }
 
     internal static FrozenDictionary<string, IReadOnlyList<MenuNode>> Build(IReadOnlyList<MenuRow> rows, IReadOnlyList<MenuNameRow> names)
@@ -66,6 +80,31 @@ public sealed class MenuCatalog(IServiceScopeFactory scopeFactory) : ICacheVersi
                 g => g.Key,
                 g => (IReadOnlyList<MenuNode>)[.. g.OrderBy(r => r.SortNo).ThenBy(r => r.MenuId).Select(r => ToNode(r, []))],
                 StringComparer.Ordinal);
+    }
+
+    internal static FrozenDictionary<string, IReadOnlyDictionary<string, string>> IndexPrograms(FrozenDictionary<string, IReadOnlyList<MenuNode>> roots)
+    {
+        var index = new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal);
+        void Visit(MenuNode node)
+        {
+            // 같은 프로그램을 여러 메뉴에 걸면 정렬상 먼저 나오는 메뉴의 이름을 쓴다
+            if (node.ProgramId is { } id && node.MenuTypeCd is MenuTypes.Page or MenuTypes.Popup)
+            {
+                index.TryAdd(id, node.Names);
+            }
+
+            foreach (var child in node.Children)
+            {
+                Visit(child);
+            }
+        }
+
+        foreach (var node in roots.Values.SelectMany(r => r))
+        {
+            Visit(node);
+        }
+
+        return index.ToFrozenDictionary(StringComparer.Ordinal);
     }
 
     internal sealed class MenuRow

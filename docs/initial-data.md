@@ -106,7 +106,7 @@ Oct 21, 2026 · @사랑나무아빠
 | 로그 > 데이터 변경 기록 | `LOG_AUDIT_INQ` | EMP | SECURITY\_AUDITOR: R, E |
 | 로그 > 개인정보 접속기록 | `LOG_PII_INQ` | EMP | SECURITY\_AUDITOR: R, E |
 
-`EXEC`(작업 수동 실행)는 `FUNC_CD`에 추가되는 사용자 정의 기능입니다. 메뉴는 고정 키(`TB_MENU.MENU_KEY`, 위 표의 프로그램 ID 또는 폴더 키 `MY`, `BRD`, `PTN`, `SYS`, `INTG`, `OPS`, `LOG`)로 식별하므로 운영 중 메뉴를 옮기거나 이름을 바꿔도 다음 배포의 시드가 덮어쓰지 않습니다. 시드 원본은 `db/seed/FW/06_PROGRAM.sql`, `07_MENU.sql`입니다. 표준 화면 예제 8종(`SMP_*`)은 개발계에만 등록하고 운영계에서는 메뉴에 넣지 않습니다.
+`EXEC`(작업 수동 실행)는 `FUNC_CD`에 추가되는 사용자 정의 기능입니다. 메뉴는 고정 키(`TB_MENU.MENU_KEY`, 위 표의 프로그램 ID 또는 폴더 키 `MY`, `BRD`, `PTN`, `SYS`, `INTG`, `OPS`, `LOG`)로 식별하므로 운영 중 메뉴를 옮기거나 이름을 바꿔도 다음 배포의 시드가 덮어쓰지 않습니다. 시드 원본은 `db/seed/FW/06_PROGRAM.sql`, `07_MENU.sql`입니다. 같은 `06_PROGRAM.sql`의 `TB_PROGRAM_API`는 요청 경로(예: `POST /Sys/Code/Save`)별 프로그램·기능으로, 코드의 `[Program]`/`[Func]`와 같아야 하며 화면이 만들어질 때마다 추가됩니다(이 표는 운영자가 바꾸는 값이 아니므로 시드가 항상 덮어씁니다). 표준 화면 예제 8종(`SMP_*`)은 개발계에만 등록하고 운영계에서는 메뉴에 넣지 않습니다.
 
 ## 5. 공통코드 그룹과 값
 

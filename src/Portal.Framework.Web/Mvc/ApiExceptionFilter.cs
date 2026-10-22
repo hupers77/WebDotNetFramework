@@ -5,11 +5,12 @@ using Microsoft.Extensions.Logging;
 using Portal.Core.Errors;
 using Portal.Core.Keys;
 using Portal.Core.Results;
+using Portal.Framework.Web.Authorization;
 
 namespace Portal.Framework.Web.Mvc;
 
 /// <summary>
-/// 오류 처리 흐름 (개발 표준 가이드 7장): 업무 오류는 200 + <c>success:false</c>, 예상 못한 오류는 기록 후 500 + 추적 ID.
+/// 오류 처리 흐름 (개발 표준 가이드 7장): 업무 오류는 200 + <c>success:false</c>, Action 안의 권한 확인 실패는 403, 예상 못한 오류는 기록 후 500 + 추적 ID.
 /// 화면(HTML) 요청의 예상 못한 오류는 공통 오류 화면(<c>UseExceptionHandler</c>)으로 넘긴다.
 /// </summary>
 public sealed partial class ApiExceptionFilter(ILogger<ApiExceptionFilter> logger) : IExceptionFilter
@@ -21,6 +22,15 @@ public sealed partial class ApiExceptionFilter(ILogger<ApiExceptionFilter> logge
         if (context.Exception is BizException biz)
         {
             context.Result = new ObjectResult(ApiResults.Fail(http, biz.MessageKey, [.. biz.Args])) { StatusCode = StatusCodes.Status200OK };
+            context.ExceptionHandled = true;
+            return;
+        }
+
+        if (context.Exception is PermissionDeniedException)
+        {
+            context.Result = RequestKind.WantsJson(http.Request)
+                ? new ObjectResult(ApiResults.Fail(http, MessageKeys.Forbidden)) { StatusCode = StatusCodes.Status403Forbidden }
+                : new ForbidResult();
             context.ExceptionHandled = true;
             return;
         }

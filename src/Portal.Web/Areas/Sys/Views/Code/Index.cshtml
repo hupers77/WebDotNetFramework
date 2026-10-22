@@ -1,0 +1,36 @@
+@model CodeIndexModel
+@{
+    var title = Menus.ProgramTitle(CodeController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/code.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="code-screen" class="md-layout"
+     data-langs="@Model.LanguagesJson"
+     data-url-groups="@Url.Action("Groups")"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")">
+    <section class="md-master" aria-labelledby="group-heading">
+        <h2 id="group-heading">@L["LBL.CODE_GROUP"]</h2>
+        <form id="group-search" class="search-bar" role="search">
+            <label for="group-keyword">@L["LBL.KEYWORD"]</label>
+            <input id="group-keyword" type="search" maxlength="100" autocomplete="off" />
+            <button type="submit">@L["BTN.SEARCH"]</button>
+        </form>
+        <p id="group-total" class="hint" aria-live="polite"></p>
+        <ul id="group-list" class="pick-list" role="listbox" aria-labelledby="group-heading"></ul>
+    </section>
+    <section class="md-detail" aria-labelledby="code-heading">
+        <h2 id="code-heading">@L["LBL.CODE"]</h2>
+        <p id="code-hint" class="hint">@L["SYS.CODE.SELECT_GROUP"]</p>
+        <div class="toolbar">
+            <fw-button func="CREATE" text-key="BTN.ADD_ROW" id="code-add" disabled />
+            <fw-button func="DELETE" text-key="BTN.DEL_ROW" id="code-del" disabled />
+            <fw-button func="UPDATE" text-key="BTN.SAVE" id="code-save" class="primary" disabled />
+        </div>
+        <div id="code-grid" class="grid-wrap"></div>
+        <p class="hint">@L["SYS.CODE.DELETE_HINT"]</p>
+    </section>
+</div>

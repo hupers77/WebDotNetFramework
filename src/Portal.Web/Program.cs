@@ -8,6 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 builder.Services.AddPortalWeb(builder.Configuration);
 
+// 화면 Service (Area별)
+builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.ICodeAdminService, Portal.Web.Areas.Sys.Services.CodeAdminService>();
+
 var app = builder.Build();
 
 // 설치 직후 또는 비상시: dotnet Portal.Web.dll init-admin → 초기 관리자(sysadmin)를 만들거나 비밀번호를 재설정하고
