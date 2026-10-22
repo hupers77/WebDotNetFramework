@@ -1,5 +1,5 @@
 -- 사용자의 유효 역할(설계서 6장 권한 평가 규칙 1):
--- 직접 부여 ∪ 부서 역할(상위 부서의 INHERIT_YN='Y' 역할 상속) ∪ AD 그룹 역할 ∪ 위임받은 역할. 유효기간 안의 사용 중인 역할만.
+-- 직접 부여 ∪ 부서 역할(상위 부서의 INHERIT_YN='Y' 역할 상속, 사용 중이고 유효기간 안의 부서가 준 것만) ∪ AD 그룹 역할 ∪ 위임받은 역할. 유효기간 안의 사용 중인 역할만.
 -- 날짜 비교는 업무 기준일(서버 로컬 날짜)로 한다.
 CREATE FUNCTION [FW].[UFN_USER_ROLES] (@P_USER_ID VARCHAR(30))
 RETURNS TABLE
@@ -24,8 +24,10 @@ RETURN
     UNION
     SELECT DR.[ROLE_ID]
       FROM [DEPT_PATH] DP
+      JOIN [FW].[TB_DEPT] D ON D.[DEPT_ID] = DP.[DEPT_ID]
       JOIN [FW].[TB_DEPT_ROLE] DR ON DR.[DEPT_ID] = DP.[DEPT_ID]
      WHERE (DP.[DEPTH] = 0 OR DR.[INHERIT_YN] = 'Y')
+       AND D.[USE_YN] = 'Y' AND CAST(GETDATE() AS DATE) BETWEEN D.[START_DT] AND D.[END_DT]
        AND CAST(GETDATE() AS DATE) BETWEEN DR.[START_DT] AND DR.[END_DT]
     UNION
     SELECT GR.[ROLE_ID]

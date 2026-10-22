@@ -188,6 +188,20 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .mfa-qr svg { width: 12rem; height: 12rem; display: block; }
 .mfa-key { font-size: 1.1rem; letter-spacing: .05em; overflow-wrap: anywhere; }
 
+/* fw.tree */
+.fw-tree, .fw-tree ul { list-style: none; margin: 0; padding: 0; }
+.fw-tree { max-height: 65vh; overflow-y: auto; }
+.fw-tree [role="treeitem"] { outline: none; }
+.fw-tree-row { display: flex; gap: .35rem; align-items: baseline; padding: .3rem .4rem; border-radius: 4px; cursor: pointer; }
+.fw-tree-row:hover { background: var(--fw-hover); }
+.fw-tree [role="treeitem"]:focus-visible > .fw-tree-row { outline: 2px solid var(--fw-primary); outline-offset: -2px; }
+.fw-tree [aria-selected="true"] > .fw-tree-row { background: var(--fw-current); font-weight: 600; }
+.fw-tree-toggle { display: inline-block; width: 1rem; text-align: center; color: var(--fw-muted); }
+.fw-tree-text { overflow-wrap: anywhere; }
+.fw-tree .unused > .fw-tree-row > .fw-tree-text { text-decoration: line-through; color: var(--fw-muted); }
+.role-list .role-row { display: grid; grid-template-columns: 1fr auto; gap: .75rem; align-items: baseline; }
+.role-list .role-row label + label { font-size: .85rem; color: var(--fw-muted); white-space: nowrap; }
+
 /* fw.grid */
 .grid-wrap { overflow: auto; max-height: 65vh; border: 1px solid var(--fw-border); border-radius: 4px; }
 .fw-grid { border-collapse: collapse; width: 100%; font-size: .875rem; }
