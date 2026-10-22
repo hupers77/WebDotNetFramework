@@ -19,6 +19,14 @@ public sealed class ApiResultTests
     }
 
     [Fact]
+    public void Ok_값형식데이터_0도내보낸다()
+    {
+        var json = JsonSerializer.Serialize(ApiResult.Ok(0), Web);
+
+        Assert.Equal("""{"data":0,"success":true,"traceId":null}""", json);
+    }
+
+    [Fact]
     public void Fail_오류형식_data없음()
     {
         var result = ApiResult.Fail("MSG.DUP_CODE", "이미 사용 중인 코드입니다.");

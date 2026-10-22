@@ -33,8 +33,7 @@ public class ApiResult
 /// <typeparam name="T">데이터 형식.</typeparam>
 public sealed class ApiResult<T> : ApiResult
 {
-    /// <summary>응답 데이터.</summary>
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    /// <summary>응답 데이터. 값 형식(처리 건수 등)도 담을 수 있도록 null이어도 항상 내보낸다.</summary>
     public T? Data { get; init; }
 }
 

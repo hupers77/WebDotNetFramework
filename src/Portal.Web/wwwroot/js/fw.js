@@ -3,7 +3,8 @@
 //   응답은 { success, data, error: { code, message }, traceId } 그대로 돌려준다.
 // - fw.t: 화면 문구. 레이아웃의 <meta name="fw-i18n">이 가리키는 언어별 묶음을 읽는다(브라우저 캐시). await fw.ready 이후에 쓴다.
 // - fw.notify: 화면 아래 안내 문구 (스크린리더가 읽는 role=status).
-// 그리드·폼·다이얼로그 컴포넌트는 표준 화면 작업에서 추가한다.
+// - fw.dialog.confirm / alert: 확인·알림 대화상자 (네이티브 <dialog>, Esc는 취소). 브라우저 confirm()은 쓰지 않는다.
+// - 편집 그리드는 fw-grid.js(fw.Grid)를 불러 쓴다.
 
 const meta = (name) => document.querySelector(`meta[name="${name}"]`)?.content ?? '';
 const LOGIN_PATH = '/Account/Login';
@@ -59,6 +60,49 @@ function touch() {
     }
 }
 
+/** 대화상자. 확인을 누르면 true, 취소·Esc면 false. 포커스는 확인 버튼에서 시작하고 닫히면 원래 위치로 돌아간다. */
+function openDialog(message, withCancel) {
+    return new Promise((resolve) => {
+        const opener = document.activeElement;
+        const dialog = document.createElement('dialog');
+        dialog.className = 'fw-dialog';
+        const text = document.createElement('p');
+        text.id = `fw-dialog-${Date.now()}`;
+        text.textContent = message;
+        dialog.setAttribute('aria-describedby', text.id);
+        const form = document.createElement('form');
+        form.method = 'dialog';
+        const ok = document.createElement('button');
+        ok.value = 'ok';
+        ok.className = 'primary';
+        ok.textContent = t('BTN.CONFIRM');
+        form.append(ok);
+        if (withCancel) {
+            const cancel = document.createElement('button');
+            cancel.value = 'cancel';
+            cancel.textContent = t('BTN.CANCEL');
+            form.append(cancel);
+        }
+
+        dialog.append(text, form);
+        dialog.addEventListener('close', () => {
+            resolve(dialog.returnValue === 'ok');
+            dialog.remove();
+            opener?.focus?.();
+        });
+        document.body.append(dialog);
+        dialog.showModal();
+        ok.focus();
+    });
+}
+
+const dialog = {
+    /** 확인 대화상자 (예: await fw.dialog.confirm(fw.t('CNF.SAVE'))). */
+    confirm: (message) => openDialog(message, true),
+    /** 알림 대화상자. */
+    alert: (message) => openDialog(message, false).then(() => undefined),
+};
+
 let pending = 0;
 
 async function ajax(url, { method = 'GET', body } = {}) {
@@ -111,5 +155,5 @@ document.addEventListener('change', (e) => {
 // 탭 안 화면이 바뀌면 (링크 이동·새로고침) 세션 타이머를 다시 맞춘다
 touch();
 
-export const fw = { ajax, t, notify, ready };
+export const fw = { ajax, t, notify, ready, dialog };
 window.fw = fw;

@@ -183,6 +183,119 @@ public sealed class CodeSpTests(DbFixture fixture)
         Assert.Equal(1, saved.AffectedCnt);
     }
 
+    public sealed class GroupDto
+    {
+        public string GroupCd { get; set; } = "";
+
+        public string GroupNm { get; set; } = "";
+
+        public string SystemYn { get; set; } = "";
+
+        public string AllowAddYn { get; set; } = "";
+
+        public int CodeCnt { get; set; }
+    }
+
+    /// <summary>FW.TVP_CODE_LANG 컬럼 순서.</summary>
+    public sealed class NameRow
+    {
+        public string Code { get; set; } = "";
+
+        public string LangCd { get; set; } = "";
+
+        public string? CodeNm { get; set; }
+    }
+
+    [Fact]
+    public async Task 그룹목록_시스템여부_코드수_사용자언어명칭()
+    {
+        await using var db = await fixture.BeginAsync();
+        db.User.LangCd = "en";
+
+        var page = await db.Sp.QueryPageAsync<GroupDto>("FW.USP_CODE_GROUP_GET_LIST",
+            new { P_KEYWORD = "USER_STAT", P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, TestContext.Current.CancellationToken);
+
+        var group = Assert.Single(page.Items);
+        Assert.Equal(1, page.TotalCount);
+        Assert.Equal(("Y", "N", 6), (group.SystemYn, group.AllowAddYn, group.CodeCnt));
+        Assert.Equal(await db.ScalarAsync<string>("SELECT GROUP_NM FROM FW.TB_CODE_GROUP_LANG WHERE GROUP_CD = 'USER_STAT' AND LANG_CD = 'en'"), group.GroupNm);
+    }
+
+    [Fact]
+    public async Task 그룹목록_그룹명일부로검색_전체건수()
+    {
+        await using var db = await fixture.BeginAsync();
+        var name = await db.ScalarAsync<string>("SELECT GROUP_NM FROM FW.TB_CODE_GROUP_LANG WHERE GROUP_CD = 'FUNC_CD' AND LANG_CD = 'ko'");
+
+        var page = await db.Sp.QueryPageAsync<GroupDto>("FW.USP_CODE_GROUP_GET_LIST",
+            new { P_KEYWORD = name[1..], P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, TestContext.Current.CancellationToken);
+
+        Assert.Contains(page.Items, g => g.GroupCd == "FUNC_CD");
+        Assert.Equal(page.Items.Count, page.TotalCount);
+    }
+
+    [Fact]
+    public async Task 언어별명칭목록_사용중인언어만()
+    {
+        await using var db = await fixture.BeginAsync();
+        await db.ExecAsync("UPDATE FW.TB_LANG SET USE_YN = 'N' WHERE LANG_CD = 'zh-CN'");
+
+        var names = await db.Sp.QueryAsync<NameRow>("FW.USP_CODE_LANG_GET_LIST", new { P_GROUP_CD = "USER_STAT" }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(["ko", "en"], names.Where(n => n.Code == "LOCKED").Select(n => n.LangCd));
+    }
+
+    [Fact]
+    public async Task Save_언어별명칭_등록후수정과삭제_감사로그에명칭()
+    {
+        await using var db = await fixture.BeginAsync();
+        await NewGroupAsync(db, "IT_GROUP");
+        await db.Sp.ExecuteAsync("FW.USP_CODE_SAVE", new
+        {
+            P_GROUP_CD = "IT_GROUP",
+            P_ROWS = Tvp.From("FW.TVP_CODE", [new CodeRow { Code = "A" }]),
+            P_NAMES = Tvp.From("FW.TVP_CODE_LANG", [
+                new NameRow { Code = "A", LangCd = "ko", CodeNm = "에이" },
+                new NameRow { Code = "A", LangCd = "en", CodeNm = "A" },
+                new NameRow { Code = "A", LangCd = "zh-CN", CodeNm = "甲" }]),
+        }, TestContext.Current.CancellationToken);
+        var a = (await List(db, "IT_GROUP")).Single();
+
+        await db.Sp.ExecuteAsync("FW.USP_CODE_SAVE", new
+        {
+            P_GROUP_CD = "IT_GROUP",
+            P_ROWS = Tvp.From("FW.TVP_CODE", [new CodeRow { RowStat = "U", Code = "A", RowVer = a.RowVer }]),
+            P_NAMES = Tvp.From("FW.TVP_CODE_LANG", [
+                new NameRow { Code = "A", LangCd = "ko", CodeNm = " 에이2 " },
+                new NameRow { Code = "A", LangCd = "en", CodeNm = "" }]),
+        }, TestContext.Current.CancellationToken);
+
+        var names = await db.Sp.QueryAsync<NameRow>("FW.USP_CODE_LANG_GET_LIST", new { P_GROUP_CD = "IT_GROUP" }, TestContext.Current.CancellationToken);
+        Assert.Equal([("ko", "에이2"), ("zh-CN", "甲")], names.Select(n => (n.LangCd, n.CodeNm)));
+        var after = await db.ScalarAsync<string>("SELECT TOP (1) AFTER_JSON FROM LOG.TB_AUDIT_LOG WHERE TABLE_NM = 'FW.TB_CODE' AND ROW_KEY = 'IT_GROUP' ORDER BY LOG_ID DESC");
+        Assert.Contains("\"NAMES\":[", after, StringComparison.Ordinal);
+        Assert.Contains("{\"LANG_CD\":\"ko\",\"CODE_NM\":\"에이2\"}", after, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("ja", "A", "あ")]  // 사용하지 않는 언어
+    [InlineData("en", "B", "B")]   // 저장 행에 없는 코드
+    [InlineData("ko", "A", " ")]   // 기본 언어 명칭은 비울 수 없다
+    public async Task Save_명칭이잘못되면_INVALID_INPUT(string langCd, string code, string name)
+    {
+        await using var db = await fixture.BeginAsync();
+        await NewGroupAsync(db, "IT_GROUP");
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => db.Sp.ExecuteAsync("FW.USP_CODE_SAVE", new
+        {
+            P_GROUP_CD = "IT_GROUP",
+            P_ROWS = Tvp.From("FW.TVP_CODE", [new CodeRow { Code = "A" }]),
+            P_NAMES = Tvp.From("FW.TVP_CODE_LANG", [new NameRow { Code = code, LangCd = langCd, CodeNm = name }]),
+        }, TestContext.Current.CancellationToken));
+
+        Assert.Equal(MessageKeys.InvalidInput, ex.MessageKey);
+    }
+
     private static Task<int> NewGroupAsync(TestDb db, string groupCd) =>
         db.ExecAsync("INSERT INTO FW.TB_CODE_GROUP (GROUP_CD, GROUP_NM) VALUES (@G, @G)", ("@G", groupCd));
 

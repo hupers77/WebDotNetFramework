@@ -1,0 +1,9 @@
+@* Area(시스템·업무 화면) 공통. 내용은 Views/_ViewImports.cshtml과 같고 화면 Tag Helper(fw-*)와 메뉴 제목을 더한다. *@
+@using Portal.Web
+@using Portal.Web.Models
+@using Portal.Framework.Web.Context
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, Portal.Framework.Web
+@inject Portal.Core.Localization.IPortalLocalizer L
+@inject Portal.Core.Context.ICurrentUser CurrentUser
+@inject Portal.Framework.Web.Navigation.MenuCatalog Menus

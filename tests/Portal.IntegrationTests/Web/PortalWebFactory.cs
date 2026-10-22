@@ -44,7 +44,8 @@ public sealed class PortalWebFactory : WebApplicationFactory<Program>
 
     /// <summary>
     /// 테스트 메뉴: 1 홈(DSH_HOME) / 2 테스트 폴더 → 3 테스트 화면(TST_SCREEN), 4 본사 전용 화면(SYS_X, EMP)
-    /// / 5 협력사 폴더(PARTNER) → 6 협력사 화면(TST_SCREEN) / 7 외부 링크 / 8 잘못된 링크(javascript:).
+    /// / 5 협력사 폴더(PARTNER) → 6 협력사 화면(TST_SCREEN) / 7 외부 링크 / 8 잘못된 링크(javascript:)
+    /// / 9 공통코드(SYS_CODE_MGT, 테스트 폴더 아래, EMP).
     /// </summary>
     internal static readonly MenuCatalog.MenuRow[] Menus =
     [
@@ -56,6 +57,7 @@ public sealed class PortalWebFactory : WebApplicationFactory<Program>
         new() { MenuId = 6, ParentMenuId = 5, MenuTypeCd = "PAGE", ProgramId = TestScreensController.ProgramId, Url = "/test-screen/page?partner=1", SortNo = 10 },
         new() { MenuId = 7, MenuTypeCd = "LINK", Url = "https://example.com/manual", SortNo = 40, NewWinYn = "Y" },
         new() { MenuId = 8, MenuTypeCd = "LINK", Url = "javascript:alert(1)", SortNo = 50 },
+        new() { MenuId = 9, ParentMenuId = 2, MenuTypeCd = "PAGE", ProgramId = "SYS_CODE_MGT", Url = "/Sys/Code", SortNo = 30, OpenScopeCd = "EMP" },
     ];
 
     internal static readonly MenuCatalog.MenuNameRow[] MenuNames =

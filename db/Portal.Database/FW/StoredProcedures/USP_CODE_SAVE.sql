@@ -1,10 +1,12 @@
 -- 공통코드 그리드 일괄 저장 (저장 SP 표준 템플릿, TVP). 프로그램: SYS_CODE_MGT
--- I: 등록, U: 수정, D: 사용 안 함(논리 삭제). 명칭은 현재 사용자 언어로 저장한다.
+-- I: 등록, U: 수정, D: 사용 안 함(논리 삭제). 명칭은 행의 CODE_NM(현재 사용자 언어) 또는 @P_NAMES(언어별)로 저장한다.
+-- @P_NAMES는 I/U 행의 명칭만 담을 수 있고, 명칭을 비우면 그 언어의 명칭을 지운다(기본 언어는 비울 수 없음).
 -- 시스템 그룹(SYSTEM_YN = 'Y')은 코드값 삭제 불가, ALLOW_ADD_YN = 'N'이면 추가도 불가.
 -- 결과: AFFECTED_CNT
 CREATE PROCEDURE [FW].[USP_CODE_SAVE]
   @P_GROUP_CD   VARCHAR(30),
   @P_ROWS       [FW].[TVP_CODE] READONLY,
+  @P_NAMES      [FW].[TVP_CODE_LANG] READONLY,
   @P_USER_ID    VARCHAR(30),
   @P_LANG_CD    VARCHAR(5),
   @P_CLIENT_IP  VARCHAR(45) = NULL
@@ -25,6 +27,14 @@ BEGIN
     THROW 50005, 'MSG.INVALID_INPUT', 1;
   IF @SYSTEM_YN = 'Y' AND EXISTS (SELECT 1 FROM @P_ROWS WHERE [ROW_STAT] = 'D' OR ([ROW_STAT] = 'I' AND @ALLOW_ADD_YN = 'N'))
     THROW 50003, 'MSG.SYSTEM_CODE', 1;
+  DECLARE @DEFAULT_LANG VARCHAR(5) = (SELECT TOP (1) [LANG_CD] FROM [FW].[TB_LANG] WHERE [DEFAULT_YN] = 'Y');
+  IF EXISTS (SELECT 1
+               FROM @P_NAMES N
+               LEFT JOIN @P_ROWS R ON R.[CODE] = N.[CODE] AND R.[ROW_STAT] IN ('I', 'U')
+               LEFT JOIN [FW].[TB_LANG] L ON L.[LANG_CD] = N.[LANG_CD] AND L.[USE_YN] = 'Y'
+              WHERE R.[CODE] IS NULL OR L.[LANG_CD] IS NULL
+                 OR (N.[LANG_CD] = @DEFAULT_LANG AND NULLIF(LTRIM(RTRIM(N.[CODE_NM])), N'') IS NULL))
+    THROW 50005, 'MSG.INVALID_INPUT', 1;
   IF EXISTS (SELECT 1 FROM @P_ROWS R JOIN [FW].[TB_CODE] C ON C.[GROUP_CD] = @P_GROUP_CD AND C.[CODE] = R.[CODE] WHERE R.[ROW_STAT] = 'I')
     THROW 50001, 'MSG.DUP_CODE', 1;
 
@@ -94,8 +104,27 @@ BEGIN
       INSERT ([GROUP_CD], [CODE], [LANG_CD], [CODE_NM], [REG_ID], [UPD_ID])
       VALUES (@P_GROUP_CD, S.[CODE], @P_LANG_CD, S.[CODE_NM], @P_USER_ID, @P_USER_ID);
 
+    -- 언어별 명칭 (그리드에서 여러 언어를 함께 편집)
+    MERGE [FW].[TB_CODE_LANG] AS T
+    USING (SELECT [CODE], [LANG_CD], LTRIM(RTRIM([CODE_NM])) AS [CODE_NM]
+             FROM @P_NAMES
+            WHERE NULLIF(LTRIM(RTRIM([CODE_NM])), N'') IS NOT NULL) AS S
+       ON T.[GROUP_CD] = @P_GROUP_CD AND T.[CODE] = S.[CODE] AND T.[LANG_CD] = S.[LANG_CD]
+    WHEN MATCHED AND T.[CODE_NM] <> S.[CODE_NM] THEN
+      UPDATE SET T.[CODE_NM] = S.[CODE_NM], T.[UPD_ID] = @P_USER_ID, T.[UPD_DT] = SYSUTCDATETIME()
+    WHEN NOT MATCHED THEN
+      INSERT ([GROUP_CD], [CODE], [LANG_CD], [CODE_NM], [REG_ID], [UPD_ID])
+      VALUES (@P_GROUP_CD, S.[CODE], S.[LANG_CD], S.[CODE_NM], @P_USER_ID, @P_USER_ID);
+
+    DELETE T
+      FROM [FW].[TB_CODE_LANG] T
+      JOIN @P_NAMES N ON N.[CODE] = T.[CODE] AND N.[LANG_CD] = T.[LANG_CD]
+     WHERE T.[GROUP_CD] = @P_GROUP_CD
+       AND NULLIF(LTRIM(RTRIM(N.[CODE_NM])), N'') IS NULL;
+
     SET @AFTER = (SELECT C.[CODE], C.[PARENT_CODE], C.[SORT_NO], C.[ATTR1], C.[ATTR2], C.[ATTR3], C.[ATTR4], C.[ATTR5],
-                         C.[START_DT], C.[END_DT], C.[USE_YN], R.[CODE_NM]
+                         C.[START_DT], C.[END_DT], C.[USE_YN], R.[CODE_NM],
+                         JSON_QUERY((SELECT N.[LANG_CD], LTRIM(RTRIM(N.[CODE_NM])) AS [CODE_NM] FROM @P_NAMES N WHERE N.[CODE] = C.[CODE] FOR JSON PATH)) AS [NAMES]
                     FROM [FW].[TB_CODE] C
                     JOIN @P_ROWS R ON R.[CODE] = C.[CODE]
                    WHERE C.[GROUP_CD] = @P_GROUP_CD

@@ -88,4 +88,22 @@ public sealed class MenuTreeTests
 
         Assert.Equal("홈", MenuTreeBuilder.Build(roots, Perm(false, "P1"), false, "en")[0].Name);
     }
+
+    [Fact]
+    public void 화면제목_프로그램을연첫메뉴의이름_언어대체()
+    {
+        var rows = new[] { Row(1, null, "FOLDER"), Row(2, 1, "PAGE", "P2", "/p2", sort: 1), Row(3, 1, "PAGE", "P2", "/p2b", sort: 2), Row(4, null, "LINK", "P4", "https://x") };
+        var names = new List<MenuCatalog.MenuNameRow>
+        {
+            new() { MenuId = 2, LangCd = "ko", MenuNm = "화면" },
+            new() { MenuId = 2, LangCd = "en", MenuNm = "Screen" },
+            new() { MenuId = 3, LangCd = "ko", MenuNm = "다른 메뉴" },
+        };
+
+        var index = MenuCatalog.IndexPrograms(MenuCatalog.Build(rows, names));
+
+        Assert.Equal("Screen", index["P2"]["en"]);
+        Assert.Equal("화면", index["P2"]["ko"]);
+        Assert.False(index.ContainsKey("P4"));
+    }
 }

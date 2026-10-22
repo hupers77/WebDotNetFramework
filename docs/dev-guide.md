@@ -121,6 +121,10 @@ public sealed class VendorController(IVendorService vendors) : PortalController
 
 Controller에는 업무 로직을 두지 않습니다. 사용자 ID·언어·IP는 SpExecutor가 넣으므로 DTO에 두지 않습니다.
 
+**그리드 일괄 저장 권한**: 저장 Action은 `[Func("UPDATE")]`로 열고, 본문에서 `await DemandRowFuncsAsync(request.Rows)`를 먼저 부릅니다. 추가 행(I)이 있으면 `CREATE`, 삭제 행(D)이 있으면 `DELETE` 권한이 추가로 필요하며, 없으면 403입니다. 행 DTO는 `IGridRow`(`RowStat`)를 구현합니다. 실제 예는 공통코드 화면(`src/Portal.Web/Areas/Sys`)입니다.
+
+**프레임워크 시스템 화면**(공통코드, 설정 관리 등)은 업무 모듈과 같은 구조로 `src/Portal.Web/Areas/Sys/`(Controllers, Services, Models, Views)와 `wwwroot/js/sys/`에 둡니다.
+
 ## 4. C# 코딩 규칙
 
 Microsoft .NET 기본 명명 규칙을 따르고, 여기서 정한 규칙은 `.editorconfig`와 분석기가 빌드에서 강제합니다. 빌드 경고는 오류로 취급하므로 경고를 남긴 채 병합할 수 없습니다.
@@ -155,7 +159,8 @@ Microsoft .NET 기본 명명 규칙을 따르고, 여기서 정한 규칙은 `.e
 - 화면에서 레이아웃을 지정하지 않습니다. `_ViewStart`가 고릅니다: 로그인 전은 `_AuthLayout`, 탭 안(`?_layout=tab` 또는 iframe 요청)은 `_TabLayout`, 그 밖에는 `_PortalLayout`입니다.
 - 멀티 탭(`UI.TAB_MODE`=Y)이면 주소창으로 화면에 직접 들어와도 프레임워크가 셸(헤더·메뉴·탭)로 감싸고 그 화면을 첫 탭으로 엽니다. 화면 코드는 탭을 의식하지 않고 일반 `View()`를 돌려주면 됩니다.
 - 메뉴에 보이는지는 프로그램의 READ 권한과 메뉴의 공개 범위(전체·임직원·협력사)로 정해집니다. 화면을 메뉴에 올리려면 `TB_PROGRAM`과 `TB_MENU`·`TB_MENU_LANG` 초기 데이터를 함께 추가합니다.
-- 문구는 `@L["키"]`, 버튼은 `<fw-button func="UPDATE" text-key="BTN.SAVE" />`, 코드 선택은 `<fw-select code-group="..." />`를 씁니다.
+- 문구는 `@L["키"]`, 버튼은 `<fw-button func="UPDATE" text-key="BTN.SAVE" id="save" />`를 씁니다. `fw-button`은 현재 Controller의 `[Program]`에 그 기능 권한이 있을 때만 그려지므로, JS는 버튼이 없으면 그 기능도 쓰지 않으면 됩니다(서버는 Action의 `[Func]`로 다시 막습니다). 코드 선택 `<fw-select code-group="..." />`는 코드 캐시와 함께 추가할 예정입니다.
+- 화면 제목은 메뉴명을 씁니다: `ViewData["Title"] = Menus.ProgramTitle(프로그램 ID, CurrentUser.LangCd)`, 본문 `<h1>`도 같은 값입니다. 화면 JS는 `@section Scripts { <script type="module" src="~/js/..."></script> }`로 넣습니다.
 - `Html.Raw`는 금지입니다. 게시판 본문처럼 HTML이 필요하면 서버에서 필터를 거친 `SafeHtml` 형식만 출력합니다.
 
 **JavaScript**
@@ -165,8 +170,8 @@ Microsoft .NET 기본 명명 규칙을 따르고, 여기서 정한 규칙은 `.e
 - 서버 호출은 `fw.ajax`만 씁니다(CSRF, 로딩, 오류 처리 자동). `fetch` 직접 호출 금지. 401이면 로그인 화면으로 이동하고 403이면 권한 안내를 띄우므로, 화면은 `result.success`만 보고 처리합니다.
 - 문구 묶음은 비동기로 읽으므로 `fw.t`는 `await fw.ready` 이후에 씁니다. 짧은 안내는 `fw.notify(문구)`를 씁니다(셸 하단 안내 영역, 스크린리더가 읽음).
 - 사용자 데이터는 `textContent` 또는 그리드 컴포넌트로만 넣고 `innerHTML`에 직접 넣지 않습니다.
-- 메시지는 `fw.t('MSG.SAVED')`, 확인창은 `fw.dialog.confirm`, 날짜·숫자 표시는 `fw.format`을 씁니다(사용자 언어·시간대 자동 반영).
-- 여러 행 저장은 그리드의 `getChanges()`(I/U/D 행)를 보내 TVP 일괄 저장 SP로 처리합니다. 행마다 요청을 보내지 않습니다.
+- 메시지는 `fw.t('MSG.SAVED')`, 확인창은 `await fw.dialog.confirm(fw.t('CNF.SAVE'))`(브라우저 `confirm()` 금지)를 씁니다. 날짜·숫자 표시용 `fw.format`은 조회형 화면 작업에서 추가합니다.
+- 편집 그리드는 `fw-grid.js`의 `Grid`를 씁니다. 컬럼에 `required`, `maxLength`, `pattern`을 주면 `validate()`가 서버와 같은 메시지 키로 검사하고 오류 칸으로 이동합니다. 여러 행 저장은 `getChanges()`(I/U/D 행)를 보내 TVP 일괄 저장 SP로 처리합니다. 행마다 요청을 보내지 않습니다. 저장하지 않은 변경이 있으면(`hasChanges()`) 다른 항목으로 옮기기 전에 `CNF.LEAVE`로 확인합니다.
 
 **웹 접근성 (KWCAG 2.2 기준, 공통 컴포넌트가 기본 지원)**
 

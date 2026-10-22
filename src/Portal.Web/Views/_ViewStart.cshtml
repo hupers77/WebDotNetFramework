@@ -1,7 +1,4 @@
 @using Portal.Framework.Web.Layout
 @{
-    // 로그인 전(로그인·오류 화면)은 메뉴 없는 레이아웃, 탭(iframe) 안은 본문만, 그 밖은 헤더·메뉴가 있는 레이아웃
-    Layout = Context.Features.Get<PortalUserFeature>() is null ? "_AuthLayout"
-        : PortalLayouts.IsTabFrame(Context.Request) ? "_TabLayout"
-        : "_PortalLayout";
+    Layout = PortalLayouts.For(Context);
 }

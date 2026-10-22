@@ -65,4 +65,13 @@ public static class PortalLayouts
     public static bool IsTabFrame(HttpRequest request) =>
         request.Query[LayoutQuery] == "tab"
         || string.Equals(request.Headers["Sec-Fetch-Dest"], "iframe", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 화면 레이아웃 이름 (<c>_ViewStart</c>가 쓴다). 로그인 전(로그인·오류 화면)은 메뉴 없는 <c>_AuthLayout</c>,
+    /// 탭(iframe) 안은 본문만 있는 <c>_TabLayout</c>, 그 밖은 헤더·메뉴가 있는 <c>_PortalLayout</c>.
+    /// </summary>
+    public static string For(HttpContext context) =>
+        context.Features.Get<Context.PortalUserFeature>() is null ? "_AuthLayout"
+        : IsTabFrame(context.Request) ? "_TabLayout"
+        : "_PortalLayout";
 }

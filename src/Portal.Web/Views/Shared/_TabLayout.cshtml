@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/theme.css" />
     <script type="module" src="~/js/fw.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
 </head>
 <body class="in-tab">
     <main id="main" class="content">

@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\src\Portal.Security\Portal.Security.csproj" />
     <ProjectReference Include="..\..\src\Portal.Infrastructure\Portal.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Portal.Framework.Web\Portal.Framework.Web.csproj" />
+    <ProjectReference Include="..\..\src\Portal.Web\Portal.Web.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
