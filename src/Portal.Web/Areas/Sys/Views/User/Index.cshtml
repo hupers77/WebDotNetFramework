@@ -12,6 +12,7 @@
      data-url-list="@Url.Action("List")"
      data-url-roles="@Url.Action("Roles")"
      data-url-depts="@Url.Action("Depts")"
+     data-url-export="@Url.Action("Export")"
      data-url-save="@Url.Action("Save")"
      data-url-unlock="@Url.Action("Unlock")"
      data-url-reset-mfa="@Url.Action("ResetMfa")"
@@ -51,7 +52,10 @@
             <input id="user-keyword" type="search" maxlength="100" autocomplete="off" />
             <button type="submit">@L["BTN.SEARCH"]</button>
         </form>
-        <p id="user-total" class="hint" aria-live="polite"></p>
+        <div class="toolbar">
+            <p id="user-total" class="hint toolbar-spacer" aria-live="polite"></p>
+            <fw-button func="EXPORT" text-key="BTN.EXCEL" id="user-export" />
+        </div>
         <ul id="user-list" class="pick-list" role="listbox" aria-labelledby="user-list-heading"></ul>
         <div id="user-pager" class="pager" hidden>
             <button type="button" id="user-prev">@L["BTN.PREV"]</button>

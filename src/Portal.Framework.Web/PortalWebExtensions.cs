@@ -100,6 +100,7 @@ public static class PortalWebExtensions
             };
         });
 
+        services.AddScoped<IPiiAccessLog, PiiAccessLog>();
         services.AddSingleton<AccessLogBuffer>();
         services.AddHostedService<AccessLogWriter>();
         return services;

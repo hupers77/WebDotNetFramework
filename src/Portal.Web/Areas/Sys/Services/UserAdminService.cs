@@ -2,12 +2,14 @@ using System.Text.Json;
 using Portal.Core.Errors;
 using Portal.Core.Keys;
 using Portal.Core.Results;
+using Portal.Core.Localization;
 using Portal.Data;
+using Portal.Framework.Web.Logging;
 using Portal.Web.Areas.Sys.Models;
 
 namespace Portal.Web.Areas.Sys.Services;
 
-/// <summary>사용자 관리 (본사 <c>SYS_USER_MGT</c>, 협력사 관리자 <c>PTN_USER_MGT</c>). 목록, 부서 지정, 이름·상태·사용 기한·직접 부여 역할 저장, 잠금 해제, 2단계 인증 초기화.</summary>
+/// <summary>사용자 관리 (본사 <c>SYS_USER_MGT</c>, 협력사 관리자 <c>PTN_USER_MGT</c>). 목록, 엑셀 내보내기, 부서 지정, 이름·상태·사용 기한·직접 부여 역할 저장, 잠금 해제, 2단계 인증 초기화.</summary>
 /// <remarks>본사 사용자는 3단계 AD 동기화로, 협력사 사용자는 가입 승인으로 만들어지므로 여기서는 새로 만들거나 지우지 않는다(퇴사·계약 종료는 상태로).
 /// 모든 메서드는 부른 화면의 프로그램 ID를 SP에 넘기고, SP가 그 프로그램의 데이터 범위(협력사 관리자는 자기 회사)로 대상을 제한한다.</remarks>
 public interface IUserAdminService
@@ -27,12 +29,15 @@ public interface IUserAdminService
     /// <summary>잠금 해제 또는 2단계 인증 초기화. 바꾼 것이 없으면 false.</summary>
     Task<bool> ResetAsync(string programId, string userId, string actionCd, CancellationToken cancellationToken = default);
 
+    /// <summary>검색 조건에 맞는 사용자 전체를 엑셀로 (<see cref="UserAdminService.MaxExportRows"/>명까지). 개인정보 접속기록에 사유를 남긴다.</summary>
+    Task<Stream> ExportAsync(string programId, UserSearch search, string reason, CancellationToken cancellationToken = default);
+
     /// <summary>검색용 회사 목록 (코드, 이름).</summary>
     Task<IReadOnlyList<(string Code, string Name)>> GetCompaniesAsync(CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
-public sealed class UserAdminService(ISpExecutor sp) : IUserAdminService
+public sealed partial class UserAdminService(ISpExecutor sp, IPiiAccessLog pii, IPortalLocalizer localizer) : IUserAdminService
 {
     /// <summary>한 쪽에 보이는 사용자 수.</summary>
     public const int PageSize = 50;
@@ -47,20 +52,19 @@ public sealed class UserAdminService(ISpExecutor sp) : IUserAdminService
 
     /// <inheritdoc />
     public Task<PageResult<UserAdminDto>> GetListAsync(string programId, UserSearch search, CancellationToken cancellationToken = default) =>
-        sp.QueryPageAsync<UserAdminDto>(
-            ListSp,
-            new
-            {
-                P_PROGRAM_ID = programId,
-                P_KEYWORD = Blank(search.Keyword),
-                P_COMPANY_CD = Blank(search.CompanyCd),
-                P_USER_TYPE_CD = Blank(search.UserTypeCd),
-                P_USER_STAT_CD = Blank(search.UserStatCd),
-                P_LOCK_YN = Blank(search.LockYn),
-                P_PAGE_NO = search.PageNo,
-                P_PAGE_SIZE = PageSize,
-            },
-            cancellationToken);
+        sp.QueryPageAsync<UserAdminDto>(ListSp, ListParameters(programId, search, search.PageNo, PageSize), cancellationToken);
+
+    private static object ListParameters(string programId, UserSearch search, int pageNo, int pageSize) => new
+    {
+        P_PROGRAM_ID = programId,
+        P_KEYWORD = Blank(search.Keyword),
+        P_COMPANY_CD = Blank(search.CompanyCd),
+        P_USER_TYPE_CD = Blank(search.UserTypeCd),
+        P_USER_STAT_CD = Blank(search.UserStatCd),
+        P_LOCK_YN = Blank(search.LockYn),
+        P_PAGE_NO = pageNo,
+        P_PAGE_SIZE = pageSize,
+    };
 
     /// <inheritdoc />
     public Task<IReadOnlyList<UserRoleDto>> GetRolesAsync(string programId, string userId, CancellationToken cancellationToken = default) =>

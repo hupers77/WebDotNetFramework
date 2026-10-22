@@ -221,7 +221,10 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 /* fw.dialog */
 .fw-dialog { border: 1px solid var(--fw-border); border-radius: 8px; padding: 1.25rem; max-width: min(28rem, 90vw); background: var(--fw-surface); color: var(--fw-text); }
 .fw-dialog::backdrop { background: rgb(0 0 0 / .4); }
-.fw-dialog form { display: flex; gap: .5rem; justify-content: flex-end; margin-top: 1rem; }
+.fw-dialog form { margin-top: 1rem; }
+.fw-dialog label { display: block; margin-bottom: .25rem; }
+.fw-dialog textarea { width: 100%; box-sizing: border-box; }
+.fw-dialog-buttons { display: flex; gap: .5rem; justify-content: flex-end; margin-top: 1rem; }
 .fw-dialog button.primary { margin-top: 0; }
 
 /* 768px 이하: 메뉴는 드로어, 검색·남은 시간은 줄인다 */

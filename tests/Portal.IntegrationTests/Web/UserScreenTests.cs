@@ -7,7 +7,7 @@ using static Portal.IntegrationTests.Web.WebTestHttp;
 
 namespace Portal.IntegrationTests.Web;
 
-/// <summary>사용자 관리 화면: 권한별 버튼(UPDATE), 권한 없는 요청 차단, 저장·잠금 해제·2단계 인증 초기화가 SP로 가는 값, 개인정보 미노출, 협력사 관리자 화면(Ptn/User).</summary>
+/// <summary>사용자 관리 화면: 권한별 버튼(UPDATE·EXPORT), 엑셀 내보내기와 개인정보 접속기록, 권한 없는 요청 차단, 저장·잠금 해제·2단계 인증 초기화가 SP로 가는 값, 개인정보 미노출, 협력사 관리자 화면(Ptn/User).</summary>
 public sealed class UserScreenTests : IClassFixture<PortalWebFactory>
 {
     private const string Program = "SYS_USER_MGT";
@@ -176,5 +176,34 @@ public sealed class UserScreenTests : IClassFixture<PortalWebFactory>
         Assert.Equal(("SYS_USER_MGT", "kim.ptn"), ((string?)sysCall["P_PROGRAM_ID"], (string?)sysCall["P_TARGET_USER_ID"]));
         Assert.Equal("PTN_USER_MGT", _web.Sp.LastCall(UserAdminService.DeptListSp).Parameters["P_PROGRAM_ID"]);
         Assert.Equal(HttpStatusCode.Forbidden, (await _web.NewClient(ptn).SendAsync(Ajax(HttpMethod.Get, "/Sys/User/Depts?userId=kim.ptn"), Ct)).StatusCode);
+    }
+
+    [Fact]
+    public async Task 엑셀_내보내기권한이면버튼과_사유를기록하고xlsx_없으면버튼없고403()
+    {
+        var token = _web.SignIn("usr.export", [.. AllFuncs, $"{Program}:EXPORT"]);
+        Assert.Contains("id=\"user-export\"", await PageAsync(token), StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"user-export\"", await PageAsync(_web.SignIn("usr.admin", AllFuncs)), StringComparison.Ordinal);
+
+        var ok = await PostAsync(token, "Export", new { search = new { companyCd = "P0001", keyword = "김협력" }, reason = "분기 계정 점검" });
+
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        Assert.Equal("users.xlsx", ok.Content.Headers.ContentDisposition?.FileNameStar);
+        var log = _web.Sp.LastCall(Portal.Framework.Web.Logging.PiiAccessLog.WriteSp).Parameters;
+        Assert.Equal((Program, "DOWNLOAD", "분기 계정 점검"), ((string)log["P_PROGRAM_ID"]!, (string)log["P_ACTION_CD"]!, (string)log["P_REASON"]!));
+        Assert.DoesNotContain("김협력", (string)log["P_TARGET_DESC"]!, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(_web.SignIn("usr.admin", AllFuncs), "Export", new { search = new { }, reason = "분기 계정 점검" })).StatusCode);
+    }
+
+    [Fact]
+    public async Task 엑셀_사유가없으면_기록도파일도없다()
+    {
+        var token = _web.SignIn("usr.export2", [.. AllFuncs, $"{Program}:EXPORT"]);
+        var before = _web.Sp.Calls.Count(c => c.SpName == Portal.Framework.Web.Logging.PiiAccessLog.WriteSp);
+
+        var response = await PostAsync(token, "Export", new { search = new { }, reason = " " });
+
+        Assert.Equal("MSG.PII_REASON_REQUIRED", (await JsonAsync(response)).GetProperty("error").GetProperty("code").GetString());
+        Assert.Equal(before, _web.Sp.Calls.Count(c => c.SpName == Portal.Framework.Web.Logging.PiiAccessLog.WriteSp));
     }
 }

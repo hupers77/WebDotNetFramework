@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Portal.Core.Keys;
 
 namespace Portal.Web.Areas.Sys.Models;
 
@@ -16,6 +17,9 @@ public static class UserAdminMessageKeys
 
     /// <summary>사용자와 같은 회사의 사용 중인 부서가 아니다.</summary>
     public const string DeptInvalid = "MSG.USER_DEPT_INVALID";
+
+    /// <summary>내보낼 사용자가 너무 많다 ({0}: 최대 수).</summary>
+    public const string ExportTooMany = "MSG.USER_EXPORT_TOO_MANY";
 }
 
 /// <summary>계정 초기화 종류 (<c>FW.USP_USER_ACCOUNT_RESET_EXEC</c>).</summary>
@@ -54,6 +58,18 @@ public sealed class UserSearch
     /// <summary>쪽 번호.</summary>
     [Range(1, int.MaxValue, ErrorMessage = "MSG.INVALID_INPUT")]
     public int PageNo { get; set; } = 1;
+}
+
+/// <summary>사용자 목록 엑셀 내보내기 요청. 사유는 개인정보 접속기록에 남는다.</summary>
+public sealed class UserExportRequest
+{
+    /// <summary>목록과 같은 검색 조건 (쪽 번호는 쓰지 않는다).</summary>
+    [Required(ErrorMessage = "MSG.INVALID_INPUT")]
+    public UserSearch Search { get; set; } = new();
+
+    /// <summary>다운로드 사유.</summary>
+    [Required(ErrorMessage = MessageKeys.PiiReasonRequired), StringLength(200, MinimumLength = 2, ErrorMessage = MessageKeys.PiiReasonRequired)]
+    public string Reason { get; set; } = "";
 }
 
 /// <summary>사용자 (<c>FW.USP_USER_GET_LIST</c>). 이메일 등 개인정보는 담지 않는다.</summary>
