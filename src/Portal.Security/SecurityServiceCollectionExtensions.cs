@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Portal.Security.Authentication;
 using Portal.Security.Authorization;
+using Portal.Security.Mfa;
 using Portal.Security.Passwords;
 using Portal.Security.Secrets;
 
@@ -28,6 +29,8 @@ public static class SecurityServiceCollectionExtensions
         services.TryAddSingleton<ISecretProtector, DataProtectionSecretProtector>();
         services.TryAddSingleton<IPersonalDataProtector, DataProtectionPersonalDataProtector>();
         services.TryAddScoped<PartnerJoinService>();
+        services.TryAddSingleton<IMfaSecretProtector, DataProtectionMfaSecretProtector>();
+        services.TryAddSingleton<MfaTicketProtector>();
         return services;
     }
 }

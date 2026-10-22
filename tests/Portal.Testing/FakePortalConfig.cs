@@ -23,6 +23,8 @@ public sealed class FakePortalConfig : IPortalConfig
         ["SITE.THEME_COLOR"] = "#1F5FBF",
         ["FILE.MAX_SIZE_MB"] = "20",
         ["FILE.MAX_COUNT"] = "10",
+        ["AUTH.PARTNER_MFA"] = "Y",
+        ["AUTH.ADMIN_MFA"] = "Y",
     };
 
     /// <summary>값을 바꾼다.</summary>

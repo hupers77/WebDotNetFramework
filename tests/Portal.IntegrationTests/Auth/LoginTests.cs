@@ -115,7 +115,7 @@ public sealed class LoginTests(DbFixture fixture)
         await SeedLoginUserAsync(db, "it.part", Pwd, "ITP01", "PARTNER");
         AsAnonymous(db, "10.1.2.3");
 
-        var result = await NewAuth(db).LoginAsync(Req("it.part"));
+        var result = await NewAuth(db, PasswordOnly()).LoginAsync(Req("it.part"));
 
         Assert.Equal(expected, result.Succeeded);
     }

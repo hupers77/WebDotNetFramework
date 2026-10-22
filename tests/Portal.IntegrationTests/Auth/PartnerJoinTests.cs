@@ -80,7 +80,7 @@ public sealed class PartnerJoinTests(DbFixture fixture)
             ("@R", reqId.ToString(System.Globalization.CultureInfo.InvariantCulture))));
 
         AsAnonymous(db);
-        var login = await NewAuth(db).LoginAsync(new LoginRequest("it.ptn.kim", Pwd, "IT-Agent"), Ct);
+        var login = await NewAuth(db, PasswordOnly()).LoginAsync(new LoginRequest("it.ptn.kim", Pwd, "IT-Agent"), Ct);
         Assert.True(login.Succeeded, login.MessageKey);
         Assert.False(login.PasswordChangeRequired);
     }

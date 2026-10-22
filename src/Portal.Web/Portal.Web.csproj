@@ -10,6 +10,9 @@
     <ProjectReference Include="..\Portal.Framework.Web\Portal.Framework.Web.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="QRCoder" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="Portal.UnitTests" />
     <InternalsVisibleTo Include="Portal.IntegrationTests" />
   </ItemGroup>
