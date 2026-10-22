@@ -1,0 +1,73 @@
+@* 역할 관리 (표준 화면 3 마스터-디테일): 왼쪽 역할 목록, 오른쪽 역할 정보. *@
+@model RoleIndexModel
+@{
+    var title = Menus.ProgramTitle(RoleController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/role.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="role-screen" class="md-layout"
+     data-url-list="@Url.Action("List")"
+     data-url-create="@Url.Action("Create")"
+     data-url-save="@Url.Action("Save")"
+     data-url-delete="@Url.Action("Delete")"
+     data-scopes="@System.Text.Json.JsonSerializer.Serialize(Model.DataScopes.ToDictionary(s => s.Code, s => s.Name))"
+     data-types="@System.Text.Json.JsonSerializer.Serialize(Model.CompanyTypes.ToDictionary(s => s.Code, s => s.Name))">
+    <section class="md-master" aria-labelledby="role-list-heading">
+        <h2 id="role-list-heading">@L["LBL.ROLE_LIST"]</h2>
+        <div class="toolbar">
+            <p id="role-total" class="hint toolbar-spacer" aria-live="polite"></p>
+            <fw-button func="CREATE" text-key="BTN.NEW" id="role-new" />
+        </div>
+        <ul id="role-list" class="pick-list" role="listbox" aria-labelledby="role-list-heading"></ul>
+    </section>
+    <section class="md-detail" aria-labelledby="role-heading">
+        <h2 id="role-heading">@L["LBL.ROLE_DETAIL"]</h2>
+        <p id="role-hint" class="hint">@L["SYS.ROLE.SELECT"]</p>
+        <div id="role-detail" hidden>
+            <dl class="detail-list">
+                <dt>@L["LBL.ROLE_USAGE"]</dt><dd data-field="usage"></dd>
+                <dt>@L["LBL.ROLE_AUTH"]</dt><dd data-field="funcs"></dd>
+                <dt>@L["LBL.UPD_DT"]</dt><dd data-field="upd"></dd>
+            </dl>
+            <p id="role-lock" class="hint" hidden></p>
+            <p class="hint">@L["SYS.ROLE.AUTH_HINT"]</p>
+            <form id="role-form" class="form" novalidate>
+                <label for="role-id">@L["LBL.ROLE_ID"]</label>
+                <input id="role-id" maxlength="30" autocomplete="off" spellcheck="false" required aria-describedby="role-id-hint" />
+                <p id="role-id-hint" class="hint">@L["SYS.ROLE.ID_HINT"]</p>
+                <label for="role-nm">@L["LBL.ROLE_NM"]</label>
+                <input id="role-nm" maxlength="100" autocomplete="off" required />
+                <label for="role-desc">@L["LBL.DESCRIPTION"]</label>
+                <textarea id="role-desc" rows="2" maxlength="500"></textarea>
+                <label for="role-type">@L["LBL.GRANT_COMPANY"]</label>
+                <select id="role-type" aria-describedby="role-type-hint">
+                    <option value="">@L["LBL.ALL_COMPANY_TYPES"]</option>
+                    @foreach (var (code, name) in Model.CompanyTypes)
+                    {
+                        <option value="@code">@name</option>
+                    }
+                </select>
+                <p id="role-type-hint" class="hint">@L["SYS.ROLE.TYPE_HINT"]</p>
+                <label for="role-scope">@L["LBL.DATA_SCOPE"]</label>
+                <select id="role-scope" aria-describedby="role-scope-hint">
+                    @foreach (var (code, name) in Model.DataScopes)
+                    {
+                        <option value="@code">@name</option>
+                    }
+                </select>
+                <p id="role-scope-hint" class="hint">@L["SYS.ROLE.SCOPE_HINT"]</p>
+                <label for="role-sort">@L["LBL.SORT_NO"]</label>
+                <input id="role-sort" type="number" min="0" max="99999" step="1" />
+                <label><input id="role-use" type="checkbox" /> @L["LBL.USE_YN"]</label>
+            </form>
+            <div class="toolbar">
+                <fw-button func="DELETE" text-key="BTN.DELETE" id="role-delete" />
+                <fw-button func="CREATE" text-key="BTN.SAVE" id="role-create" class="primary" />
+                <fw-button func="UPDATE" text-key="BTN.SAVE" id="role-save" class="primary" />
+            </div>
+        </div>
+    </section>
+</div>
