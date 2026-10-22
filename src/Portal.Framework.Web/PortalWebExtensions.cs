@@ -2,6 +2,7 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -43,6 +44,18 @@ public static class PortalWebExtensions
         services.TryAddScoped<ICurrentUser, HttpCurrentUser>();
         services.AddPortalData(configuration);
         services.AddPortalSecurity();
+
+        // Data Protection 키(CSRF 토큰·설정 비밀값 암호화). 운영은 백업되는 로컬 폴더에 두고 Windows DPAPI로 보호한다(설계서 3장·16장).
+        // 경로를 비우면 .NET 기본 위치(사용자 프로필)를 쓴다(개발 PC).
+        var dataProtection = services.AddDataProtection().SetApplicationName("Portal");
+        if (configuration["Portal:DataProtection:KeyPath"] is { Length: > 0 } keyPath)
+        {
+            dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keyPath));
+            if (OperatingSystem.IsWindows())
+            {
+                dataProtection.ProtectKeysWithDpapi(protectToLocalMachine: true);
+            }
+        }
         services.AddPortalInfrastructure(configuration);
 
         // 한글·중국어를 &#x..; 로 바꾸지 않고 그대로 출력한다 (HTML 특수문자는 계속 인코딩된다)

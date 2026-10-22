@@ -4,6 +4,7 @@
 // - fw.t: 화면 문구. 레이아웃의 <meta name="fw-i18n">이 가리키는 언어별 묶음을 읽는다(브라우저 캐시). await fw.ready 이후에 쓴다.
 // - fw.notify: 화면 아래 안내 문구 (스크린리더가 읽는 role=status).
 // - fw.dialog.confirm / alert: 확인·알림 대화상자 (네이티브 <dialog>, Esc는 취소). 브라우저 confirm()은 쓰지 않는다.
+// - fw.format.dateTime: 서버의 UTC 일시를 사용자 언어 형식·브라우저 시간대로 보여 준다.
 // - 편집 그리드는 fw-grid.js(fw.Grid)를 불러 쓴다.
 
 const meta = (name) => document.querySelector(`meta[name="${name}"]`)?.content ?? '';
@@ -155,5 +156,19 @@ document.addEventListener('change', (e) => {
 // 탭 안 화면이 바뀌면 (링크 이동·새로고침) 세션 타이머를 다시 맞춘다
 touch();
 
-export const fw = { ajax, t, notify, ready, dialog };
+const format = {
+    /** UTC ISO 문자열 → "2026. 10. 22. 오후 3:04" 같은 사용자 언어 형식. 값이 없으면 빈 문자열. */
+    dateTime(value) {
+        if (!value) {
+            return '';
+        }
+
+        const date = new Date(/[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`);
+        return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(document.documentElement.lang || undefined, {
+            dateStyle: 'medium', timeStyle: 'short',
+        });
+    },
+};
+
+export const fw = { ajax, t, notify, ready, dialog, format };
 window.fw = fw;

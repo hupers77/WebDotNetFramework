@@ -19,6 +19,11 @@ function setPath(data, field, value) {
     target[last] = value;
 }
 
+/** 컬럼 옵션이 함수면 행 데이터로 계산한다 (예: 설정 형식에 따라 칸 종류가 다른 그리드). */
+function resolve(option, data) {
+    return typeof option === 'function' ? option(data) : option;
+}
+
 function isEmpty(value) {
     return value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
 }
@@ -43,14 +48,19 @@ export class Grid {
      * @param {object} options
      * @param {string} options.label 표 제목 (스크린리더용 caption)
      * @param {Array<object>} options.columns 컬럼: field, header, type(text|number|date|yn), required, maxLength,
-     *   pattern(RegExp)+patternKey(메시지 키), readonly(row, state), width
+     *   pattern(RegExp)+patternKey(메시지 키), readonly(true 또는 (row, state) => bool), check(row) => 메시지|null, width,
+ *   format(value, row) 읽기 전용 칸 표시, placeholder.
+ *   type·required·placeholder는 (row) => 값 함수도 된다. type 'password'는 값을 다시 보여 주지 않는 입력 칸이다.
+ *   type 'button'은 행마다 버튼(text, onClick(row))을 그린다. 읽기 전용 그리드에서도 그리고, 검사하지 않는다.
      * @param {boolean} [options.editable=true] false면 읽기 전용
+     * @param {boolean} [options.selectable=true] false면 행 선택 칸을 그리지 않는다 (행 추가·삭제가 없는 수정 전용 그리드)
      */
-    constructor(container, { label, columns, editable = true }) {
+    constructor(container, { label, columns, editable = true, selectable = true }) {
         this.container = container;
         this.label = label;
         this.columns = columns;
         this.editable = editable;
+        this.selectable = selectable;
         this.rows = [];
         this.render();
     }
@@ -117,13 +127,13 @@ export class Grid {
             }
 
             for (const col of this.columns) {
-                if (this.isReadonly(col, row)) {
+                if (col.type === 'button' || this.isReadonly(col, row)) {
                     continue;
                 }
 
                 const value = getPath(row.data, col.field);
                 let message = null;
-                if (col.required && isEmpty(value)) {
+                if (resolve(col.required, row.data) && isEmpty(value)) {
                     message = fw.t('VAL.REQUIRED', col.header);
                 } else if (col.maxLength && typeof value === 'string' && value.trim().length > col.maxLength) {
                     message = fw.t('VAL.MAX_LENGTH', col.header, col.maxLength);
@@ -146,7 +156,11 @@ export class Grid {
     }
 
     isReadonly(col, row) {
-        return !this.editable || row.state === 'D' || (col.readonly?.(row.data, row.state) ?? false);
+        if (!this.editable || row.state === 'D') {
+            return true;
+        }
+
+        return typeof col.readonly === 'function' ? col.readonly(row.data, row.state) : !!col.readonly;
     }
 
     render() {
@@ -168,7 +182,10 @@ export class Grid {
             head.append(cell);
             return cell;
         };
-        th(fw.t('LBL.ROW_SELECT'), 'col-select');
+        if (this.selectable) {
+            th(fw.t('LBL.ROW_SELECT'), 'col-select');
+        }
+
         th(fw.t('LBL.ROW_STAT'), 'col-state');
         for (const col of this.columns) {
             const cell = th(col.header);
@@ -176,7 +193,8 @@ export class Grid {
                 cell.style.width = col.width;
             }
 
-            if (col.required) {
+            // 행마다 다른 필수 여부는 머리글에 표시하지 않는다
+            if (col.required === true) {
                 cell.classList.add('required');
             }
         }
@@ -188,7 +206,7 @@ export class Grid {
 
         if (this.rows.length === 0) {
             const empty = this.body.insertRow().insertCell();
-            empty.colSpan = this.columns.length + 2;
+            empty.colSpan = this.columns.length + (this.selectable ? 2 : 1);
             empty.className = 'grid-empty';
             empty.textContent = fw.t('MSG.NO_DATA');
         }
@@ -200,15 +218,17 @@ export class Grid {
         const tr = document.createElement('tr');
         tr.className = row.state ? `row-${row.state}` : '';
 
-        const select = document.createElement('input');
-        select.type = 'checkbox';
-        select.className = 'row-select';
-        select.checked = !!row.selected;
-        select.setAttribute('aria-label', fw.t('LBL.ROW_SELECT'));
-        select.addEventListener('change', () => {
-            row.selected = select.checked;
-        });
-        tr.insertCell().append(select);
+        if (this.selectable) {
+            const select = document.createElement('input');
+            select.type = 'checkbox';
+            select.className = 'row-select';
+            select.checked = !!row.selected;
+            select.setAttribute('aria-label', fw.t('LBL.ROW_SELECT'));
+            select.addEventListener('change', () => {
+                row.selected = select.checked;
+            });
+            tr.insertCell().append(select);
+        }
 
         const state = tr.insertCell();
         state.className = 'cell-state';
@@ -223,30 +243,51 @@ export class Grid {
 
     renderCell(col, row, tr, stateCell) {
         const value = getPath(row.data, col.field);
+        const type = resolve(col.type, row.data) ?? 'text';
+        if (type === 'button') {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = col.text;
+            button.addEventListener('click', () => col.onClick(row.data));
+            return button;
+        }
+
         if (this.isReadonly(col, row)) {
             const span = document.createElement('span');
             span.dataset.field = col.field;
-            span.textContent = col.type === 'yn' ? (value === 'Y' ? '✓' : '') : (value ?? '');
+            span.textContent = col.format ? col.format(value, row.data)
+                : type === 'yn' ? (value === 'Y' ? '✓' : '')
+                : type === 'password' ? ''
+                : (value ?? '');
             return span;
         }
 
         const input = document.createElement('input');
         input.dataset.field = col.field;
         input.setAttribute('aria-label', col.header);
-        if (col.type === 'yn') {
+        if (type === 'yn') {
             input.type = 'checkbox';
             input.checked = value === 'Y';
         } else {
-            input.type = col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text';
+            input.type = ['number', 'date', 'password'].includes(type) ? type : 'text';
             input.value = value ?? '';
+            if (type === 'password') {
+                input.autocomplete = 'new-password';
+            }
+
+            const placeholder = resolve(col.placeholder, row.data);
+            if (placeholder) {
+                input.placeholder = placeholder;
+            }
+
             if (col.maxLength) {
                 input.maxLength = col.maxLength;
             }
         }
 
         input.addEventListener('change', () => {
-            const next = col.type === 'yn' ? (input.checked ? 'Y' : 'N')
-                : col.type === 'number' ? (input.value === '' ? null : Number(input.value))
+            const next = type === 'yn' ? (input.checked ? 'Y' : 'N')
+                : type === 'number' ? (input.value === '' ? null : Number(input.value))
                 : input.value === '' ? null : input.value;
             setPath(row.data, col.field, next);
             input.removeAttribute('aria-invalid');

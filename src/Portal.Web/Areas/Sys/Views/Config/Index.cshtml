@@ -1,0 +1,50 @@
+@model ConfigIndexModel
+@{
+    var title = Menus.ProgramTitle(ConfigController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/config.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="config-screen"
+     data-url-list="@Url.Action("List")"
+     data-url-history="@Url.Action("History")"
+     data-url-save="@Url.Action("Save")">
+    <form id="config-search" class="search-bar" role="search">
+        <label for="config-category">@L["LBL.CATEGORY"]</label>
+        <select id="config-category">
+            <option value="">@L["LBL.ALL"]</option>
+            @foreach (var (code, name) in Model.Categories)
+            {
+                <option value="@code">@name</option>
+            }
+        </select>
+        <label for="config-keyword">@L["LBL.KEYWORD"]</label>
+        <input id="config-keyword" type="search" maxlength="100" autocomplete="off" />
+        <button type="submit">@L["BTN.SEARCH"]</button>
+    </form>
+    <div class="toolbar">
+        <p id="config-total" class="hint" aria-live="polite"></p>
+        <fw-button func="UPDATE" text-key="BTN.SAVE" id="config-save" class="primary" />
+    </div>
+    <p class="hint">@L["SYS.CONFIG.HINT"]</p>
+    <div id="config-grid" class="grid-wrap"></div>
+    <section id="hist-panel" aria-labelledby="hist-heading" hidden>
+        <h2 id="hist-heading">@L["LBL.HISTORY"]</h2>
+        <div class="grid-wrap">
+            <table class="fw-grid">
+                <thead>
+                    <tr>
+                        <th scope="col">@L["LBL.CHG_DT"]</th>
+                        <th scope="col">@L["LBL.UPD_ID"]</th>
+                        <th scope="col">@L["LBL.OLD_VAL"]</th>
+                        <th scope="col">@L["LBL.NEW_VAL"]</th>
+                        <th scope="col">@L["LBL.CLIENT_IP"]</th>
+                    </tr>
+                </thead>
+                <tbody id="hist-body"></tbody>
+            </table>
+        </div>
+    </section>
+</div>
