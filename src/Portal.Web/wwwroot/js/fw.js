@@ -1,11 +1,11 @@
 // 화면 공통 스크립트 (개발 표준 가이드 5장, 설계서 12장). 모든 레이아웃이 불러온다.
-// - fw.ajax: 서버 호출은 이것만 쓴다. CSRF 헤더·AJAX 표시를 붙이고, 401은 로그인 화면으로, 403은 권한 안내를 띄운다.
+// - fw.ajax: 서버 호출은 이것만 쓴다(파일 올리기는 fw.upload). CSRF 헤더·AJAX 표시를 붙이고, 401은 로그인 화면으로, 403은 권한 안내를 띄운다.
 //   응답은 { success, data, error: { code, message }, traceId } 그대로 돌려준다.
 // - fw.t: 화면 문구. 레이아웃의 <meta name="fw-i18n">이 가리키는 언어별 묶음을 읽는다(브라우저 캐시). await fw.ready 이후에 쓴다.
 // - fw.notify: 화면 아래 안내 문구 (스크린리더가 읽는 role=status).
 // - fw.dialog.confirm / alert: 확인·알림 대화상자 (네이티브 <dialog>, Esc는 취소). 브라우저 confirm()은 쓰지 않는다.
-// - fw.format.dateTime: 서버의 UTC 일시를 사용자 언어 형식·브라우저 시간대로 보여 준다.
-// - 편집 그리드는 fw-grid.js(fw.Grid)를 불러 쓴다.
+// - fw.format.dateTime: 서버의 UTC 일시를 사용자 언어 형식·브라우저 시간대로 보여 준다. fw.format.fileSize: 파일 크기.
+// - 편집 그리드는 fw-grid.js(Grid), 첨부는 fw-file.js(FileBox)를 불러 쓴다.
 
 const meta = (name) => document.querySelector(`meta[name="${name}"]`)?.content ?? '';
 const LOGIN_PATH = '/Account/Login';
@@ -106,22 +106,12 @@ const dialog = {
 
 let pending = 0;
 
-async function ajax(url, { method = 'GET', body } = {}) {
-    const headers = { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' };
-    if (method !== 'GET') {
-        headers['X-CSRF-TOKEN'] = meta('csrf-token');
-        headers['Content-Type'] = 'application/json';
-    }
-
+/** 서버 호출 공통: 로딩 표시, 401은 로그인 화면으로, 403은 권한 안내, 세션 타이머 갱신. */
+async function send(url, init) {
     pending++;
     document.documentElement.classList.add('fw-loading');
     try {
-        const response = await fetch(url, {
-            method,
-            headers,
-            body: body === undefined ? undefined : JSON.stringify(body),
-            credentials: 'same-origin',
-        });
+        const response = await fetch(url, { ...init, credentials: 'same-origin' });
 
         if (response.status === 401) {
             const back = encodeURIComponent(window.top.location.pathname + window.top.location.search);
@@ -146,6 +136,27 @@ async function ajax(url, { method = 'GET', body } = {}) {
     }
 }
 
+function ajax(url, { method = 'GET', body } = {}) {
+    const headers = { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' };
+    if (method !== 'GET') {
+        headers['X-CSRF-TOKEN'] = meta('csrf-token');
+        headers['Content-Type'] = 'application/json';
+    }
+
+    return send(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+}
+
+/** 파일 하나를 멀티파트로 올린다 (첨부 부품 fw-file.js가 쓴다). 응답 형식은 fw.ajax와 같다. */
+function upload(url, file) {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return send(url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json', 'X-CSRF-TOKEN': meta('csrf-token') },
+        body: form,
+    });
+}
+
 // data-autosubmit 셀렉트는 바꾸면 바로 제출 (언어 전환). 인라인 onchange는 CSP가 막는다.
 document.addEventListener('change', (e) => {
     if (e.target instanceof HTMLSelectElement && e.target.dataset.autosubmit === 'Y') {
@@ -157,6 +168,19 @@ document.addEventListener('change', (e) => {
 touch();
 
 const format = {
+    /** 바이트 → "1.2 MB" 같은 크기 표시. */
+    fileSize(bytes) {
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let value = Number(bytes) || 0;
+        let unit = 0;
+        while (value >= 1024 && unit < units.length - 1) {
+            value /= 1024;
+            unit++;
+        }
+
+        return `${unit === 0 ? value : value.toFixed(1)} ${units[unit]}`;
+    },
+
     /** UTC ISO 문자열 → "2026. 10. 22. 오후 3:04" 같은 사용자 언어 형식. 값이 없으면 빈 문자열. */
     dateTime(value) {
         if (!value) {
@@ -170,5 +194,5 @@ const format = {
     },
 };
 
-export const fw = { ajax, t, notify, ready, dialog, format };
+export const fw = { ajax, upload, meta, t, notify, ready, dialog, format };
 window.fw = fw;

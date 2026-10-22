@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Hosting;
@@ -122,6 +123,40 @@ public sealed class FileServiceTests
         await stream.CopyToAsync(copy, Ct);
         Assert.Equal(PdfBytes, copy.ToArray());
         Assert.Equal(70L, _sp.LastCall("FW.USP_FILE_DOWNLOAD_EXEC").Parameters["P_FILE_ID"]);
+    }
+
+    [Fact]
+    public async Task ZIP_묶음의파일을모두담고_같은이름은번호를붙이고_횟수를올린다()
+    {
+        _storage.Files["p/1"] = PdfBytes;
+        _storage.Files["p/2"] = [1, 2, 3];
+        _storage.Files["p/3"] = [4, 5];
+        var names = new Dictionary<long, (string Name, string Path)> { [1] = ("a.pdf", "p/1"), [2] = ("a.pdf", "p/2"), [3] = ("메모.txt", "p/3") };
+        _sp.Returns("FW.USP_FILE_GET", p => names.TryGetValue((long)p["P_FILE_ID"]!, out var f)
+            ? new StoredFileDto { FileId = (long)p["P_FILE_ID"]!, OrgFileNm = f.Name, StoredPath = f.Path }
+            : null);
+        var list = new FileListResult(new FileGroupDto { FileGroupId = 7 }, [.. names.Keys.Select(id => new FileItemDto { FileId = id })]);
+
+        await using var zip = await _service.OpenZipAsync(list, Ct);
+
+        using var archive = new ZipArchive(zip, ZipArchiveMode.Read);
+        Assert.Equal(["a.pdf", "a (2).pdf", "메모.txt"], archive.Entries.Select(e => e.FullName));
+        await using (var entry = archive.GetEntry("a (2).pdf")!.Open())
+        using (var copy = new MemoryStream())
+        {
+            await entry.CopyToAsync(copy, Ct);
+            Assert.Equal([1, 2, 3], copy.ToArray());
+        }
+
+        Assert.Equal(3, _sp.Calls.Count(c => c.SpName == "FW.USP_FILE_DOWNLOAD_EXEC"));
+    }
+
+    [Fact]
+    public void ZIP이름_확장자없는이름도겹치지않게()
+    {
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        Assert.Equal(["README", "readme (2)", "README (3)"], new[] { "README", "readme", "README" }.Select(n => FileService.UniqueName(n, used)));
     }
 
     [Theory]
