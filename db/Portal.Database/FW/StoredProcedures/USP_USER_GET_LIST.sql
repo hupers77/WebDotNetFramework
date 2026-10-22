@@ -1,4 +1,4 @@
--- 사용자 목록 (목록 SP 표준 템플릿). 프로그램: SYS_USER_MGT(본사 관리자), PTN_USER_MGT(협력사 관리자)
+-- 사용자 목록 (목록 SP 표준 템플릿). 프로그램: SYS_USER_MGT(본사 관리자), PTN_USER_MGT(협력사 관리자), SYS_USER_AUTH_MGT(예외 권한 대상 고르기)
 -- 보이는 사용자는 @P_PROGRAM_ID의 데이터 범위(UFN_DATA_SCOPE)로 거른다: 포털 관리자는 전체, 협력사 관리자는 자기 회사만.
 -- 검색어는 사용자 ID·이름 일부. 이메일 등 개인정보는 돌려주지 않는다(2단계 인증은 등록 여부만).
 -- 결과셋 1: 목록(회사 정렬 순서, 회사, 사용자 ID 순), 결과셋 2: 전체 건수
@@ -18,7 +18,7 @@ AS
 BEGIN
   SET NOCOUNT ON;
 
-  IF @P_PROGRAM_ID NOT IN ('SYS_USER_MGT', 'PTN_USER_MGT')
+  IF @P_PROGRAM_ID NOT IN ('SYS_USER_MGT', 'PTN_USER_MGT', 'SYS_USER_AUTH_MGT')
     THROW 50005, 'MSG.INVALID_INPUT', 1;
 
   DECLARE @DEFAULT_LANG VARCHAR(5) = (SELECT TOP (1) [LANG_CD] FROM [FW].[TB_LANG] WHERE [DEFAULT_YN] = 'Y');

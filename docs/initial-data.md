@@ -70,7 +70,7 @@ Oct 21, 2026 · @사랑나무아빠
 
 ## 4. 시스템 프로그램·메뉴 목록과 기본 권한
 
-프레임워크가 제공하는 화면은 아래 33개이고, 모두 하나의 메뉴 트리에 들어갑니다. "공개"는 메뉴의 `OPEN_SCOPE_CD`이고, "기본 권한"은 설치 시 부여되는 역할과 기능입니다(`SYS_ADMIN`은 전부 허용이므로 생략). 약어: R 조회, C 등록, U 수정, D 삭제, E 내보내기.
+프레임워크가 제공하는 화면은 아래 34개이고, 모두 하나의 메뉴 트리에 들어갑니다. "공개"는 메뉴의 `OPEN_SCOPE_CD`이고, "기본 권한"은 설치 시 부여되는 역할과 기능입니다(`SYS_ADMIN`은 전부 허용이므로 생략). 약어: R 조회, C 등록, U 수정, D 삭제, E 내보내기.
 
 | 메뉴 경로 | 프로그램 ID | 공개 | 기본 권한 |
 | --- | --- | --- | --- |
@@ -82,16 +82,17 @@ Oct 21, 2026 · @사랑나무아빠
 | 게시판 > 자료실 | `BRD_ARCHIVE` | ALL | 모든 역할: R / PORTAL\_ADMIN: C, U, D |
 | 게시판 > FAQ·문의 | `BRD_QNA` | ALL | 모든 역할: R, C / PORTAL\_ADMIN: U, D |
 | 게시판 > 사내 게시판 | `BRD_EMP_FREE` | EMP | EMP\_USER: R, C |
-| 협력사 > 협력사 사용자 관리 | `PTN_USER_MGT` | PARTNER | PARTNER\_ADMIN: R, C, U |
-| 시스템 관리 > 사용자 관리 | `SYS_USER_MGT` | EMP | PORTAL\_ADMIN: R, C, U, D, E |
+| 협력사 > 협력사 사용자 관리 | `PTN_USER_MGT` | PARTNER | PARTNER\_ADMIN: R, C, U, E |
+| 시스템 관리 > 사용자 관리 | `SYS_USER_MGT` | EMP | PORTAL\_ADMIN: R, C, U, E |
 | 시스템 관리 > 협력사 계정 승인 | `SYS_PARTNER_APPROVE` | EMP | PORTAL\_ADMIN: R, APPROVE |
 | 시스템 관리 > 회사 관리 | `SYS_COMPANY_MGT` | EMP | PORTAL\_ADMIN: R, C, U, D |
 | 시스템 관리 > 부서 관리 | `SYS_DEPT_MGT` | EMP | PORTAL\_ADMIN: R, C, U, D |
 | 시스템 관리 > 역할 관리 | `SYS_ROLE_MGT` | EMP | PORTAL\_ADMIN: R, C, U, D |
 | 시스템 관리 > 역할별 권한 | `SYS_ROLE_AUTH_MGT` | EMP | PORTAL\_ADMIN: R, U |
+| 시스템 관리 > 사용자별 예외 권한 | `SYS_USER_AUTH_MGT` | EMP | PORTAL\_ADMIN: R, U |
 | 시스템 관리 > 프로그램 관리 | `SYS_PROGRAM_MGT` | EMP | PORTAL\_ADMIN: R, C, U, D |
 | 시스템 관리 > 메뉴 관리 | `SYS_MENU_MGT` | EMP | PORTAL\_ADMIN: R, C, U, D |
-| 시스템 관리 > 공통코드 | `SYS_CODE_MGT` | EMP | PORTAL\_ADMIN: R, C, U, D, E |
+| 시스템 관리 > 공통코드 | `SYS_CODE_MGT` | EMP | PORTAL\_ADMIN: R, C, U, D, E, UPLOAD |
 | 시스템 관리 > 다국어 관리 | `SYS_LANG_MGT` | EMP | PORTAL\_ADMIN: R, C, U, D, E, UPLOAD |
 | 시스템 관리 > 설정 관리 | `SYS_CONFIG_MGT` | EMP | PORTAL\_ADMIN: R, U |
 | 시스템 관리 > 휴일·달력 | `SYS_HOLIDAY_MGT` | EMP | PORTAL\_ADMIN: R, C, U, D |

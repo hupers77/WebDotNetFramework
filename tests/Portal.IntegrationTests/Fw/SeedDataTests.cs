@@ -82,7 +82,7 @@ public sealed class SeedDataTests(DbFixture fixture)
 
     [Theory]
     [InlineData("SELECT COUNT(*) FROM FW.TB_ROLE", 7)]
-    [InlineData("SELECT COUNT(*) FROM FW.TB_PROGRAM", 33)]
+    [InlineData("SELECT COUNT(*) FROM FW.TB_PROGRAM", 34)]
     [InlineData("SELECT COUNT(*) FROM FW.TB_LANG", 3)]
     // 문구·명칭이 빠진 행: 0이어야 한다
     [InlineData("SELECT COUNT(*) FROM FW.TB_MENU M CROSS JOIN FW.TB_LANG L WHERE NOT EXISTS (SELECT 1 FROM FW.TB_MENU_LANG ML WHERE ML.MENU_ID = M.MENU_ID AND ML.LANG_CD = L.LANG_CD)", 0)]
