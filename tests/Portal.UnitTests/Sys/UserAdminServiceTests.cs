@@ -26,6 +26,17 @@ public sealed class UserAdminServiceTests
     }
 
     [Fact]
+    public async Task 저장_부서는다듬고_비우면NULL()
+    {
+        await Service.SaveAsync("SYS_USER_MGT", new UserSaveRequest { UserId = "u1", RowVer = [0, 0, 0, 0, 0, 0, 0, 1], UserNm = "a", DeptId = " D000001 " });
+        var dept = _sp.LastCall(UserAdminService.SaveSp).Parameters["P_DEPT_ID"];
+        await Service.SaveAsync("SYS_USER_MGT", new UserSaveRequest { UserId = "u1", RowVer = [0, 0, 0, 0, 0, 0, 0, 1], UserNm = "a", DeptId = "  " });
+
+        Assert.Equal("D000001", dept);
+        Assert.Null(_sp.LastCall(UserAdminService.SaveSp).Parameters["P_DEPT_ID"]);
+    }
+
+    [Fact]
     public async Task 저장_역할을모두빼면_빈배열()
     {
         await Service.SaveAsync("SYS_USER_MGT", Request());

@@ -7,7 +7,7 @@ using Portal.Web.Areas.Sys.Models;
 
 namespace Portal.Web.Areas.Sys.Services;
 
-/// <summary>사용자 관리 (본사 <c>SYS_USER_MGT</c>, 협력사 관리자 <c>PTN_USER_MGT</c>). 목록, 이름·상태·사용 기한·직접 부여 역할 저장, 잠금 해제, 2단계 인증 초기화.</summary>
+/// <summary>사용자 관리 (본사 <c>SYS_USER_MGT</c>, 협력사 관리자 <c>PTN_USER_MGT</c>). 목록, 부서 지정, 이름·상태·사용 기한·직접 부여 역할 저장, 잠금 해제, 2단계 인증 초기화.</summary>
 /// <remarks>본사 사용자는 3단계 AD 동기화로, 협력사 사용자는 가입 승인으로 만들어지므로 여기서는 새로 만들거나 지우지 않는다(퇴사·계약 종료는 상태로).
 /// 모든 메서드는 부른 화면의 프로그램 ID를 SP에 넘기고, SP가 그 프로그램의 데이터 범위(협력사 관리자는 자기 회사)로 대상을 제한한다.</remarks>
 public interface IUserAdminService
@@ -18,7 +18,10 @@ public interface IUserAdminService
     /// <summary>사용자 한 명의 역할 선택지.</summary>
     Task<IReadOnlyList<UserRoleDto>> GetRolesAsync(string programId, string userId, CancellationToken cancellationToken = default);
 
-    /// <summary>이름·상태·사용 기한·역할 저장.</summary>
+    /// <summary>사용자 한 명에게 지정할 수 있는 부서 (같은 회사, 트리 순서).</summary>
+    Task<IReadOnlyList<UserDeptDto>> GetDeptsAsync(string programId, string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>이름·상태·사용 기한·부서·역할 저장.</summary>
     Task SaveAsync(string programId, UserSaveRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>잠금 해제 또는 2단계 인증 초기화. 바꾼 것이 없으면 false.</summary>
@@ -38,6 +41,7 @@ public sealed class UserAdminService(ISpExecutor sp) : IUserAdminService
     internal const string RoleListSp = "FW.USP_USER_ROLE_GET_LIST";
     internal const string SaveSp = "FW.USP_USER_SAVE";
     internal const string ResetSp = "FW.USP_USER_ACCOUNT_RESET_EXEC";
+    internal const string DeptListSp = "FW.USP_USER_DEPT_GET_LIST";
 
     private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
@@ -63,6 +67,10 @@ public sealed class UserAdminService(ISpExecutor sp) : IUserAdminService
         sp.QueryAsync<UserRoleDto>(RoleListSp, new { P_PROGRAM_ID = programId, P_TARGET_USER_ID = userId }, cancellationToken);
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<UserDeptDto>> GetDeptsAsync(string programId, string userId, CancellationToken cancellationToken = default) =>
+        sp.QueryAsync<UserDeptDto>(DeptListSp, new { P_PROGRAM_ID = programId, P_TARGET_USER_ID = userId }, cancellationToken);
+
+    /// <inheritdoc />
     public async Task SaveAsync(string programId, UserSaveRequest request, CancellationToken cancellationToken = default)
     {
         var roles = request.RoleIds.Select(r => r?.Trim() ?? "").Distinct(StringComparer.Ordinal).ToList();
@@ -81,6 +89,7 @@ public sealed class UserAdminService(ISpExecutor sp) : IUserAdminService
                 P_USER_NM = request.UserNm.Trim(),
                 P_USER_STAT_CD = request.UserStatCd,
                 P_ACCOUNT_END_DT = request.AccountEndDt,
+                P_DEPT_ID = Blank(request.DeptId),
                 P_ROLE_IDS = JsonSerializer.Serialize(roles),
             },
             cancellationToken);

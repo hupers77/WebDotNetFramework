@@ -1,0 +1,54 @@
+-- 사용자 한 명에게 지정할 수 있는 부서 (사용자 관리 화면의 부서 선택지). 프로그램: SYS_USER_MGT, PTN_USER_MGT
+-- 대상 사용자와 같은 회사의 사용 중인 부서를 트리 순서(상위 바로 아래 하위)로 돌려주고, 지금 부서가 사용 안 함이면 그것도 넣는다.
+-- 대상 사용자가 @P_PROGRAM_ID의 데이터 범위(UFN_DATA_SCOPE) 밖이면 없는 것으로 본다.
+-- 결과: DEPT_ID, PARENT_DEPT_ID, DEPT_NM, USE_YN, DEPTH(0부터)
+CREATE PROCEDURE [FW].[USP_USER_DEPT_GET_LIST]
+  @P_PROGRAM_ID     VARCHAR(30),
+  @P_TARGET_USER_ID VARCHAR(30),
+  @P_USER_ID        VARCHAR(30),
+  @P_LANG_CD        VARCHAR(5),
+  @P_CLIENT_IP      VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  IF @P_PROGRAM_ID NOT IN ('SYS_USER_MGT', 'PTN_USER_MGT')
+    THROW 50005, 'MSG.INVALID_INPUT', 1;
+
+  DECLARE @COMPANY_CD VARCHAR(10), @CUR_DEPT VARCHAR(20);
+  SELECT @COMPANY_CD = U.[COMPANY_CD], @CUR_DEPT = U.[DEPT_ID]
+    FROM [FW].[TB_USER] U
+   WHERE U.[USER_ID] = @P_TARGET_USER_ID
+     AND EXISTS (SELECT 1 FROM [FW].[UFN_DATA_SCOPE](@P_USER_ID, @P_PROGRAM_ID) S
+                  WHERE S.[COMPANY_CD] = U.[COMPANY_CD] AND (S.[DEPT_ID] IS NULL OR S.[DEPT_ID] = U.[DEPT_ID])
+                    AND (S.[USER_ID] IS NULL OR S.[USER_ID] = U.[USER_ID]));
+  IF @COMPANY_CD IS NULL
+    THROW 50004, 'MSG.NOT_FOUND', 1;
+
+  -- 정렬 경로: 단계마다 정렬 순서(5자리)와 부서 ID를 이어 붙여 트리 순서를 만든다
+  WITH [T] AS (
+    SELECT D.[DEPT_ID], D.[PARENT_DEPT_ID], D.[DEPT_NM], D.[USE_YN], 0 AS [DEPTH],
+           CAST(RIGHT('00000' + CAST(D.[SORT_NO] AS VARCHAR(10)), 5) + D.[DEPT_ID] AS VARCHAR(900)) AS [PATH]
+      FROM [FW].[TB_DEPT] D
+     WHERE D.[COMPANY_CD] = @COMPANY_CD AND D.[PARENT_DEPT_ID] IS NULL
+       AND (D.[USE_YN] = 'Y' OR D.[DEPT_ID] = @CUR_DEPT)
+    UNION ALL
+    SELECT C.[DEPT_ID], C.[PARENT_DEPT_ID], C.[DEPT_NM], C.[USE_YN], T.[DEPTH] + 1,
+           CAST(T.[PATH] + '/' + RIGHT('00000' + CAST(C.[SORT_NO] AS VARCHAR(10)), 5) + C.[DEPT_ID] AS VARCHAR(900))
+      FROM [T] T
+      JOIN [FW].[TB_DEPT] C ON C.[PARENT_DEPT_ID] = T.[DEPT_ID]
+     WHERE (C.[USE_YN] = 'Y' OR C.[DEPT_ID] = @CUR_DEPT) AND T.[DEPTH] < 20
+  )
+  SELECT X.[DEPT_ID], X.[PARENT_DEPT_ID], X.[DEPT_NM], X.[USE_YN], X.[DEPTH]
+    FROM (
+      SELECT [DEPT_ID], [PARENT_DEPT_ID], [DEPT_NM], [USE_YN], [DEPTH], 0 AS [TAIL], [PATH] FROM [T]
+      UNION ALL
+      -- 지금 부서가 사용 안 함 부서 아래에 있어 트리에 안 잡히면 맨 끝에 따로 넣는다
+      SELECT D.[DEPT_ID], D.[PARENT_DEPT_ID], D.[DEPT_NM], D.[USE_YN], 0, 1, CAST(D.[DEPT_ID] AS VARCHAR(900))
+        FROM [FW].[TB_DEPT] D
+       WHERE D.[DEPT_ID] = @CUR_DEPT
+         AND NOT EXISTS (SELECT 1 FROM [T] WHERE [T].[DEPT_ID] = D.[DEPT_ID])
+    ) X
+   ORDER BY X.[TAIL], X.[PATH]
+   OPTION (MAXRECURSION 30);
+END

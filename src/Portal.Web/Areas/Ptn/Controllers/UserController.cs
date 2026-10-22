@@ -41,7 +41,14 @@ public sealed class UserController(IUserAdminService users, ICodeAdminService co
         CancellationToken cancellationToken) =>
         Ok(await users.GetRolesAsync(ProgramId, userId, cancellationToken));
 
-    /// <summary>이름·상태·사용 기한·역할 저장.</summary>
+    /// <summary>사용자 한 명에게 지정할 수 있는 부서.</summary>
+    [HttpGet]
+    public async Task<ApiResult<IReadOnlyList<UserDeptDto>>> Depts(
+        [Required(ErrorMessage = "MSG.INVALID_INPUT"), StringLength(30, ErrorMessage = "MSG.INVALID_INPUT")] string userId,
+        CancellationToken cancellationToken) =>
+        Ok(await users.GetDeptsAsync(ProgramId, userId, cancellationToken));
+
+    /// <summary>이름·상태·사용 기한·부서·역할 저장.</summary>
     [HttpPost, Func(FuncCodes.Update)]
     public async Task<ApiResult> Save([FromBody] UserSaveRequest request, CancellationToken cancellationToken)
     {

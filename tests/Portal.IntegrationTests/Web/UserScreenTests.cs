@@ -28,6 +28,7 @@ public sealed class UserScreenTests : IClassFixture<PortalWebFactory>
         });
         web.Sp.Returns(UserAdminService.RoleListSp, new List<UserRoleDto> { new() { RoleId = "PARTNER_USER", RoleNm = "협력사 사용자", AssignedYn = "Y", EffectiveYn = "Y", AssignableYn = "Y" } });
         web.Sp.Returns(UserAdminService.ResetSp, new SaveResult(1, null));
+        web.Sp.Returns(UserAdminService.DeptListSp, new List<UserDeptDto> { new() { DeptId = "D000003", DeptNm = "구매팀" } });
         web.Sp.Returns(CompanyAdminService.ListSp, new PageResult<CompanyDto> { Items = [new() { CompanyCd = "P0001", CompanyNm = "협력사1" }], TotalCount = 1, PageNo = 1, PageSize = 500 });
         web.Sp.Returns("FW.USP_CODE_GET_LIST", new PageResult<CodeDto> { Items = [new() { Code = "ACTIVE", CodeNm = "사용" }], TotalCount = 1, PageNo = 1, PageSize = 500 });
         web.Sp.Returns("FW.USP_CODE_LANG_GET_LIST", new List<CodeAdminService.NameRow>());
@@ -51,7 +52,7 @@ public sealed class UserScreenTests : IClassFixture<PortalWebFactory>
     }
 
     private static object Save(params string[] roles) =>
-        new { userId = "kim.ptn", rowVer = RowVer, userNm = "김협력", userStatCd = "ACTIVE", accountEndDt = "2030-12-31", roleIds = roles };
+        new { userId = "kim.ptn", rowVer = RowVer, userNm = "김협력", userStatCd = "ACTIVE", accountEndDt = "2030-12-31", deptId = " D000003 ", roleIds = roles };
 
     [Fact]
     public async Task 화면_수정권한이있을때만_저장잠금해제초기화버튼()
@@ -103,6 +104,7 @@ public sealed class UserScreenTests : IClassFixture<PortalWebFactory>
         Assert.Equal("""["PARTNER_USER","PARTNER_ADMIN"]""", p["P_ROLE_IDS"]);
         Assert.Equal(new DateOnly(2030, 12, 31), p["P_ACCOUNT_END_DT"]);
         Assert.Equal("kim.ptn", p["P_TARGET_USER_ID"]);
+        Assert.Equal("D000003", p["P_DEPT_ID"]);
     }
 
     [Fact]
@@ -158,5 +160,21 @@ public sealed class UserScreenTests : IClassFixture<PortalWebFactory>
 
         Assert.Equal(HttpStatusCode.Forbidden, (await _web.NewClient(sys).GetAsync("/Ptn/User?_layout=tab", Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await _web.NewClient(ptn).SendAsync(Ajax(HttpMethod.Get, "/Sys/User/List"), Ct)).StatusCode);
+    }
+
+    [Fact]
+    public async Task 부서선택지_화면프로그램ID와대상사용자를넘기고_조회권한이필요하다()
+    {
+        var sys = _web.SignIn("usr.depts", AllFuncs);
+        var ptn = _web.SignIn("ptn.depts", [Home, "PTN_USER_MGT:READ"]);
+
+        var json = await JsonAsync(await _web.NewClient(sys).SendAsync(Ajax(HttpMethod.Get, "/Sys/User/Depts?userId=kim.ptn"), Ct));
+        var sysCall = _web.Sp.LastCall(UserAdminService.DeptListSp).Parameters;
+        await _web.NewClient(ptn).SendAsync(Ajax(HttpMethod.Get, "/Ptn/User/Depts?userId=kim.ptn"), Ct);
+
+        Assert.Equal("D000003", json.GetProperty("data")[0].GetProperty("deptId").GetString());
+        Assert.Equal(("SYS_USER_MGT", "kim.ptn"), ((string?)sysCall["P_PROGRAM_ID"], (string?)sysCall["P_TARGET_USER_ID"]));
+        Assert.Equal("PTN_USER_MGT", _web.Sp.LastCall(UserAdminService.DeptListSp).Parameters["P_PROGRAM_ID"]);
+        Assert.Equal(HttpStatusCode.Forbidden, (await _web.NewClient(ptn).SendAsync(Ajax(HttpMethod.Get, "/Sys/User/Depts?userId=kim.ptn"), Ct)).StatusCode);
     }
 }
