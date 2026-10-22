@@ -13,6 +13,7 @@ builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.ICodeAdminService, Port
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IConfigAdminService, Portal.Web.Areas.Sys.Services.ConfigAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IPartnerApproveService, Portal.Web.Areas.Sys.Services.PartnerApproveService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IJobAdminService, Portal.Web.Areas.Sys.Services.JobAdminService>();
+builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.ICompanyAdminService, Portal.Web.Areas.Sys.Services.CompanyAdminService>();
 
 var app = builder.Build();
 

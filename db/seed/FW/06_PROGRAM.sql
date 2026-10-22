@@ -347,7 +347,12 @@ USING (VALUES
   (N'GET', N'/My/Notification/List', N'MY_NOTIFICATION', N'READ'),
   (N'GET', N'/My/Notification/Unread', N'MY_NOTIFICATION', N'READ'),
   (N'POST', N'/My/Notification/Read', N'MY_NOTIFICATION', N'READ'),
-  (N'POST', N'/My/Notification/Delete', N'MY_NOTIFICATION', N'DELETE')
+  (N'POST', N'/My/Notification/Delete', N'MY_NOTIFICATION', N'DELETE'),
+  (N'GET', N'/Sys/Company', N'SYS_COMPANY_MGT', N'READ'),
+  (N'GET', N'/Sys/Company/List', N'SYS_COMPANY_MGT', N'READ'),
+  (N'POST', N'/Sys/Company/Create', N'SYS_COMPANY_MGT', N'CREATE'),
+  (N'POST', N'/Sys/Company/Save', N'SYS_COMPANY_MGT', N'UPDATE'),
+  (N'POST', N'/Sys/Company/Delete', N'SYS_COMPANY_MGT', N'DELETE')
 ) AS S ([HTTP_METHOD], [ROUTE_PATTERN], [PROGRAM_ID], [FUNC_CD])
    ON T.[HTTP_METHOD] = S.[HTTP_METHOD] AND T.[ROUTE_PATTERN] = S.[ROUTE_PATTERN]
 WHEN MATCHED THEN UPDATE SET T.[PROGRAM_ID] = S.[PROGRAM_ID], T.[FUNC_CD] = S.[FUNC_CD]
