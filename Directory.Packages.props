@@ -12,6 +12,7 @@
     <!-- 런타임 (Microsoft, MIT) -->
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.1" />
     <PackageVersion Include="DocumentFormat.OpenXml" Version="3.5.1" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.13" />
   </ItemGroup>
   <ItemGroup>
     <!-- 런타임 (OSS, MIT). QRCoder는 1.7부터 net6+에 System.Drawing.Common이 따라오므로 의존성 없는 1.6에 둔다 -->

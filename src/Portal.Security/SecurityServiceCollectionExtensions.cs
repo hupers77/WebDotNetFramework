@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Portal.Core.Security;
 using Portal.Security.Authentication;
 using Portal.Security.Authorization;
 using Portal.Security.Mfa;
@@ -31,6 +33,26 @@ public static class SecurityServiceCollectionExtensions
         services.TryAddScoped<PartnerJoinService>();
         services.TryAddSingleton<IMfaSecretProtector, DataProtectionMfaSecretProtector>();
         services.TryAddSingleton<MfaTicketProtector>();
+        return services;
+    }
+
+    /// <summary>
+    /// Data Protection 키 위치를 정한다(CSRF 토큰·설정 비밀값·개인정보·2단계 인증 비밀키 암호화). 웹과 Portal.Worker가 같은 값을 써야
+    /// 서로 암호화한 값을 풀 수 있다: 애플리케이션 이름 <c>Portal</c>과 같은 키 폴더(<c>Portal:DataProtection:KeyPath</c>).
+    /// 운영은 백업되는 로컬 폴더에 두고 Windows DPAPI(컴퓨터 단위)로 보호한다(설계서 3장·16장). 경로를 비우면 .NET 기본 위치(사용자 프로필)를 쓴다(개발 PC).
+    /// </summary>
+    public static IServiceCollection AddPortalDataProtection(this IServiceCollection services, IConfiguration configuration)
+    {
+        var dataProtection = services.AddDataProtection().SetApplicationName("Portal");
+        if (configuration["Portal:DataProtection:KeyPath"] is { Length: > 0 } keyPath)
+        {
+            dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keyPath));
+            if (OperatingSystem.IsWindows())
+            {
+                dataProtection.ProtectKeysWithDpapi(protectToLocalMachine: true);
+            }
+        }
+
         return services;
     }
 }

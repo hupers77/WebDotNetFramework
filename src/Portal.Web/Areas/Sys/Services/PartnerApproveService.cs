@@ -1,3 +1,4 @@
+using Portal.Core.Security;
 using System.Security.Cryptography;
 using Portal.Core.Results;
 using Portal.Data;

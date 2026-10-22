@@ -1,3 +1,4 @@
+using Portal.Core.Security;
 using System.Globalization;
 using System.Text.Json;
 using Portal.Core.Errors;
@@ -5,7 +6,6 @@ using Portal.Core.Keys;
 using Portal.Core.Results;
 using Portal.Data;
 using Portal.Framework.Web.Mvc;
-using Portal.Security.Secrets;
 using Portal.Web.Areas.Sys.Models;
 
 namespace Portal.Web.Areas.Sys.Services;

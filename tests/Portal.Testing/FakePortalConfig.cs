@@ -25,6 +25,9 @@ public sealed class FakePortalConfig : IPortalConfig
         ["FILE.MAX_COUNT"] = "10",
         ["AUTH.PARTNER_MFA"] = "Y",
         ["AUTH.ADMIN_MFA"] = "Y",
+        ["MAIL.ENABLED"] = "N",
+        ["MAIL.SMTP_PORT"] = "587",
+        ["MAIL.SMTP_SSL"] = "Y",
     };
 
     /// <summary>값을 바꾼다.</summary>

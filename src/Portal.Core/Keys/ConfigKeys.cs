@@ -72,6 +72,9 @@ public static class ConfigKeys
     /// <summary>브랜드 색상.</summary>
     public const string SiteThemeColor = "SITE.THEME_COLOR";
 
+    /// <summary>포털 주소 (메일 본문의 링크, 예: https://portal.example.com).</summary>
+    public const string SiteBaseUrl = "SITE.BASE_URL";
+
     /// <summary>메일 실제 발송 여부.</summary>
     public const string MailEnabled = "MAIL.ENABLED";
 
@@ -80,6 +83,12 @@ public static class ConfigKeys
 
     /// <summary>SMTP 포트.</summary>
     public const string MailSmtpPort = "MAIL.SMTP_PORT";
+
+    /// <summary>SMTP 계정. 비어 있으면 인증 없이 보낸다(사내 릴레이).</summary>
+    public const string MailSmtpUser = "MAIL.SMTP_USER";
+
+    /// <summary>SMTP 암호화(STARTTLS) 사용.</summary>
+    public const string MailSmtpSsl = "MAIL.SMTP_SSL";
 
     /// <summary>SMTP 계정 비밀번호(SECRET).</summary>
     public const string MailSmtpPassword = "MAIL.SMTP_PASSWORD";
