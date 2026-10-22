@@ -1,0 +1,11 @@
+-- 프로그램별 공개 대상 (그 프로그램을 연 메뉴의 OPEN_SCOPE_CD). 메뉴가 없거나 메뉴마다 다르면 ALL.
+-- 역할별 권한에서 회사 유형이 정해진 역할에 줄 수 있는 프로그램을 가른다 (본사 역할 → ALL/EMP, 협력사 역할 → ALL/PARTNER).
+CREATE FUNCTION [FW].[UFN_PROGRAM_SCOPE] ()
+RETURNS TABLE
+AS
+RETURN
+  SELECT P.[PROGRAM_ID],
+         CASE WHEN COUNT(M.[MENU_ID]) > 0 AND MIN(M.[OPEN_SCOPE_CD]) = MAX(M.[OPEN_SCOPE_CD]) THEN MIN(M.[OPEN_SCOPE_CD]) ELSE 'ALL' END AS [OPEN_SCOPE_CD]
+    FROM [FW].[TB_PROGRAM] P
+    LEFT JOIN [FW].[TB_MENU] M ON M.[PROGRAM_ID] = P.[PROGRAM_ID] AND M.[USE_YN] = 'Y'
+   GROUP BY P.[PROGRAM_ID];
