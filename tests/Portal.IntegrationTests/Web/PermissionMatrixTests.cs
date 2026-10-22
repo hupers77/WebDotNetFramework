@@ -147,6 +147,37 @@ public sealed class PermissionMatrixTests(DbFixture fixture, PortalWebFactory we
         Assert.True(mismatches.Count == 0, string.Join(Environment.NewLine, mismatches));
     }
 
+    /// <summary>
+    /// 메뉴 공개 대상(<c>OPEN_SCOPE_CD</c>)은 메뉴 표시만 정하고 보안 검사는 세션과 권한으로만 하므로,
+    /// 협력사 역할의 권한 설정 자체가 공개 대상과 맞아야 한다: 본사 전용 화면 권한은 없고, 함께 보는 화면(ALL)은 조회할 수 있다.
+    /// </summary>
+    [Fact]
+    public async Task 협력사역할_본사전용화면권한없음_공용화면은조회가능()
+    {
+        await using var db = await fixture.BeginAsync();
+
+        var empOnly = await db.ColumnAsync<string>(
+            """
+            SELECT CONCAT(F.ROLE_ID, ' ', F.PROGRAM_ID, ':', F.FUNC_CD)
+              FROM FW.TB_ROLE_PROGRAM_FUNC F
+             WHERE F.ROLE_ID LIKE 'PARTNER[_]%'
+               AND EXISTS (SELECT 1 FROM FW.TB_MENU M WHERE M.PROGRAM_ID = F.PROGRAM_ID)
+               AND NOT EXISTS (SELECT 1 FROM FW.TB_MENU M WHERE M.PROGRAM_ID = F.PROGRAM_ID AND M.OPEN_SCOPE_CD <> 'EMP')
+            """);
+        var sharedWithoutRead = await db.ColumnAsync<string>(
+            """
+            SELECT CONCAT(R.ROLE_ID, ' ', M.PROGRAM_ID)
+              FROM FW.TB_MENU M
+             CROSS JOIN FW.TB_ROLE R
+             WHERE M.OPEN_SCOPE_CD = 'ALL' AND M.PROGRAM_ID IS NOT NULL AND M.USE_YN = 'Y'
+               AND R.ROLE_ID LIKE 'PARTNER[_]%' AND R.USE_YN = 'Y'
+               AND NOT EXISTS (SELECT 1 FROM FW.TB_ROLE_PROGRAM_FUNC F WHERE F.ROLE_ID = R.ROLE_ID AND F.PROGRAM_ID = M.PROGRAM_ID AND F.FUNC_CD = 'READ')
+            """);
+
+        Assert.Empty(empOnly);
+        Assert.Empty(sharedWithoutRead);
+    }
+
     [Fact]
     public async Task 경로마다_등록된기능이없으면403_같은프로그램의다른기능으로는열리지않는다()
     {
