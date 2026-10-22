@@ -68,6 +68,9 @@ public sealed class PortalWebFactory : WebApplicationFactory<Program>
 
     public FakeSpExecutor Sp { get; } = new();
 
+    /// <summary>첨부 저장소 (메모리).</summary>
+    public MemoryFileStorage Files { get; } = new();
+
     public FakePortalConfig Config { get; } = new FakePortalConfig().Set("AUTH.LOGIN_RATE_PER_MIN", "1000");
 
     /// <summary>화면에 쓰는 몇 개 문구 (나머지는 키가 그대로 보인다).</summary>
@@ -147,6 +150,8 @@ public sealed class PortalWebFactory : WebApplicationFactory<Program>
             services.AddSingleton<ISpExecutor>(Sp);
             services.RemoveAll<IPortalConfig>();
             services.AddSingleton<IPortalConfig>(Config);
+            services.RemoveAll<Portal.Infrastructure.Files.IFileStorage>();
+            services.AddSingleton<Portal.Infrastructure.Files.IFileStorage>(Files);
             services.RemoveAll<IHostedService>();
             services.AddHostedService<Portal.Infrastructure.Caching.CacheVersionMonitor>();
             services.AddControllersWithViews().AddApplicationPart(typeof(PortalWebFactory).Assembly);

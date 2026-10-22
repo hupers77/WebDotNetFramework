@@ -125,6 +125,14 @@ Controller에는 업무 로직을 두지 않습니다. 사용자 ID·언어·IP�
 
 **프레임워크 시스템 화면**(공통코드, 설정 관리 등)은 업무 모듈과 같은 구조로 `src/Portal.Web/Areas/Sys/`(Controllers, Services, Models, Views)와 `wwwroot/js/sys/`에 둡니다.
 
+**첨부 파일**: 화면은 첨부를 직접 받지 않고 공통 API(`/File/Upload`, `/File/List`, `/File/Download/{id}`, `/File/Delete`)를 씁니다. 업무 테이블에는 `FILE_GROUP_ID BIGINT NULL` 컬럼 하나만 두고, 순서는 다음과 같습니다.
+
+1. 화면이 `/File/Upload?programId=PUR_VENDOR_MGT`로 파일을 하나씩 올립니다. 처음 올리면 임시 묶음이 생기고 응답의 `fileGroupId`를 다음 업로드와 저장 요청에 함께 보냅니다.
+2. 업무 저장 SP가 업무 행에 `FILE_GROUP_ID`를 저장하고, 같은 트랜잭션에서 `EXEC [FW].[USP_FILE_GROUP_CONFIRM_EXEC] @P_FILE_GROUP_ID, @P_PROGRAM_ID = 'PUR_VENDOR_MGT', @P_SHARE_YN = NULL, @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD`를 부릅니다. 확정하지 않은 묶음은 정리 작업이 지웁니다.
+3. 권한은 묶음의 프로그램으로 확인합니다. 목록·다운로드는 `READ`, 업로드·삭제는 `CREATE` 또는 `UPDATE`가 필요합니다. 협력사 사용자는 자기 회사 묶음만 보고, 본사가 협력사에게 보여 줄 첨부(공지 등)는 확정할 때 `@P_SHARE_YN = 'Y'`를 넘깁니다.
+
+허용 확장자는 공통코드 `FILE_EXT`, 크기·개수는 설정 `FILE.MAX_SIZE_MB`·`FILE.MAX_COUNT`가 정합니다. 실행·스크립트 형식(exe, js, html, svg 등)은 코드에 추가해도 `FileService`가 막고, 내용이 확장자와 맞는지(매직 넘버)도 확인합니다. 저장소 폴더는 `appsettings.json`의 `Portal:File:StorageRoot`(웹 루트 밖, 실행 권한 없음, 백업 대상)이고, 파일 이름은 GUID라 원래 이름은 DB에만 있습니다. IIS는 요청 본문 한도가 따로 있으므로 `FILE.MAX_SIZE_MB`를 30MB보다 크게 올리면 `web.config`의 `requestLimits maxAllowedContentLength`도 함께 올립니다.
+
 ## 4. C# 코딩 규칙
 
 Microsoft .NET 기본 명명 규칙을 따르고, 여기서 정한 규칙은 `.editorconfig`와 분석기가 빌드에서 강제합니다. 빌드 경고는 오류로 취급하므로 경고를 남긴 채 병합할 수 없습니다.
@@ -342,7 +350,7 @@ MR을 올릴 때 아래 체크리스트를 MR 본문에 붙이고 해당 항목�
 | 메뉴 위치·이름 변경, 메뉴 숨기기 | 시스템 관리 > 메뉴 관리 | 없음 |
 | 특정 역할에 버튼 권한 부여 | 시스템 관리 > 역할별 권한 | 없음 |
 | 협력사 추가, 협력사 관리자 지정 | 시스템 관리 > 회사 관리 / 사용자 관리 | 없음 |
-| 공통코드 값 추가·숬기기 | 시스템 관리 > 공통코드 (삭제 대신 사용 안 함) | 없음 |
+| 공통코드 값 추가·숨기기 | 시스템 관리 > 공통코드 (삭제 대신 사용 안 함) | 없음 |
 | 화면 문구·번역 수정 | 시스템 관리 > 다국어 관리 | 없음 |
 | 정책값 변경 (세션 시간, 비밀번호 규칙, 업로드 크기 등) | 시스템 관리 > 설정 관리 (`RESTART_YN = 'Y'` 항목은 앱 풀 재시작 필요) | 없음 |
 | 게시판 추가 | 게시판 관리에서 생성 후 메뉴에 연결 | 없음 |
@@ -355,4 +363,4 @@ MR을 올릴 때 아래 체크리스트를 MR 본문에 붙이고 해당 항목�
 | 비밀값 설정 (SMTP·AD 계정 비밀번호 등) | 설정 관리에서 새 값을 입력하면 Data Protection(`ISecretProtector`)으로 암호화해 저장합니다. 화면·이력·감사 로그에는 값이 남지 않고, 키 폴더(`Portal:DataProtection:KeyPath`)를 잃으면 다시 입력해야 합니다 | 없음 |
 | 화면 변경이 반영 안 됨 | 운영 모니터링 > 캐시 강제 갱신. 자주 발생하면 해당 SP의 `TB_CACHE_VERSION` 누락 확인 | 경우에 따라 |
 
-관리 화면에서 바꾼 값은 설정 이력·감사 로그에 남으므로 누가 언제 바꿈는지 나중에 확인할 수 있습니다.
+관리 화면에서 바꾼 값은 설정 이력·감사 로그에 남으므로 누가 언제 바꿨는지 나중에 확인할 수 있습니다.

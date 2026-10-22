@@ -51,7 +51,7 @@ public static class ConfigKeys
     /// <summary>파일 1개 최대 크기(MB).</summary>
     public const string FileMaxSizeMb = "FILE.MAX_SIZE_MB";
 
-    /// <summary>한 번에 첨부 가능한 수.</summary>
+    /// <summary>첨부 묶음 하나의 최대 파일 수.</summary>
     public const string FileMaxCount = "FILE.MAX_COUNT";
 
     /// <summary>멀티 탭 사용.</summary>

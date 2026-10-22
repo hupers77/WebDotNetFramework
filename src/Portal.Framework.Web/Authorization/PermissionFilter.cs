@@ -16,6 +16,7 @@ namespace Portal.Framework.Web.Authorization;
 /// <item>로그인 전: 401 또는 로그인 화면.</item>
 /// <item>비밀번호 변경 필요: 비밀번호 변경 화면과 <c>[AuthenticatedOnly]</c> 외에는 변경 화면으로 보낸다.</item>
 /// <item><c>[AuthenticatedOnly]</c>: 로그인만 확인한다.</item>
+/// <item><c>[ProgramFromData]</c>: 비밀번호 변경 강제까지 확인하고, 프로그램 권한은 Action이 확인한다.</item>
 /// <item>프로그램이 없거나 권한이 없으면 403 (기본 거부).</item>
 /// </list>
 /// </summary>
@@ -52,7 +53,7 @@ public sealed class PermissionFilter(CurrentPermissions permissions) : IAsyncAut
             return;
         }
 
-        if (metadata.OfType<AuthenticatedOnlyAttribute>().Any())
+        if (metadata.OfType<AuthenticatedOnlyAttribute>().Any() || metadata.OfType<ProgramFromDataAttribute>().Any())
         {
             return;
         }

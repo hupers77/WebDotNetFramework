@@ -1,0 +1,29 @@
+-- 첨부 파일 메타. 파일 내용은 웹 루트 밖 저장소에 GUID 이름으로 두고(STORED_PATH), 원래 이름은 표시·다운로드에만 쓴다.
+-- 삭제는 표시만 한다(DEL_YN). 저장소의 파일은 정리 작업이 지운다.
+CREATE TABLE [FW].[TB_FILE] (
+
+  [FILE_ID]        BIGINT         IDENTITY(1,1) NOT NULL,
+  [FILE_GROUP_ID]  BIGINT         NOT NULL,
+  [ORG_FILE_NM]    NVARCHAR(200)  NOT NULL,
+  [FILE_EXT]       VARCHAR(10)    NOT NULL,                                                          -- 소문자, 점 없이 (FILE_EXT 공통코드)
+  [FILE_SIZE]      BIGINT         NOT NULL,
+  [STORED_PATH]    VARCHAR(100)   NOT NULL,                                                          -- 저장소 기준 상대 경로 yyyy/MM/<guid>
+  [CONTENT_HASH]   CHAR(64)       NOT NULL,                                                          -- SHA-256 (무결성 확인)
+  [SORT_NO]        INT            NOT NULL CONSTRAINT [DF_TB_FILE_SORT_NO] DEFAULT (0),
+  [DOWN_CNT]       INT            NOT NULL CONSTRAINT [DF_TB_FILE_DOWN_CNT] DEFAULT (0),
+  [DEL_YN]         CHAR(1)        NOT NULL CONSTRAINT [DF_TB_FILE_DEL_YN] DEFAULT ('N'),
+  [REG_ID]         VARCHAR(30)    NOT NULL CONSTRAINT [DF_TB_FILE_REG_ID] DEFAULT ('SYSTEM'),
+  [REG_DT]         DATETIME2(0)   NOT NULL CONSTRAINT [DF_TB_FILE_REG_DT] DEFAULT (SYSUTCDATETIME()),
+  [UPD_ID]         VARCHAR(30)    NOT NULL CONSTRAINT [DF_TB_FILE_UPD_ID] DEFAULT ('SYSTEM'),
+  [UPD_DT]         DATETIME2(0)   NOT NULL CONSTRAINT [DF_TB_FILE_UPD_DT] DEFAULT (SYSUTCDATETIME()),
+  [ROW_VER]        ROWVERSION     NOT NULL,
+  CONSTRAINT [PK_TB_FILE] PRIMARY KEY CLUSTERED ([FILE_ID]),
+  CONSTRAINT [CK_TB_FILE_DEL_YN] CHECK ([DEL_YN] IN ('Y', 'N')),
+  CONSTRAINT [CK_TB_FILE_FILE_SIZE] CHECK ([FILE_SIZE] > 0)
+);
+GO
+CREATE INDEX [IX_TB_FILE_GROUP] ON [FW].[TB_FILE] ([FILE_GROUP_ID], [DEL_YN]);
+GO
+CREATE UNIQUE INDEX [UX_TB_FILE_STORED_PATH] ON [FW].[TB_FILE] ([STORED_PATH]);
+GO
+ALTER TABLE [FW].[TB_FILE] ADD CONSTRAINT [FK_TB_FILE_TB_FILE_GROUP] FOREIGN KEY ([FILE_GROUP_ID]) REFERENCES [FW].[TB_FILE_GROUP] ([FILE_GROUP_ID]);

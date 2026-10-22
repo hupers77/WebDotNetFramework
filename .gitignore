@@ -8,3 +8,4 @@ TestResults/
 *.dacpac
 appsettings.*.local.json
 .idea/
+App_Data/

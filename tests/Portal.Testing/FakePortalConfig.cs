@@ -21,6 +21,8 @@ public sealed class FakePortalConfig : IPortalConfig
         ["UI.TAB_MODE"] = "Y",
         ["UI.MAX_TABS"] = "10",
         ["SITE.THEME_COLOR"] = "#1F5FBF",
+        ["FILE.MAX_SIZE_MB"] = "20",
+        ["FILE.MAX_COUNT"] = "10",
     };
 
     /// <summary>값을 바꾼다.</summary>
