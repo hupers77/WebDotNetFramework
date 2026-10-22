@@ -16,6 +16,7 @@
     <input id="Password" name="Password" type="password" autocomplete="current-password" maxlength="128" required />
     <button type="submit" class="primary">@L["BTN.LOGIN"]</button>
 </form>
+<p class="login-join">@L["JOIN.LOGIN_HINT"] <a asp-action="Join">@L["BTN.JOIN"]</a></p>
 <form method="post" asp-action="Language" class="lang-form login-lang">
     <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
     <label for="lang-select">@L["LBL.LANGUAGE"]</label>

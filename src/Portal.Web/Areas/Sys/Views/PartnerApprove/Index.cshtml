@@ -1,0 +1,55 @@
+@model PartnerApproveIndexModel
+@{
+    var title = Menus.ProgramTitle(PartnerApproveController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/partner-approve.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="join-screen" class="md-layout"
+     data-url-list="@Url.Action("List")"
+     data-url-approve="@Url.Action("Approve")"
+     data-url-reject="@Url.Action("Reject")">
+    <section class="md-master" aria-labelledby="join-list-heading">
+        <h2 id="join-list-heading">@L["LBL.JOIN_REQ"]</h2>
+        <form id="join-search" class="search-bar" role="search">
+            <label for="join-stat">@L["LBL.REQ_STAT"]</label>
+            <select id="join-stat">
+                <option value="">@L["LBL.ALL"]</option>
+                @foreach (var (code, name) in Model.Stats)
+                {
+                    <option value="@code" selected="@(code == "REQUESTED")">@name</option>
+                }
+            </select>
+            <label for="join-keyword">@L["LBL.KEYWORD"]</label>
+            <input id="join-keyword" type="search" maxlength="100" autocomplete="off" />
+            <button type="submit">@L["BTN.SEARCH"]</button>
+        </form>
+        <p id="join-total" class="hint" aria-live="polite"></p>
+        <ul id="join-list" class="pick-list" role="listbox" aria-labelledby="join-list-heading"></ul>
+    </section>
+    <section class="md-detail" aria-labelledby="join-heading">
+        <h2 id="join-heading">@L["LBL.JOIN_DETAIL"]</h2>
+        <p id="join-hint" class="hint">@L["SYS.JOIN.SELECT"]</p>
+        <dl id="join-detail" class="detail-list" hidden>
+            <dt>@L["LBL.COMPANY"]</dt><dd data-field="company"></dd>
+            <dt>@L["LBL.USER_ID"]</dt><dd data-field="userId"></dd>
+            <dt>@L["LBL.USER_NM"]</dt><dd data-field="userNm"></dd>
+            <dt>@L["LBL.EMAIL"]</dt><dd data-field="emailMasked"></dd>
+            <dt>@L["LBL.REQ_DT"]</dt><dd data-field="reqDt"></dd>
+            <dt>@L["LBL.REQ_STAT"]</dt><dd data-field="reqStatNm"></dd>
+            <dt>@L["LBL.PROC"]</dt><dd data-field="proc"></dd>
+            <dt>@L["LBL.REJECT_REASON"]</dt><dd data-field="rejectReason"></dd>
+        </dl>
+        <div id="join-actions" class="form" hidden>
+            <label for="join-reason">@L["LBL.REJECT_REASON"]</label>
+            <textarea id="join-reason" rows="3" maxlength="500" aria-describedby="join-reason-hint"></textarea>
+            <p id="join-reason-hint" class="hint">@L["SYS.JOIN.REASON_HINT"]</p>
+            <div class="toolbar">
+                <fw-button func="APPROVE" text-key="BTN.REJECT" id="join-reject" />
+                <fw-button func="APPROVE" text-key="BTN.APPROVE" id="join-approve" class="primary" />
+            </div>
+        </div>
+    </section>
+</div>

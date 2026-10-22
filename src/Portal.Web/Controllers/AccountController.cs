@@ -2,20 +2,29 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Net.Http.Headers;
+using Portal.Core.Config;
+using Portal.Core.Errors;
 using Portal.Core.Keys;
+using Portal.Core.Localization;
 using Portal.Framework.Web;
 using Portal.Framework.Web.Authentication;
 using Portal.Framework.Web.Authorization;
 using Portal.Framework.Web.Context;
 using Portal.Framework.Web.Mvc;
 using Portal.Security.Authentication;
+using Portal.Security.Passwords;
 using Portal.Web.Models;
 
 namespace Portal.Web.Controllers;
 
-/// <summary>ID/PW 로그인·로그아웃 (설계서 5장). AD SSO는 개발계에서 같은 화면에 붙인다.</summary>
+/// <summary>ID/PW 로그인·로그아웃, 협력사 가입 신청 (설계서 5장). AD SSO는 3단계에서 같은 화면에 붙인다.</summary>
 [AllowAnonymous]
-public sealed class AccountController(AuthService auth, UserLanguageService languages) : PortalController
+public sealed class AccountController(
+    AuthService auth,
+    UserLanguageService languages,
+    PartnerJoinService joins,
+    IPortalConfig config,
+    IPortalLocalizer localizer) : PortalController
 {
     // 주소창으로 넘어온 reason은 이 키만 보여 준다 (임의 문구 주입 방지)
     private static readonly string[] ReasonKeys =
@@ -63,6 +72,41 @@ public sealed class AccountController(AuthService auth, UserLanguageService lang
         return LocalRedirect(PortalSessionHandler.LoginPath);
     }
 
+    /// <summary>협력사 가입 신청 화면.</summary>
+    [HttpGet]
+    public IActionResult Join() => View(JoinModel(new JoinForm(), null));
+
+    /// <summary>
+    /// 협력사 가입 신청. 본사 담당자가 승인하면 같은 ID·비밀번호로 로그인할 수 있다.
+    /// 로그인과 같은 요청 한도를 둔다(ID 존재 여부를 대량으로 확인하지 못하게).
+    /// </summary>
+    [HttpPost, EnableRateLimiting(PortalWebExtensions.LoginRateLimitPolicy)]
+    public async Task<IActionResult> Join([FromForm] JoinForm form)
+    {
+        var shown = new JoinForm { BizRegNo = form.BizRegNo, UserId = form.UserId, UserNm = form.UserNm, Email = form.Email };
+        if (string.IsNullOrWhiteSpace(form.BizRegNo) || string.IsNullOrWhiteSpace(form.UserId) || string.IsNullOrWhiteSpace(form.UserNm)
+            || string.IsNullOrWhiteSpace(form.Email) || string.IsNullOrEmpty(form.Password))
+        {
+            return View(JoinModel(shown, localizer[MessageKeys.InvalidInput]));
+        }
+
+        if (form.Password != form.PasswordConfirm)
+        {
+            return View(JoinModel(shown, localizer[PasswordMessageKeys.ConfirmMismatch]));
+        }
+
+        try
+        {
+            await joins.RequestAsync(new PartnerJoinRequest(form.BizRegNo, form.UserId, form.UserNm, form.Email, form.Password), HttpContext.RequestAborted);
+        }
+        catch (BizException ex)
+        {
+            return View(JoinModel(shown, localizer[ex.MessageKey, [.. ex.Args]]));
+        }
+
+        return View(JoinModel(new JoinForm(), null) with { Done = true });
+    }
+
     /// <summary>로그인 화면 언어 선택 (쿠키에만 저장).</summary>
     [HttpPost]
     public async Task<IActionResult> Language([FromForm] string lang, [FromForm] string? returnUrl)
@@ -70,6 +114,9 @@ public sealed class AccountController(AuthService auth, UserLanguageService lang
         await languages.ChangeAsync(lang, HttpContext.RequestAborted);
         return LocalRedirect(PortalSessionHandler.LoginPath + QueryString.Create("returnUrl", SafeReturnUrl(returnUrl)));
     }
+
+    private JoinViewModel JoinModel(JoinForm form, string? error) =>
+        new(form, config.GetInt(ConfigKeys.PwdMinLen3types), config.GetInt(ConfigKeys.PwdMinLen2types), error);
 
     // 다른 사이트로 보내는 오픈 리디렉트를 막는다
     private string SafeReturnUrl(string? returnUrl) =>
