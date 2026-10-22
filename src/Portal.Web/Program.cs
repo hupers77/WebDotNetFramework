@@ -12,6 +12,7 @@ builder.Services.AddPortalWeb(builder.Configuration);
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.ICodeAdminService, Portal.Web.Areas.Sys.Services.CodeAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IConfigAdminService, Portal.Web.Areas.Sys.Services.ConfigAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IPartnerApproveService, Portal.Web.Areas.Sys.Services.PartnerApproveService>();
+builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IJobAdminService, Portal.Web.Areas.Sys.Services.JobAdminService>();
 
 var app = builder.Build();
 

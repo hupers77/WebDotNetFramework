@@ -337,7 +337,12 @@ USING (VALUES
   (N'GET', N'/Sys/Config', N'SYS_CONFIG_MGT', N'READ'),
   (N'GET', N'/Sys/Config/List', N'SYS_CONFIG_MGT', N'READ'),
   (N'GET', N'/Sys/Config/History', N'SYS_CONFIG_MGT', N'READ'),
-  (N'POST', N'/Sys/Config/Save', N'SYS_CONFIG_MGT', N'UPDATE')
+  (N'POST', N'/Sys/Config/Save', N'SYS_CONFIG_MGT', N'UPDATE'),
+  (N'GET', N'/Sys/Job', N'SYS_JOB_MGT', N'READ'),
+  (N'GET', N'/Sys/Job/List', N'SYS_JOB_MGT', N'READ'),
+  (N'GET', N'/Sys/Job/History', N'SYS_JOB_MGT', N'READ'),
+  (N'POST', N'/Sys/Job/Save', N'SYS_JOB_MGT', N'UPDATE'),
+  (N'POST', N'/Sys/Job/Run', N'SYS_JOB_MGT', N'EXEC')
 ) AS S ([HTTP_METHOD], [ROUTE_PATTERN], [PROGRAM_ID], [FUNC_CD])
    ON T.[HTTP_METHOD] = S.[HTTP_METHOD] AND T.[ROUTE_PATTERN] = S.[ROUTE_PATTERN]
 WHEN MATCHED THEN UPDATE SET T.[PROGRAM_ID] = S.[PROGRAM_ID], T.[FUNC_CD] = S.[FUNC_CD]
