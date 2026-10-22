@@ -43,4 +43,11 @@ public sealed class CodeController(ICodeAdminService codes, LangResources langs)
         await DemandRowFuncsAsync(request.Rows);
         return Ok((await codes.SaveAsync(request, cancellationToken)).AffectedCnt);
     }
+
+    /// <summary>그룹의 코드를 엑셀로 내려받는다.</summary>
+    [HttpGet, Func(FuncCodes.Export)]
+    public async Task<IActionResult> Export(
+        [Required(ErrorMessage = "MSG.INVALID_INPUT"), StringLength(30, ErrorMessage = "MSG.INVALID_INPUT")] string groupCd,
+        CancellationToken cancellationToken) =>
+        Excel(await codes.ExportAsync(groupCd, cancellationToken), $"{groupCd}.xlsx");
 }

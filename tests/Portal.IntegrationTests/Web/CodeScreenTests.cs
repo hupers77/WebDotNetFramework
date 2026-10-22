@@ -153,4 +153,38 @@ public sealed class CodeScreenTests : IClassFixture<PortalWebFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("MSG.NO_CHANGES", json.GetProperty("error").GetProperty("code").GetString());
     }
+
+    [Fact]
+    public async Task 엑셀_내보내기권한이면버튼과xlsx_없으면버튼없고403()
+    {
+        _web.Sp.Returns(CodeAdminService.GroupListSp, new PageResult<CodeGroupDto>
+        {
+            Items = [new() { GroupCd = "G", GroupNm = "그룹", Attr1Nm = "속성" }],
+            TotalCount = 1,
+            PageNo = 1,
+            PageSize = CodeAdminService.MaxRows,
+        });
+        var exporter = _web.SignIn("code.exporter", [Home, $"{Program}:READ", $"{Program}:EXPORT"]);
+        var reader = _web.SignIn("code.reader.export", [Home, $"{Program}:READ"]);
+
+        Assert.Contains("id=\"code-export\"", await PageAsync(exporter), StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"code-export\"", await PageAsync(reader), StringComparison.Ordinal);
+
+        var ok = await _web.NewClient(exporter).GetAsync("/Sys/Code/Export?groupCd=G", Ct);
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ok.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("G.xlsx", ok.Content.Headers.ContentDisposition?.FileNameStar);
+        using (var doc = DocumentFormat.OpenXml.Packaging.SpreadsheetDocument.Open(await ok.Content.ReadAsStreamAsync(Ct), false))
+        {
+            var rows = doc.WorkbookPart!.WorksheetParts.Single().Worksheet!.Descendants<DocumentFormat.OpenXml.Spreadsheet.Row>().ToList();
+            Assert.Equal(2, rows.Count);
+            var cells = rows[1].Elements<DocumentFormat.OpenXml.Spreadsheet.Cell>().Select(c => c.InlineString?.Text?.Text ?? c.CellValue?.Text).ToList();
+            Assert.Equal("A", cells[0]);
+            Assert.Contains("Ga", cells);
+            Assert.Equal("속성", rows[0].Elements<DocumentFormat.OpenXml.Spreadsheet.Cell>().Select(c => c.InlineString?.Text?.Text).ElementAt(6));
+        }
+
+        var denied = await _web.NewClient(reader).GetAsync("/Sys/Code/Export?groupCd=G", Ct);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+    }
 }
