@@ -227,7 +227,7 @@ Microsoft .NET 기본 명명 규칙을 따르고, 여기서 정한 규칙은 `.e
 - 테이블 변경은 호환성을 유지합니다: 컬럼은 NULL 허용 또는 기본값과 함께 추가하고, 삭제·이름 변경은 다음 릴리스로 미룹니다(롤백 대비).
 - 초기·등록 데이터 스크립트는 `MERGE`로 작성해 여러 번 실행해도 같은 결과가 나오게 합니다.
 - 작성자·변경 이력은 SP 주석이 아니라 Git 이력으로 관리합니다. SP 첫 줄 주석에는 용도와 프로그램 ID만 씁니다.
-- 업무 처리 결과를 메일로 알릴 때는 그 업무 SP 안에서 `FW.USP_MSG_QUEUE_SAVE`를 `@P_RESULT_YN = 'N'`으로 부릅니다. 업무와 같은 트랜잭션으로 대기열에 쌓이고(업무가 롤백되면 메일도 사라짐), 발송은 Portal.Worker가 합니다. 받는 사람은 `@P_TO_USER_ID`(사용자의 업무 이메일·언어 사용)로 주고, 치환값 JSON에는 비밀번호·인증 번호를 넣지 않습니다. 예: `USP_PARTNER_JOIN_APPROVE_EXEC`.
+- 업무 처리 결과를 메일로 알릴 때는 그 업무 SP 안에서 `FW.USP_MSG_QUEUE_SAVE`를 `@P_RESULT_YN = 'N'`으로 부릅니다. 업무와 같은 트랜잭션으로 대기열에 쌓이고(업무가 롤백되면 메일도 사라짐), 발송은 Portal.Worker가 합니다(본문은 발송할 때 받는 사람 언어의 템플릿으로 만들고, 치환값은 HTML 인코딩됩니다). 받는 사람은 `@P_TO_USER_ID`(사용자의 업무 이메일·언어 사용)로 주고, 치환값 JSON에는 비밀번호·인증 번호를 넣지 않습니다. 예: `USP_PARTNER_JOIN_APPROVE_EXEC`.
 - 한 요청에서 1초를 넘는 SP는 느린 SP 로그에 남습니다. 릴리스 전 실행 계획을 확인하고 필요한 인덱스를 같은 MR에 넣습니다.
 
 **데이터 범위 적용 예시**
@@ -386,6 +386,7 @@ MR을 올릴 때 아래 체크리스트를 MR 본문에 붙이고 해당 항목�
 | 비밀값 설정 (SMTP·AD 계정 비밀번호 등) | 설정 관리에서 새 값을 입력하면 Data Protection(`ISecretProtector`)으로 암호화해 저장합니다. 화면·이력·감사 로그에는 값이 남지 않고, 키 폴더(`Portal:DataProtection:KeyPath`)를 잃으면 다시 입력해야 합니다 | 없음 |
 | 협력사 계정 발급 | 회사 관리에 협력사(사업자등록번호, 계약 종료일)를 먼저 등록합니다. 협력사 담당자가 로그인 화면의 "가입 신청"에서 신청하면 시스템 관리 > 협력사 계정 승인에서 승인하거나 사유를 적어 반려합니다. 승인하면 협력사 사용자 역할이 부여되고, 계정 사용 기한은 회사 계약 종료일입니다 | 없음 |
 | 2단계 인증 재등록 (휴대폰 교체·분실) | 사용자 관리 화면에서 2단계 인증을 초기화합니다(화면 준비 전에는 DBA가 `UPDATE FW.TB_USER SET MFA_SECRET_ENC = NULL, MFA_LAST_STEP = NULL WHERE USER_ID = '대상ID'` 실행). 다음 로그인에서 QR 등록 화면이 다시 나옵니다. Data Protection 키 폴더를 잃으면 모든 등록이 무효가 되므로 키 폴더를 백업합니다 | 없음 |
+| 메일 발송 켜기 | 설정 관리에서 `MAIL.SMTP_HOST`·`MAIL.SMTP_PORT`·`MAIL.SMTP_SSL`·`MAIL.FROM`(필요하면 `MAIL.SMTP_USER`·`MAIL.SMTP_PASSWORD`)과 메일 속 링크 주소 `SITE.BASE_URL`을 넣고 `MAIL.ENABLED = Y`로 바꿉니다(개발계는 N 유지). 발송은 Windows 서비스 PortalWorker가 1분마다 대기열을 읽어 합니다. 서비스는 웹과 같은 DB 연결 문자열과 같은 Data Protection 키 폴더(`Portal:DataProtection:KeyPath`)를 써야 암호화한 주소·비밀번호를 풀 수 있습니다. 실패하면 5분·10분 뒤 다시 보내고 3번 실패하면 FAILED로 남기며, `TB_MSG_QUEUE.ERROR_MSG`에 원인 코드(`SMTP_...`, `ADDRESS_INVALID` 등, 주소는 남기지 않음)가 남습니다 | 없음 |
 | 화면 변경이 반영 안 됨 | 운영 모니터링 > 캐시 강제 갱신. 자주 발생하면 해당 SP의 `TB_CACHE_VERSION` 누락 확인 | 경우에 따라 |
 
 관리 화면에서 바꾼 값은 설정 이력·감사 로그에 남으므로 누가 언제 바꿨는지 나중에 확인할 수 있습니다.

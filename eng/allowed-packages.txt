@@ -6,6 +6,7 @@
 Microsoft.Data.SqlClient            # MIT, DB 접근
 System.Security.Cryptography.Pkcs   # MIT, SqlClient 전이 의존성 보안 패치 고정
 DocumentFormat.OpenXml              # MIT, 엑셀 (2단계)
+Microsoft.Extensions.Hosting.WindowsServices # MIT, Portal.Worker를 Windows 서비스로 실행
 
 # 런타임 - OSS 허용 (MIT)
 QRCoder                             # MIT, 2단계 인증 등록 QR (1.6.0: 의존성 없음)

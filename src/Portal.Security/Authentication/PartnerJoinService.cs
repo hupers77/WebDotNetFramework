@@ -1,8 +1,8 @@
+using Portal.Core.Security;
 using System.Text.RegularExpressions;
 using Portal.Core.Errors;
 using Portal.Data;
 using Portal.Security.Passwords;
-using Portal.Security.Secrets;
 
 namespace Portal.Security.Authentication;
 

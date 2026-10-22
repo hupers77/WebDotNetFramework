@@ -1,9 +1,9 @@
+using Portal.Core.Security;
 using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Portal.Core.Results;
 using Portal.Data;
 using Portal.Security.Authentication;
-using Portal.Security.Secrets;
 using Portal.Web.Areas.Sys.Models;
 using Portal.Web.Areas.Sys.Services;
 using static Portal.IntegrationTests.Web.WebTestHttp;

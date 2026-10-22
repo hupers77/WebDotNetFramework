@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
+using Portal.Core.Security;
 using Portal.Security;
 using Portal.Security.Secrets;
 

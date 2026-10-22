@@ -162,8 +162,11 @@ Oct 21, 2026 · @사랑나무아빠
 | `UI.DEFAULT_LANG` | ko | STRING | N | 기본 언어 |
 | `SITE.NAME` | (설치 시 입력) | STRING | N | 사이트명 (다국어 키 `SITE.NAME`을 우선 사용) |
 | `SITE.THEME_COLOR` | #1F5FBF | STRING | N | 브랜드 색상 |
+| `SITE.BASE_URL` | (설치 시 입력) | STRING | N | 포털 주소 (메일 링크, 예: https://portal.example.com) |
 | `MAIL.ENABLED` | N | BOOL | N | 실제 발송 여부 |
 | `MAIL.SMTP_HOST` / `MAIL.SMTP_PORT` | (입력) / 587 | STRING / INT | N | SMTP 서버 |
+| `MAIL.SMTP_USER` | (입력) | STRING | N | SMTP 계정 (비우면 인증 없이 발송: 사내 릴레이) |
+| `MAIL.SMTP_SSL` | Y | BOOL | N | SMTP 암호화(STARTTLS) 사용 |
 | `MAIL.SMTP_PASSWORD` | (입력) | SECRET | N | SMTP 계정 비밀번호 |
 | `MAIL.FROM` | (입력) | STRING | N | 보내는 주소 |
 | `LOG.RETENTION_YEARS` | 10 | INT | N | 접속기록·감사 로그 보관 기간 |
