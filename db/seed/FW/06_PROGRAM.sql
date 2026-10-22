@@ -356,6 +356,7 @@ USING (VALUES
   (N'GET', N'/Sys/User', N'SYS_USER_MGT', N'READ'),
   (N'GET', N'/Sys/User/List', N'SYS_USER_MGT', N'READ'),
   (N'GET', N'/Sys/User/Roles', N'SYS_USER_MGT', N'READ'),
+  (N'GET', N'/Sys/User/Depts', N'SYS_USER_MGT', N'READ'),
   (N'POST', N'/Sys/User/Save', N'SYS_USER_MGT', N'UPDATE'),
   (N'POST', N'/Sys/User/Unlock', N'SYS_USER_MGT', N'UPDATE'),
   (N'POST', N'/Sys/User/ResetMfa', N'SYS_USER_MGT', N'UPDATE'),
@@ -368,6 +369,7 @@ USING (VALUES
   (N'GET', N'/Ptn/User', N'PTN_USER_MGT', N'READ'),
   (N'GET', N'/Ptn/User/List', N'PTN_USER_MGT', N'READ'),
   (N'GET', N'/Ptn/User/Roles', N'PTN_USER_MGT', N'READ'),
+  (N'GET', N'/Ptn/User/Depts', N'PTN_USER_MGT', N'READ'),
   (N'POST', N'/Ptn/User/Save', N'PTN_USER_MGT', N'UPDATE'),
   (N'POST', N'/Ptn/User/Unlock', N'PTN_USER_MGT', N'UPDATE'),
   (N'POST', N'/Ptn/User/ResetMfa', N'PTN_USER_MGT', N'UPDATE')

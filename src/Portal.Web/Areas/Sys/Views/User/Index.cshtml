@@ -11,6 +11,7 @@
 <div id="user-screen" class="md-layout"
      data-url-list="@Url.Action("List")"
      data-url-roles="@Url.Action("Roles")"
+     data-url-depts="@Url.Action("Depts")"
      data-url-save="@Url.Action("Save")"
      data-url-unlock="@Url.Action("Unlock")"
      data-url-reset-mfa="@Url.Action("ResetMfa")"
@@ -85,6 +86,9 @@
                     }
                 </select>
                 <p id="user-stat-hint" class="hint">@L["SYS.USER.STAT_HINT"]</p>
+                <label for="user-dept">@L["LBL.DEPT"]</label>
+                <select id="user-dept" aria-describedby="user-dept-hint"></select>
+                <p id="user-dept-hint" class="hint">@L["SYS.USER.DEPT_HINT"]</p>
                 <label for="user-end">@L["LBL.ACCOUNT_END_DT"]</label>
                 <input id="user-end" type="date" />
                 <fieldset id="user-roles" class="role-list">

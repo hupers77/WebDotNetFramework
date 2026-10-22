@@ -89,6 +89,7 @@ public sealed class DeptAdminSpTests(DbFixture fixture)
     {
         await using var db = await BeginAsync(fixture);
         var before = await AuthVersionAsync(db);
+        var lastLog = await db.ScalarAsync<long>("SELECT ISNULL(MAX(LOG_ID), 0) FROM LOG.TB_AUDIT_LOG");
 
         var first = await SaveAsync(db, null, Root, roles: [Role("EMP_USER", "N")]);
         var second = await SaveAsync(db, null, null);
@@ -99,7 +100,7 @@ public sealed class DeptAdminSpTests(DbFixture fixture)
         Assert.Equal((Root, "새 부서", "EMP_USER"), (row.ParentDeptId, row.DeptNm, row.RoleIds));
         Assert.Equal("N", await db.ScalarAsync<string>("SELECT INHERIT_YN FROM FW.TB_DEPT_ROLE WHERE DEPT_ID = @D", ("@D", first.NewKey)));
         Assert.Equal(before + 1, await AuthVersionAsync(db)); // 역할이 없는 두 번째 등록은 캐시를 올리지 않는다
-        Assert.Equal(1, await db.ScalarAsync<int>("SELECT COUNT(*) FROM LOG.TB_AUDIT_LOG WHERE TABLE_NM = 'FW.TB_DEPT' AND ROW_KEY = @D AND ACTION_CD = 'I'", ("@D", first.NewKey)));
+        Assert.Equal(1, await db.ScalarAsync<int>("SELECT COUNT(*) FROM LOG.TB_AUDIT_LOG WHERE TABLE_NM = 'FW.TB_DEPT' AND ROW_KEY = @D AND ACTION_CD = 'I' AND LOG_ID > @L", ("@D", first.NewKey), ("@L", lastLog)));
     }
 
     [Fact]

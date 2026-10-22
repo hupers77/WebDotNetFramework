@@ -8,7 +8,7 @@ namespace Portal.IntegrationTests.Fw;
 
 /// <summary>
 /// 사용자 관리 SP: 목록, 역할 선택지(회사 유형·SYS_ADMIN), 저장(역할 더하고 빼기, 권한 캐시, 감사 로그),
-/// 협력사 사용자에게 본사 역할 금지, 협력사 관리자는 자기 회사 사용자만(데이터 범위), 자기 계정 보호, SYS_ADMIN 보호, 동시성, 잠금 해제·2단계 인증 초기화.
+/// 협력사 사용자에게 본사 역할 금지, 협력사 관리자는 자기 회사 사용자만(데이터 범위), 부서 지정(같은 회사 사용 중 부서, 권한 캐시), 자기 계정 보호, SYS_ADMIN 보호, 동시성, 잠금 해제·2단계 인증 초기화.
 /// </summary>
 /// <remarks>SP 오류는 테스트 트랜잭션도 롤백하므로 오류 확인은 각 테스트의 마지막 호출로 둔다.</remarks>
 [Collection(DbTests.Name)]
@@ -56,12 +56,12 @@ public sealed class UserAdminSpTests(DbFixture fixture)
         return Assert.Single(page.Items, u => u.UserId == userId);
     }
 
-    private static async Task<Portal.Data.SaveResult> SaveAsync(TestDb db, string userId, string[] roles, string stat = "ACTIVE", byte[]? rowVer = null, DateOnly? end = null, string program = Sys)
+    private static async Task<Portal.Data.SaveResult> SaveAsync(TestDb db, string userId, string[] roles, string stat = "ACTIVE", byte[]? rowVer = null, DateOnly? end = null, string program = Sys, string? dept = null)
     {
         rowVer ??= (await GetAsync(db, userId, program)).RowVer;
         return await db.Sp.ExecuteAsync(
             UserAdminService.SaveSp,
-            new { P_PROGRAM_ID = program, P_TARGET_USER_ID = userId, P_ROW_VER = rowVer, P_USER_NM = " 새 이름 ", P_USER_STAT_CD = stat, P_ACCOUNT_END_DT = end, P_ROLE_IDS = System.Text.Json.JsonSerializer.Serialize(roles) },
+            new { P_PROGRAM_ID = program, P_TARGET_USER_ID = userId, P_ROW_VER = rowVer, P_USER_NM = " 새 이름 ", P_USER_STAT_CD = stat, P_ACCOUNT_END_DT = end, P_DEPT_ID = dept, P_ROLE_IDS = System.Text.Json.JsonSerializer.Serialize(roles) },
             Ct);
     }
 
@@ -346,5 +346,115 @@ public sealed class UserAdminSpTests(DbFixture fixture)
 
         var ex = await Assert.ThrowsAsync<BizException>(() => SaveAsync(db, PtnUser, ["PARTNER_USER", "EMP_USER"], program: Ptn));
         Assert.Equal(UserAdminMessageKeys.RoleType, ex.MessageKey);
+    }
+
+    private static Task<IReadOnlyList<UserDeptDto>> DeptsAsync(TestDb db, string userId, string program = Sys) =>
+        db.Sp.QueryAsync<UserDeptDto>(UserAdminService.DeptListSp, new { P_PROGRAM_ID = program, P_TARGET_USER_ID = userId }, Ct);
+
+    [Fact]
+    public async Task 부서지정_부서역할을받고_권한캐시를올리고_감사로그에남는다()
+    {
+        await using var db = await BeginAsync(fixture);
+        await db.SeedDeptAsync("IT_U_D1", "HQ");
+        await db.ExecAsync("INSERT INTO FW.TB_DEPT_ROLE (DEPT_ID, ROLE_ID) VALUES ('IT_U_D1', 'SECURITY_AUDITOR')");
+        var cacheBefore = await db.ScalarAsync<long>("SELECT VERSION_NO FROM FW.TB_CACHE_VERSION WHERE CACHE_KEY = 'AUTH'");
+
+        await SaveAsync(db, EmpUser, ["EMP_USER"], dept: "IT_U_D1");
+
+        Assert.Equal("IT_U_D1", (await GetAsync(db, EmpUser)).DeptId);
+        Assert.Contains("SECURITY_AUDITOR", await db.ColumnAsync<string>("SELECT ROLE_ID FROM FW.UFN_USER_ROLES(@U)", ("@U", EmpUser)));
+        Assert.Equal(cacheBefore + 1, await db.ScalarAsync<long>("SELECT VERSION_NO FROM FW.TB_CACHE_VERSION WHERE CACHE_KEY = 'AUTH'"));
+        var audit = await db.ScalarAsync<string>("SELECT TOP 1 AFTER_JSON FROM LOG.TB_AUDIT_LOG WHERE TABLE_NM = 'FW.TB_USER' AND ROW_KEY = @U ORDER BY LOG_ID DESC", ("@U", EmpUser));
+        Assert.Contains("\"DEPT_ID\":\"IT_U_D1\"", audit, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task 부서지정_비우면부서없음()
+    {
+        await using var db = await BeginAsync(fixture);
+        await db.SeedDeptAsync("IT_U_D1", "HQ");
+        await SaveAsync(db, EmpUser, ["EMP_USER"], dept: "IT_U_D1");
+
+        await SaveAsync(db, EmpUser, ["EMP_USER"]);
+
+        Assert.Null((await GetAsync(db, EmpUser)).DeptId);
+    }
+
+    [Fact]
+    public async Task 부서지정_다른회사부서는거부()
+    {
+        await using var db = await BeginAsync(fixture);
+        await db.SeedDeptAsync("IT_U_D1", "HQ");
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => SaveAsync(db, PtnUser, ["PARTNER_USER"], dept: "IT_U_D1"));
+        Assert.Equal(UserAdminMessageKeys.DeptInvalid, ex.MessageKey);
+    }
+
+    [Fact]
+    public async Task 부서지정_지금부서는사용안함이어도그대로둘수있다()
+    {
+        await using var db = await BeginAsync(fixture);
+        await db.SeedDeptAsync("IT_U_D1", "HQ");
+        await SaveAsync(db, EmpUser, ["EMP_USER"], dept: "IT_U_D1");
+        await db.ExecAsync("UPDATE FW.TB_DEPT SET USE_YN = 'N' WHERE DEPT_ID = 'IT_U_D1'");
+
+        await SaveAsync(db, EmpUser, ["EMP_USER"], dept: "IT_U_D1");
+
+        Assert.Equal("IT_U_D1", (await GetAsync(db, EmpUser)).DeptId);
+    }
+
+    [Fact]
+    public async Task 부서지정_사용안함부서로새로옮길수없다()
+    {
+        await using var db = await BeginAsync(fixture);
+        await db.SeedDeptAsync("IT_U_D1", "HQ");
+        await db.ExecAsync("UPDATE FW.TB_DEPT SET USE_YN = 'N' WHERE DEPT_ID = 'IT_U_D1'");
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => SaveAsync(db, EmpUser, ["EMP_USER"], dept: "IT_U_D1"));
+        Assert.Equal(UserAdminMessageKeys.DeptInvalid, ex.MessageKey);
+    }
+
+    [Fact]
+    public async Task 부서지정_자기부서는못바꾼다()
+    {
+        await using var db = await BeginAsync(fixture);
+        await db.SeedDeptAsync("IT_U_D1", "HQ");
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => SaveAsync(db, Admin, ["PORTAL_ADMIN"], dept: "IT_U_D1"));
+        Assert.Equal(UserAdminMessageKeys.SelfChange, ex.MessageKey);
+    }
+
+    [Fact]
+    public async Task 부서선택지_같은회사사용중부서를트리순서로_지금부서는사용안함이어도()
+    {
+        await using var db = await BeginAsync(fixture);
+        await db.SeedDeptAsync("IT_U_A", "HQ");
+        await db.SeedDeptAsync("IT_U_A1", "HQ", "IT_U_A");
+        await db.SeedDeptAsync("IT_U_B", "HQ");
+        await db.SeedDeptAsync("IT_U_X", "HQ");
+        await db.SeedDeptAsync("IT_U_OFF", "HQ", "IT_U_X");
+        await db.SeedDeptAsync("IT_U_P", Partner);
+        await db.ExecAsync("UPDATE FW.TB_DEPT SET SORT_NO = 1 WHERE DEPT_ID = 'IT_U_B'; UPDATE FW.TB_DEPT SET SORT_NO = 2 WHERE DEPT_ID = 'IT_U_A'; UPDATE FW.TB_DEPT SET SORT_NO = 3 WHERE DEPT_ID = 'IT_U_X'");
+        // 지금 부서와 그 상위 부서가 모두 사용 안 함: 상위는 빠지고 지금 부서만 맨 끝에 붙는다
+        await db.ExecAsync("UPDATE FW.TB_USER SET DEPT_ID = 'IT_U_OFF' WHERE USER_ID = @U; UPDATE FW.TB_DEPT SET USE_YN = 'N' WHERE DEPT_ID IN ('IT_U_OFF', 'IT_U_X')", ("@U", EmpUser));
+
+        var depts = (await DeptsAsync(db, EmpUser)).Where(d => d.DeptId.StartsWith("IT_U_", StringComparison.Ordinal)).ToList();
+
+        Assert.Equal(["IT_U_B", "IT_U_A", "IT_U_A1", "IT_U_OFF"], depts.Select(d => d.DeptId));
+        Assert.Equal((1, "N"), (depts[2].Depth, depts[3].UseYn));
+    }
+
+    [Fact]
+    public async Task 협력사관리자_자기회사사용자의부서는지정하고_다른회사사용자는없는것으로()
+    {
+        await using var db = await BeginPartnerAdminAsync(fixture);
+        await db.SeedDeptAsync("IT_U_P", Partner);
+
+        Assert.Equal(["IT_U_P"], (await DeptsAsync(db, PtnUser, Ptn)).Select(d => d.DeptId).Where(d => d.StartsWith("IT_U_", StringComparison.Ordinal)));
+        await SaveAsync(db, PtnUser, ["PARTNER_USER"], program: Ptn, dept: "IT_U_P");
+        Assert.Equal("IT_U_P", (await GetAsync(db, PtnUser, Ptn)).DeptId);
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => DeptsAsync(db, PtnUser2, Ptn));
+        Assert.Equal(MessageKeys.NotFound, ex.MessageKey);
     }
 }

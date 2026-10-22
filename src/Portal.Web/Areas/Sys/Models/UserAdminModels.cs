@@ -13,6 +13,9 @@ public static class UserAdminMessageKeys
 
     /// <summary>사용자 회사 유형에 줄 수 없는 역할 (협력사 사용자에게 본사 역할 등).</summary>
     public const string RoleType = "MSG.USER_ROLE_TYPE";
+
+    /// <summary>사용자와 같은 회사의 사용 중인 부서가 아니다.</summary>
+    public const string DeptInvalid = "MSG.USER_DEPT_INVALID";
 }
 
 /// <summary>계정 초기화 종류 (<c>FW.USP_USER_ACCOUNT_RESET_EXEC</c>).</summary>
@@ -173,9 +176,32 @@ public sealed class UserSaveRequest
     /// <summary>계정 사용 기한. 비우면 기한 없음.</summary>
     public DateOnly? AccountEndDt { get; set; }
 
+    /// <summary>부서 ID. 비우면 부서 없음. 사용자와 같은 회사의 사용 중인 부서여야 한다(지금 부서는 그대로 둘 수 있다).</summary>
+    [StringLength(20, ErrorMessage = "MSG.INVALID_INPUT")]
+    public string? DeptId { get; set; }
+
     /// <summary>직접 부여할 역할 전체 (이 목록이 되도록 더하고 뺀다).</summary>
     [MaxLength(50, ErrorMessage = "MSG.INVALID_INPUT")]
     public List<string> RoleIds { get; set; } = [];
+}
+
+/// <summary>사용자에게 지정할 수 있는 부서 (<c>FW.USP_USER_DEPT_GET_LIST</c>, 트리 순서).</summary>
+public sealed class UserDeptDto
+{
+    /// <summary>부서 ID.</summary>
+    public string DeptId { get; set; } = "";
+
+    /// <summary>상위 부서 ID.</summary>
+    public string? ParentDeptId { get; set; }
+
+    /// <summary>부서명.</summary>
+    public string DeptNm { get; set; } = "";
+
+    /// <summary>사용 여부 (사용 안 함은 지금 부서일 때만 온다).</summary>
+    public string UseYn { get; set; } = "Y";
+
+    /// <summary>단계 (최상위 0). 선택지 들여쓰기에 쓴다.</summary>
+    public int Depth { get; set; }
 }
 
 /// <summary>잠금 해제·2단계 인증 초기화 요청.</summary>

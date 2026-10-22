@@ -1,7 +1,7 @@
 // 사용자 관리 (SYS_USER_MGT 본사, PTN_USER_MGT 협력사 관리자): 표준 화면 3(마스터-디테일). 협력사 화면에는 회사·유형 검색이 없다.
-// 왼쪽 사용자 목록에서 고르면 오른쪽에서 이름·상태·사용 기한·역할을 고치고, 잠금 해제·2단계 인증 초기화를 한다.
+// 왼쪽 사용자 목록에서 고르면 오른쪽에서 이름·상태·부서·사용 기한·역할을 고치고, 잠금 해제·2단계 인증 초기화를 한다.
 // 역할 선택지는 서버가 이 사용자에게 줄 수 있는지(회사 유형, SYS_ADMIN)를 함께 주므로 줄 수 없는 역할은 잠근다. 저장할 때 SP가 다시 확인한다.
-// 자기 자신의 상태·역할·잠금·2단계 인증은 바꿀 수 없다. 버튼은 서버가 권한으로 그린다(fw-button).
+// 자기 자신의 상태·부서·역할·잠금·2단계 인증은 바꿀 수 없다. 버튼은 서버가 권한으로 그린다(fw-button). 부서 선택지는 같은 회사의 사용 중 부서다.
 import { fw } from '../fw.js';
 
 await fw.ready;
@@ -9,14 +9,14 @@ await fw.ready;
 const $ = (selector) => document.querySelector(selector);
 const root = $('#user-screen');
 const urls = {
-    list: root.dataset.urlList, roles: root.dataset.urlRoles, save: root.dataset.urlSave,
+    list: root.dataset.urlList, roles: root.dataset.urlRoles, depts: root.dataset.urlDepts, save: root.dataset.urlSave,
     unlock: root.dataset.urlUnlock, resetMfa: root.dataset.urlResetMfa,
 };
 const me = root.dataset.me;
 const buttons = { save: $('#user-save'), unlock: $('#user-unlock'), mfa: $('#user-mfa-reset') };
 const list = $('#user-list');
 const detail = $('#user-detail');
-const inputs = { nm: $('#user-nm'), stat: $('#user-stat'), end: $('#user-end') };
+const inputs = { nm: $('#user-nm'), stat: $('#user-stat'), dept: $('#user-dept'), end: $('#user-end') };
 const roleBox = $('#user-role-items');
 
 let page = { items: [], pageNo: 1, totalPages: 0 };
@@ -103,6 +103,30 @@ async function loadRoles(userId) {
     }
 }
 
+// 부서 선택지: (없음) + 같은 회사의 사용 중인 부서를 트리 순서로 들여 써서. 지금 부서가 사용 안 함이면 그것도 보인다
+async function loadDepts(row) {
+    inputs.dept.replaceChildren(new Option(fw.t('LBL.NONE'), ''));
+    if (row.deptId) {
+        inputs.dept.append(new Option(row.deptNm ?? row.deptId, row.deptId));
+    }
+
+    inputs.dept.value = row.deptId ?? '';
+    const result = await fw.ajax(`${urls.depts}?${new URLSearchParams({ userId: row.userId })}`);
+    if (!result.success || current?.userId !== row.userId) {
+        if (!result.success) {
+            fw.notify(result.error.message);
+        }
+
+        return;
+    }
+
+    inputs.dept.replaceChildren(new Option(fw.t('LBL.NONE'), ''), ...result.data.map((d) => new Option(
+        `${'\u00a0\u00a0'.repeat(d.depth)}${d.deptNm}${d.useYn === 'Y' ? '' : ` (${fw.t('LBL.NOT_IN_USE')})`}`,
+        d.deptId,
+    )));
+    inputs.dept.value = row.deptId ?? '';
+}
+
 function showDetail(row) {
     current = row;
     renderList();
@@ -139,6 +163,7 @@ function showDetail(row) {
     inputs.nm.disabled = !buttons.save;
     inputs.end.disabled = !buttons.save;
     inputs.stat.disabled = !buttons.save || isSelf;
+    inputs.dept.disabled = !buttons.save || isSelf;
     $('#user-self-hint').hidden = !isSelf;
     if (buttons.unlock) {
         buttons.unlock.disabled = isSelf || (row.lockYn !== 'Y' && row.loginFailCnt === 0);
@@ -148,6 +173,7 @@ function showDetail(row) {
         buttons.mfa.disabled = isSelf || row.mfaYn !== 'Y';
     }
 
+    loadDepts(row);
     loadRoles(row.userId);
 }
 
@@ -189,11 +215,16 @@ async function save() {
         userNm: inputs.nm.value.trim(),
         userStatCd: inputs.stat.value,
         accountEndDt: inputs.end.value || null,
+        deptId: inputs.dept.value || null,
         roleIds: [...roleBox.querySelectorAll('input[type="checkbox"]:checked')].map((c) => c.value),
     };
     const result = await fw.ajax(urls.save, { method: 'POST', body });
     if (!result.success) {
         fw.notify(result.error.message);
+        if (result.error.code === 'MSG.USER_DEPT_INVALID') {
+            inputs.dept.focus();
+        }
+
         return;
     }
 
