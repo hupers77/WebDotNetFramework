@@ -1,10 +1,14 @@
+@inject Portal.Infrastructure.Localization.LangResources Lang
 <!DOCTYPE html>
 <html lang="@CurrentUser.LangCd">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="fw-i18n" content="@Url.Content($"~/i18n/{CurrentUser.LangCd}.json?v={Lang.Version}")" />
     <title>@ViewData["Title"] - @L["SITE.NAME"]</title>
     <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/theme.css" />
+    <script type="module" src="~/js/fw.js" asp-append-version="true"></script>
 </head>
 <body class="auth">
     <main class="auth-box">

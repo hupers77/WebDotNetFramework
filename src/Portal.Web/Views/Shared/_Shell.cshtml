@@ -1,0 +1,17 @@
+@model Portal.Framework.Web.Layout.ShellModel
+@{
+    // 멀티 탭 셸: 화면은 탭(iframe) 안에서 열리고, 이 페이지는 헤더·메뉴·탭만 그린다 (ShellResultFilter)
+    Layout = "_PortalLayout";
+    ViewData["Title"] = L["SITE.NAME"];
+    ViewData["Shell"] = true;
+}
+<div id="fw-tabs" class="tabs" data-initial-url="@Model.InitialUrl" data-max-tabs="@Model.MaxTabs">
+    <div class="tab-bar">
+        <div class="tab-list" role="tablist" aria-label="@L["LBL.OPEN_TABS"]"></div>
+        <div class="tab-actions">
+            <button type="button" data-tab-action="refresh" title="@L["BTN.REFRESH"]" aria-label="@L["BTN.REFRESH"]">⟳</button>
+            <button type="button" data-tab-action="close-others" title="@L["BTN.CLOSE_OTHER_TABS"]" aria-label="@L["BTN.CLOSE_OTHER_TABS"]">⨯⨯</button>
+        </div>
+    </div>
+    <div class="tab-panels"></div>
+</div>

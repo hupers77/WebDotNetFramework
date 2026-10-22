@@ -1,0 +1,26 @@
+-- 메뉴 트리 전체 (모든 메뉴 세트, 사용 중인 메뉴·프로그램만). 웹서버가 시작할 때와 캐시 버전(MENU)이 바뀔 때 읽는다.
+-- 사용자별 노출(권한·공개 대상)은 애플리케이션이 캐시된 권한으로 거른다(요청당 DB 호출 0회).
+-- 결과 1: MENU_ID, MENU_SET_CD, PARENT_MENU_ID, MENU_TYPE_CD, PROGRAM_ID, URL, ICON_CD, SORT_NO, NEW_WIN_YN, OPEN_SCOPE_CD
+-- 결과 2: MENU_ID, LANG_CD, MENU_NM (사용 중인 언어)
+CREATE PROCEDURE [FW].[USP_MENU_GET_LIST]
+  @P_USER_ID    VARCHAR(30),
+  @P_LANG_CD    VARCHAR(5),
+  @P_CLIENT_IP  VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  SELECT M.[MENU_ID], M.[MENU_SET_CD], M.[PARENT_MENU_ID], M.[MENU_TYPE_CD], M.[PROGRAM_ID],
+         CASE M.[MENU_TYPE_CD] WHEN 'LINK' THEN M.[LINK_URL] ELSE P.[URL] END AS [URL],
+         M.[ICON_CD], M.[SORT_NO], M.[NEW_WIN_YN], M.[OPEN_SCOPE_CD]
+    FROM [FW].[TB_MENU] M
+    LEFT JOIN [FW].[TB_PROGRAM] P ON P.[PROGRAM_ID] = M.[PROGRAM_ID]
+   WHERE M.[USE_YN] = 'Y'
+     AND (M.[PROGRAM_ID] IS NULL OR P.[USE_YN] = 'Y')
+   ORDER BY M.[MENU_SET_CD], M.[PARENT_MENU_ID], M.[SORT_NO], M.[MENU_ID];
+
+  SELECT N.[MENU_ID], N.[LANG_CD], N.[MENU_NM]
+    FROM [FW].[TB_MENU_LANG] N
+    JOIN [FW].[TB_LANG] L ON L.[LANG_CD] = N.[LANG_CD]
+   WHERE L.[USE_YN] = 'Y';
+END

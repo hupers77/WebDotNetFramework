@@ -59,7 +59,7 @@ public sealed class PasswordAndPermissionTests(DbFixture fixture)
     public async Task 초기관리자_생성후임시비밀번호로로그인_변경강제_재실행은재설정()
     {
         await using var db = await fixture.BeginAsync();
-        await db.ExecAsync("DELETE FROM FW.TB_USER_ROLE WHERE USER_ID = 'sysadmin'; DELETE FROM FW.TB_USER_SESSION WHERE USER_ID = 'sysadmin'; DELETE FROM FW.TB_USER_PWD_HIST WHERE USER_ID = 'sysadmin'; DELETE FROM FW.TB_USER WHERE USER_ID = 'sysadmin'");
+        await db.ExecAsync("DELETE FROM FW.TB_USER_ROLE WHERE USER_ID = 'sysadmin'; DELETE FROM FW.TB_USER_SESSION WHERE USER_ID = 'sysadmin'; DELETE FROM FW.TB_USER_PWD_HIST WHERE USER_ID = 'sysadmin'; DELETE FROM FW.TB_USER_FAVORITE WHERE USER_ID = 'sysadmin'; DELETE FROM FW.TB_USER WHERE USER_ID = 'sysadmin'");
         AsAnonymous(db);
         var bootstrap = new AdminBootstrapService(db.Sp, Hasher);
 
