@@ -34,6 +34,11 @@ public sealed class UserController(IUserAdminService users, ICodeAdminService co
     public async Task<ApiResult<PageResult<UserAdminDto>>> List([FromQuery] UserSearch search, CancellationToken cancellationToken) =>
         Ok(await users.GetListAsync(ProgramId, search, cancellationToken));
 
+    /// <summary>자기 회사 사용자 엑셀 (사유 필수, 개인정보 접속기록). 버튼은 역할별 권한의 EXPORT로 연다.</summary>
+    [HttpPost, Func(FuncCodes.Export)]
+    public async Task<IActionResult> Export([FromBody] UserExportRequest request, CancellationToken cancellationToken) =>
+        Excel(await users.ExportAsync(ProgramId, request.Search, request.Reason, cancellationToken), "users.xlsx");
+
     /// <summary>사용자 한 명의 역할 선택지.</summary>
     [HttpGet]
     public async Task<ApiResult<IReadOnlyList<UserRoleDto>>> Roles(
