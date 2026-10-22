@@ -1,6 +1,7 @@
+@* 사용자 관리 화면. 본사(Sys/User)와 협력사 관리자(Ptn/User) 컨트롤러가 같이 쓰고, 주소(Url.Action)는 부른 컨트롤러 기준이다. *@
 @model UserAdminIndexModel
 @{
-    var title = Menus.ProgramTitle(UserController.ProgramId, CurrentUser.LangCd);
+    var title = Menus.ProgramTitle(Model.ProgramId, CurrentUser.LangCd);
     ViewData["Title"] = title;
 }
 @section Scripts {
@@ -17,22 +18,25 @@
     <section class="md-master" aria-labelledby="user-list-heading">
         <h2 id="user-list-heading">@L["LBL.USER_LIST"]</h2>
         <form id="user-search" class="search-bar" role="search">
-            <label for="user-company-filter">@L["LBL.COMPANY"]</label>
-            <select id="user-company-filter">
-                <option value="">@L["LBL.ALL"]</option>
-                @foreach (var (code, name) in Model.Companies)
-                {
-                    <option value="@code">@name</option>
-                }
-            </select>
-            <label for="user-type-filter">@L["LBL.USER_TYPE"]</label>
-            <select id="user-type-filter">
-                <option value="">@L["LBL.ALL"]</option>
-                @foreach (var (code, name) in Model.Types)
-                {
-                    <option value="@code">@name</option>
-                }
-            </select>
+            @if (!Model.OwnCompanyOnly)
+            {
+                <label for="user-company-filter">@L["LBL.COMPANY"]</label>
+                <select id="user-company-filter">
+                    <option value="">@L["LBL.ALL"]</option>
+                    @foreach (var (code, name) in Model.Companies)
+                    {
+                        <option value="@code">@name</option>
+                    }
+                </select>
+                <label for="user-type-filter">@L["LBL.USER_TYPE"]</label>
+                <select id="user-type-filter">
+                    <option value="">@L["LBL.ALL"]</option>
+                    @foreach (var (code, name) in Model.Types)
+                    {
+                        <option value="@code">@name</option>
+                    }
+                </select>
+            }
             <label for="user-stat-filter">@L["LBL.USER_STAT"]</label>
             <select id="user-stat-filter">
                 <option value="">@L["LBL.ALL"]</option>

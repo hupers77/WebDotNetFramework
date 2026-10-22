@@ -7,21 +7,22 @@ using Portal.Web.Areas.Sys.Models;
 
 namespace Portal.Web.Areas.Sys.Services;
 
-/// <summary>사용자 관리 (<c>SYS_USER_MGT</c>). 목록, 이름·상태·사용 기한·직접 부여 역할 저장, 잠금 해제, 2단계 인증 초기화.</summary>
-/// <remarks>본사 사용자는 3단계 AD 동기화로, 협력사 사용자는 가입 승인으로 만들어지므로 여기서는 새로 만들거나 지우지 않는다(퇴사·계약 종료는 상태로).</remarks>
+/// <summary>사용자 관리 (본사 <c>SYS_USER_MGT</c>, 협력사 관리자 <c>PTN_USER_MGT</c>). 목록, 이름·상태·사용 기한·직접 부여 역할 저장, 잠금 해제, 2단계 인증 초기화.</summary>
+/// <remarks>본사 사용자는 3단계 AD 동기화로, 협력사 사용자는 가입 승인으로 만들어지므로 여기서는 새로 만들거나 지우지 않는다(퇴사·계약 종료는 상태로).
+/// 모든 메서드는 부른 화면의 프로그램 ID를 SP에 넘기고, SP가 그 프로그램의 데이터 범위(협력사 관리자는 자기 회사)로 대상을 제한한다.</remarks>
 public interface IUserAdminService
 {
     /// <summary>사용자 목록 (한 쪽 <see cref="UserAdminService.PageSize"/>명).</summary>
-    Task<PageResult<UserAdminDto>> GetListAsync(UserSearch search, CancellationToken cancellationToken = default);
+    Task<PageResult<UserAdminDto>> GetListAsync(string programId, UserSearch search, CancellationToken cancellationToken = default);
 
     /// <summary>사용자 한 명의 역할 선택지.</summary>
-    Task<IReadOnlyList<UserRoleDto>> GetRolesAsync(string userId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<UserRoleDto>> GetRolesAsync(string programId, string userId, CancellationToken cancellationToken = default);
 
     /// <summary>이름·상태·사용 기한·역할 저장.</summary>
-    Task SaveAsync(UserSaveRequest request, CancellationToken cancellationToken = default);
+    Task SaveAsync(string programId, UserSaveRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>잠금 해제 또는 2단계 인증 초기화. 바꾼 것이 없으면 false.</summary>
-    Task<bool> ResetAsync(string userId, string actionCd, CancellationToken cancellationToken = default);
+    Task<bool> ResetAsync(string programId, string userId, string actionCd, CancellationToken cancellationToken = default);
 
     /// <summary>검색용 회사 목록 (코드, 이름).</summary>
     Task<IReadOnlyList<(string Code, string Name)>> GetCompaniesAsync(CancellationToken cancellationToken = default);
@@ -41,11 +42,12 @@ public sealed class UserAdminService(ISpExecutor sp) : IUserAdminService
     private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     /// <inheritdoc />
-    public Task<PageResult<UserAdminDto>> GetListAsync(UserSearch search, CancellationToken cancellationToken = default) =>
+    public Task<PageResult<UserAdminDto>> GetListAsync(string programId, UserSearch search, CancellationToken cancellationToken = default) =>
         sp.QueryPageAsync<UserAdminDto>(
             ListSp,
             new
             {
+                P_PROGRAM_ID = programId,
                 P_KEYWORD = Blank(search.Keyword),
                 P_COMPANY_CD = Blank(search.CompanyCd),
                 P_USER_TYPE_CD = Blank(search.UserTypeCd),
@@ -57,11 +59,11 @@ public sealed class UserAdminService(ISpExecutor sp) : IUserAdminService
             cancellationToken);
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<UserRoleDto>> GetRolesAsync(string userId, CancellationToken cancellationToken = default) =>
-        sp.QueryAsync<UserRoleDto>(RoleListSp, new { P_TARGET_USER_ID = userId }, cancellationToken);
+    public Task<IReadOnlyList<UserRoleDto>> GetRolesAsync(string programId, string userId, CancellationToken cancellationToken = default) =>
+        sp.QueryAsync<UserRoleDto>(RoleListSp, new { P_PROGRAM_ID = programId, P_TARGET_USER_ID = userId }, cancellationToken);
 
     /// <inheritdoc />
-    public async Task SaveAsync(UserSaveRequest request, CancellationToken cancellationToken = default)
+    public async Task SaveAsync(string programId, UserSaveRequest request, CancellationToken cancellationToken = default)
     {
         var roles = request.RoleIds.Select(r => r?.Trim() ?? "").Distinct(StringComparer.Ordinal).ToList();
         if (roles.Exists(r => r.Length is 0 or > 30))
@@ -73,6 +75,7 @@ public sealed class UserAdminService(ISpExecutor sp) : IUserAdminService
             SaveSp,
             new
             {
+                P_PROGRAM_ID = programId,
                 P_TARGET_USER_ID = request.UserId,
                 P_ROW_VER = request.RowVer,
                 P_USER_NM = request.UserNm.Trim(),
@@ -84,8 +87,8 @@ public sealed class UserAdminService(ISpExecutor sp) : IUserAdminService
     }
 
     /// <inheritdoc />
-    public async Task<bool> ResetAsync(string userId, string actionCd, CancellationToken cancellationToken = default) =>
-        (await sp.ExecuteAsync(ResetSp, new { P_TARGET_USER_ID = userId, P_ACTION_CD = actionCd }, cancellationToken)).AffectedCnt > 0;
+    public async Task<bool> ResetAsync(string programId, string userId, string actionCd, CancellationToken cancellationToken = default) =>
+        (await sp.ExecuteAsync(ResetSp, new { P_PROGRAM_ID = programId, P_TARGET_USER_ID = userId, P_ACTION_CD = actionCd }, cancellationToken)).AffectedCnt > 0;
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<(string Code, string Name)>> GetCompaniesAsync(CancellationToken cancellationToken = default)
