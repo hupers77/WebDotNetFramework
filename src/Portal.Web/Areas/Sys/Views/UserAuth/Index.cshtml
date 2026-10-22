@@ -1,0 +1,82 @@
+@* 사용자별 예외 권한 (표준 화면 3 마스터-디테일): 왼쪽 사용자 목록, 오른쪽 그 사람의 예외 권한 목록과 추가 줄. *@
+@model UserAuthIndexModel
+@{
+    var title = Menus.ProgramTitle(UserAuthController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/user-auth.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="user-auth-screen" class="md-layout"
+     data-url-users="@Url.Action("Users")"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")"
+     data-funcs="@System.Text.Json.JsonSerializer.Serialize(Model.Funcs.ToDictionary(f => f.Code, f => f.Name))">
+    <section class="md-master" aria-labelledby="user-list-heading">
+        <h2 id="user-list-heading">@L["LBL.USER_LIST"]</h2>
+        <form id="user-search" class="search-bar" role="search">
+            <label for="user-company-filter">@L["LBL.COMPANY"]</label>
+            <select id="user-company-filter">
+                <option value="">@L["LBL.ALL"]</option>
+                @foreach (var (code, name) in Model.Companies)
+                {
+                    <option value="@code">@name</option>
+                }
+            </select>
+            <label for="user-keyword">@L["LBL.KEYWORD"]</label>
+            <input id="user-keyword" type="search" maxlength="100" autocomplete="off" />
+            <button type="submit">@L["BTN.SEARCH"]</button>
+        </form>
+        <p id="user-total" class="hint" aria-live="polite"></p>
+        <ul id="user-list" class="pick-list" role="listbox" aria-labelledby="user-list-heading"></ul>
+        <div id="user-pager" class="pager" hidden>
+            <button type="button" id="user-prev">@L["BTN.PREV"]</button>
+            <span id="user-page" aria-live="polite"></span>
+            <button type="button" id="user-next">@L["BTN.NEXT"]</button>
+        </div>
+    </section>
+    <section class="md-detail" aria-labelledby="user-auth-heading">
+        <h2 id="user-auth-heading">@L["LBL.USER_AUTH"]</h2>
+        <p id="user-auth-hint" class="hint">@L["SYS.USER_AUTH.SELECT"]</p>
+        <div id="user-auth-detail" hidden>
+            <p id="user-auth-target"></p>
+            <p id="user-auth-lock" class="hint" hidden></p>
+            <p class="hint">@L["SYS.USER_AUTH.HINT"]</p>
+            <form id="user-auth-add" class="search-bar">
+                <label for="user-auth-program">@L["LBL.PROGRAM"]</label>
+                <select id="user-auth-program"></select>
+                <label for="user-auth-func">@L["LBL.FUNC"]</label>
+                <select id="user-auth-func"></select>
+                <label for="user-auth-type">@L["LBL.GRANT_TYPE"]</label>
+                <select id="user-auth-type">
+                    <option value="DENY">@L["LBL.DENY"]</option>
+                    <option value="GRANT">@L["LBL.GRANT"]</option>
+                </select>
+                <label for="user-auth-end">@L["LBL.END_DT"]</label>
+                <input id="user-auth-end" type="date" required />
+                <button type="submit" id="user-auth-add-row">@L["BTN.ADD_ROW"]</button>
+            </form>
+            <p id="user-auth-add-note" class="hint" hidden>@L["SYS.USER_AUTH.NOT_GRANTABLE"]</p>
+            <div class="grid-wrap">
+                <table class="fw-grid user-auth-grid" aria-labelledby="user-auth-heading">
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["LBL.PROGRAM"]</th>
+                            <th scope="col">@L["LBL.FUNC"]</th>
+                            <th scope="col">@L["LBL.BY_ROLE"]</th>
+                            <th scope="col">@L["LBL.GRANT_TYPE"]</th>
+                            <th scope="col">@L["LBL.END_DT"]</th>
+                            <th scope="col" class="col-state"><span class="sr-only">@L["BTN.DEL_ROW"]</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-auth-rows"></tbody>
+                </table>
+            </div>
+            <div class="toolbar">
+                <span class="toolbar-spacer"></span>
+                <fw-button func="UPDATE" text-key="BTN.SAVE" id="user-auth-save" class="primary" />
+            </div>
+        </div>
+    </section>
+</div>
