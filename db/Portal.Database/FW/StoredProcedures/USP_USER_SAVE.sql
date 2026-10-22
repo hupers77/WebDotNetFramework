@@ -1,11 +1,14 @@
--- 사용자 정보·역할 저장 (저장 SP 표준 템플릿). 프로그램: SYS_USER_MGT
+-- 사용자 정보·역할 저장 (저장 SP 표준 템플릿). 프로그램: SYS_USER_MGT, PTN_USER_MGT
 -- 이름, 상태(ACTIVE/LOCKED/DORMANT/RETIRED), 계정 사용 기한, 직접 부여 역할(@P_ROLE_IDS: JSON 배열, 이 목록이 되도록 더하고 뺀다)을 저장한다.
 -- 규칙: 자기 자신의 상태·역할은 바꿀 수 없다. 역할은 COMPANY_TYPE_CD가 비었거나 사용자 회사 유형과 같은 것만 줄 수 있다
 --       (협력사 사용자에게 본사 역할 금지). SYS_ADMIN 역할을 주고 빼는 것과 SYS_ADMIN 사용자를 고치는 것은 SYS_ADMIN만 한다.
+--       대상은 @P_PROGRAM_ID의 데이터 범위(UFN_DATA_SCOPE) 안이어야 하고(밖이면 없는 것으로 본다), 협력사 관리 화면(PTN_USER_MGT)에서는
+--       협력사 역할(COMPANY_TYPE_CD = 'PARTNER')만 줄 수 있다.
 -- 상태를 사용 외로 바꾸면 그 사용자의 세션은 다음 요청에서 끊긴다(세션 확인 SP). 역할·상태가 바뀌면 권한 캐시(AUTH)를 갱신한다.
 -- 동시성: 조회 때 받은 ROW_VER와 같아야 한다. 감사 로그를 남긴다.
 -- 결과: AFFECTED_CNT
 CREATE PROCEDURE [FW].[USP_USER_SAVE]
+  @P_PROGRAM_ID      VARCHAR(30),
   @P_TARGET_USER_ID  VARCHAR(30),
   @P_ROW_VER         BINARY(8),
   @P_USER_NM         NVARCHAR(100),
@@ -20,6 +23,8 @@ BEGIN
   SET NOCOUNT ON;
   SET XACT_ABORT ON;
 
+  IF @P_PROGRAM_ID NOT IN ('SYS_USER_MGT', 'PTN_USER_MGT')
+    THROW 50005, 'MSG.INVALID_INPUT', 1;
   SET @P_USER_NM = NULLIF(LTRIM(RTRIM(@P_USER_NM)), N'');
   IF @P_USER_NM IS NULL OR ISJSON(@P_ROLE_IDS) <> 1 OR LEFT(LTRIM(@P_ROLE_IDS), 1) <> '['
     THROW 50005, 'MSG.INVALID_INPUT', 1;
@@ -39,7 +44,10 @@ BEGIN
     SELECT @OLD_STAT = U.[USER_STAT_CD], @OLD_VER = U.[ROW_VER], @COMPANY_TYPE = C.[COMPANY_TYPE_CD]
       FROM [FW].[TB_USER] U WITH (UPDLOCK, HOLDLOCK)
       JOIN [FW].[TB_COMPANY] C ON C.[COMPANY_CD] = U.[COMPANY_CD]
-     WHERE U.[USER_ID] = @P_TARGET_USER_ID;
+     WHERE U.[USER_ID] = @P_TARGET_USER_ID
+       AND EXISTS (SELECT 1 FROM [FW].[UFN_DATA_SCOPE](@P_USER_ID, @P_PROGRAM_ID) S
+                   WHERE S.[COMPANY_CD] = U.[COMPANY_CD] AND (S.[DEPT_ID] IS NULL OR S.[DEPT_ID] = U.[DEPT_ID])
+                     AND (S.[USER_ID] IS NULL OR S.[USER_ID] = U.[USER_ID]));
 
     IF @OLD_STAT IS NULL
       THROW 50004, 'MSG.NOT_FOUND', 1;
@@ -67,7 +75,8 @@ BEGIN
             OR EXISTS (SELECT 1 FROM @ADDED WHERE [ROLE_ID] = 'SYS_ADMIN'))
       THROW 50003, 'MSG.USER_SYS_ADMIN_ONLY', 1;
     IF EXISTS (SELECT 1 FROM @ADDED A JOIN [FW].[TB_ROLE] R ON R.[ROLE_ID] = A.[ROLE_ID]
-                WHERE R.[USE_YN] <> 'Y' OR (R.[COMPANY_TYPE_CD] IS NOT NULL AND R.[COMPANY_TYPE_CD] <> @COMPANY_TYPE))
+                WHERE R.[USE_YN] <> 'Y' OR (R.[COMPANY_TYPE_CD] IS NOT NULL AND R.[COMPANY_TYPE_CD] <> @COMPANY_TYPE)
+                   OR (@P_PROGRAM_ID = 'PTN_USER_MGT' AND ISNULL(R.[COMPANY_TYPE_CD], '') <> 'PARTNER'))
       THROW 50003, 'MSG.USER_ROLE_TYPE', 1;
 
     SET @BEFORE = (SELECT U.[USER_NM], U.[USER_STAT_CD], U.[ACCOUNT_END_DT],

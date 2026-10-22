@@ -358,7 +358,13 @@ USING (VALUES
   (N'GET', N'/Sys/User/Roles', N'SYS_USER_MGT', N'READ'),
   (N'POST', N'/Sys/User/Save', N'SYS_USER_MGT', N'UPDATE'),
   (N'POST', N'/Sys/User/Unlock', N'SYS_USER_MGT', N'UPDATE'),
-  (N'POST', N'/Sys/User/ResetMfa', N'SYS_USER_MGT', N'UPDATE')
+  (N'POST', N'/Sys/User/ResetMfa', N'SYS_USER_MGT', N'UPDATE'),
+  (N'GET', N'/Ptn/User', N'PTN_USER_MGT', N'READ'),
+  (N'GET', N'/Ptn/User/List', N'PTN_USER_MGT', N'READ'),
+  (N'GET', N'/Ptn/User/Roles', N'PTN_USER_MGT', N'READ'),
+  (N'POST', N'/Ptn/User/Save', N'PTN_USER_MGT', N'UPDATE'),
+  (N'POST', N'/Ptn/User/Unlock', N'PTN_USER_MGT', N'UPDATE'),
+  (N'POST', N'/Ptn/User/ResetMfa', N'PTN_USER_MGT', N'UPDATE')
 ) AS S ([HTTP_METHOD], [ROUTE_PATTERN], [PROGRAM_ID], [FUNC_CD])
    ON T.[HTTP_METHOD] = S.[HTTP_METHOD] AND T.[ROUTE_PATTERN] = S.[ROUTE_PATTERN]
 WHEN MATCHED THEN UPDATE SET T.[PROGRAM_ID] = S.[PROGRAM_ID], T.[FUNC_CD] = S.[FUNC_CD]

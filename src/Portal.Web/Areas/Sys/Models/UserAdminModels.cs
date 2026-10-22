@@ -186,11 +186,15 @@ public sealed class UserResetRequest
     public string UserId { get; set; } = "";
 }
 
-/// <summary>화면 모델: 검색 선택지.</summary>
+/// <summary>화면 모델: 화면 프로그램과 검색 선택지. 본사 사용자 관리와 협력사 사용자 관리가 같은 화면(Sys/Views/User/Index)을 쓴다.</summary>
+/// <param name="ProgramId">화면 프로그램 ID (제목·권한 버튼).</param>
+/// <param name="OwnCompanyOnly">협력사 관리자 화면이면 true: 회사·사용자 유형 검색을 숨긴다(자기 회사 협력사 사용자만 보이므로).</param>
 /// <param name="Companies">(회사 코드, 회사명).</param>
 /// <param name="Types">(사용자 유형, 이름).</param>
 /// <param name="Stats">(상태, 이름).</param>
 public sealed record UserAdminIndexModel(
+    string ProgramId,
+    bool OwnCompanyOnly,
     IReadOnlyList<(string Code, string Name)> Companies,
     IReadOnlyList<(string Code, string Name)> Types,
     IReadOnlyList<(string Code, string Name)> Stats);

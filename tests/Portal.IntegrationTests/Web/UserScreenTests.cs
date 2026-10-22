@@ -7,7 +7,7 @@ using static Portal.IntegrationTests.Web.WebTestHttp;
 
 namespace Portal.IntegrationTests.Web;
 
-/// <summary>사용자 관리 화면: 권한별 버튼(UPDATE), 권한 없는 요청 차단, 저장·잠금 해제·2단계 인증 초기화가 SP로 가는 값, 개인정보 미노출.</summary>
+/// <summary>사용자 관리 화면: 권한별 버튼(UPDATE), 권한 없는 요청 차단, 저장·잠금 해제·2단계 인증 초기화가 SP로 가는 값, 개인정보 미노출, 협력사 관리자 화면(Ptn/User).</summary>
 public sealed class UserScreenTests : IClassFixture<PortalWebFactory>
 {
     private const string Program = "SYS_USER_MGT";
@@ -42,10 +42,10 @@ public sealed class UserScreenTests : IClassFixture<PortalWebFactory>
         return await response.Content.ReadAsStringAsync(Ct);
     }
 
-    private async Task<HttpResponseMessage> PostAsync(string token, string action, object body)
+    private async Task<HttpResponseMessage> PostAsync(string token, string action, object body, string area = "Sys")
     {
         var (csrf, cookie) = await GetCsrfAsync(_web.NewClient(token), "/");
-        var request = Ajax(HttpMethod.Post, $"/Sys/User/{action}", body);
+        var request = Ajax(HttpMethod.Post, $"/{area}/User/{action}", body);
         request.Headers.Add("X-CSRF-TOKEN", csrf);
         return await _web.NewClient(token, cookie).SendAsync(request, Ct);
     }
@@ -128,5 +128,35 @@ public sealed class UserScreenTests : IClassFixture<PortalWebFactory>
         Assert.Contains("\"userId\":\"kim.ptn\"", body, StringComparison.Ordinal);
         Assert.DoesNotContain("email", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("secret", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task 협력사화면_회사유형검색이없고_SP에협력사프로그램ID를넘긴다()
+    {
+        var token = _web.SignIn("ptn.admin", [Home, "PTN_USER_MGT:READ", "PTN_USER_MGT:UPDATE"]);
+
+        var response = await _web.NewClient(token).GetAsync("/Ptn/User?_layout=tab", Ct);
+        var html = await response.Content.ReadAsStringAsync(Ct);
+        await _web.NewClient(token).SendAsync(Ajax(HttpMethod.Get, "/Ptn/User/List?companyCd=P0002"), Ct);
+        var listProgram = _web.Sp.LastCall(UserAdminService.ListSp).Parameters["P_PROGRAM_ID"];
+        await PostAsync(token, "Unlock", new { userId = "kim.ptn" }, "Ptn");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.DoesNotContain("id=\"user-company-filter\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"user-type-filter\"", html, StringComparison.Ordinal);
+        Assert.Contains("data-url-list=\"/Ptn/User/List\"", html, StringComparison.Ordinal);
+        Assert.Contains("id=\"user-save\"", html, StringComparison.Ordinal);
+        Assert.Equal("PTN_USER_MGT", listProgram);
+        Assert.Equal("PTN_USER_MGT", _web.Sp.LastCall(UserAdminService.ResetSp).Parameters["P_PROGRAM_ID"]);
+    }
+
+    [Fact]
+    public async Task 협력사화면_본사사용자관리권한만으로는403_반대도403()
+    {
+        var sys = _web.SignIn("ptn.sysonly", AllFuncs);
+        var ptn = _web.SignIn("ptn.only", [Home, "PTN_USER_MGT:READ"]);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await _web.NewClient(sys).GetAsync("/Ptn/User?_layout=tab", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await _web.NewClient(ptn).SendAsync(Ajax(HttpMethod.Get, "/Sys/User/List"), Ct)).StatusCode);
     }
 }

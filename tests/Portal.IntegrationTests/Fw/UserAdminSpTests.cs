@@ -8,7 +8,7 @@ namespace Portal.IntegrationTests.Fw;
 
 /// <summary>
 /// 사용자 관리 SP: 목록, 역할 선택지(회사 유형·SYS_ADMIN), 저장(역할 더하고 빼기, 권한 캐시, 감사 로그),
-/// 협력사 사용자에게 본사 역할 금지, 자기 계정 보호, SYS_ADMIN 보호, 동시성, 잠금 해제·2단계 인증 초기화.
+/// 협력사 사용자에게 본사 역할 금지, 협력사 관리자는 자기 회사 사용자만(데이터 범위), 자기 계정 보호, SYS_ADMIN 보호, 동시성, 잠금 해제·2단계 인증 초기화.
 /// </summary>
 /// <remarks>SP 오류는 테스트 트랜잭션도 롤백하므로 오류 확인은 각 테스트의 마지막 호출로 둔다.</remarks>
 [Collection(DbTests.Name)]
@@ -19,6 +19,11 @@ public sealed class UserAdminSpTests(DbFixture fixture)
     private const string Admin = "it.u.admin";
     private const string PtnUser = "it.u.ptn";
     private const string EmpUser = "it.u.emp";
+    private const string Partner2 = "IT_UCO2";
+    private const string PtnAdmin = "it.u.padm";
+    private const string PtnUser2 = "it.u.ptn2";
+    private const string Sys = "SYS_USER_MGT";
+    private const string Ptn = "PTN_USER_MGT";
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -34,23 +39,34 @@ public sealed class UserAdminSpTests(DbFixture fixture)
         return db;
     }
 
-    private static async Task<UserAdminDto> GetAsync(TestDb db, string userId)
+    /// <summary>협력사 한 곳을 더 만들고, 첫 협력사의 협력사 관리자로 바꾼다.</summary>
+    private static async Task<TestDb> BeginPartnerAdminAsync(DbFixture fixture)
     {
-        var page = await db.Sp.QueryPageAsync<UserAdminDto>(UserAdminService.ListSp, new { P_KEYWORD = userId, P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, Ct);
+        var db = await BeginAsync(fixture);
+        await db.SeedCompanyAsync(Partner2);
+        await db.SeedUserAsync(PtnUser2, Partner2, "PARTNER", null, "PARTNER_USER");
+        await db.SeedUserAsync(PtnAdmin, Partner, "PARTNER", null, "PARTNER_ADMIN");
+        db.AsUser(PtnAdmin, Partner, "PARTNER");
+        return db;
+    }
+
+    private static async Task<UserAdminDto> GetAsync(TestDb db, string userId, string program = Sys)
+    {
+        var page = await db.Sp.QueryPageAsync<UserAdminDto>(UserAdminService.ListSp, new { P_PROGRAM_ID = program, P_KEYWORD = userId, P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, Ct);
         return Assert.Single(page.Items, u => u.UserId == userId);
     }
 
-    private static async Task<Portal.Data.SaveResult> SaveAsync(TestDb db, string userId, string[] roles, string stat = "ACTIVE", byte[]? rowVer = null, DateOnly? end = null)
+    private static async Task<Portal.Data.SaveResult> SaveAsync(TestDb db, string userId, string[] roles, string stat = "ACTIVE", byte[]? rowVer = null, DateOnly? end = null, string program = Sys)
     {
-        rowVer ??= (await GetAsync(db, userId)).RowVer;
+        rowVer ??= (await GetAsync(db, userId, program)).RowVer;
         return await db.Sp.ExecuteAsync(
             UserAdminService.SaveSp,
-            new { P_TARGET_USER_ID = userId, P_ROW_VER = rowVer, P_USER_NM = " 새 이름 ", P_USER_STAT_CD = stat, P_ACCOUNT_END_DT = end, P_ROLE_IDS = System.Text.Json.JsonSerializer.Serialize(roles) },
+            new { P_PROGRAM_ID = program, P_TARGET_USER_ID = userId, P_ROW_VER = rowVer, P_USER_NM = " 새 이름 ", P_USER_STAT_CD = stat, P_ACCOUNT_END_DT = end, P_ROLE_IDS = System.Text.Json.JsonSerializer.Serialize(roles) },
             Ct);
     }
 
-    private static Task<IReadOnlyList<UserRoleDto>> RolesAsync(TestDb db, string userId) =>
-        db.Sp.QueryAsync<UserRoleDto>(UserAdminService.RoleListSp, new { P_TARGET_USER_ID = userId }, Ct);
+    private static Task<IReadOnlyList<UserRoleDto>> RolesAsync(TestDb db, string userId, string program = Sys) =>
+        db.Sp.QueryAsync<UserRoleDto>(UserAdminService.RoleListSp, new { P_PROGRAM_ID = program, P_TARGET_USER_ID = userId }, Ct);
 
     [Fact]
     public async Task 목록_회사로찾고_역할과2단계인증등록여부를준다()
@@ -58,8 +74,8 @@ public sealed class UserAdminSpTests(DbFixture fixture)
         await using var db = await BeginAsync(fixture);
         await db.ExecAsync("UPDATE FW.TB_USER SET MFA_SECRET_ENC = 0x01, LOCK_YN = 'Y', LOGIN_FAIL_CNT = 5 WHERE USER_ID = @U", ("@U", PtnUser));
 
-        var page = await db.Sp.QueryPageAsync<UserAdminDto>(UserAdminService.ListSp, new { P_COMPANY_CD = Partner, P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, Ct);
-        var locked = await db.Sp.QueryPageAsync<UserAdminDto>(UserAdminService.ListSp, new { P_KEYWORD = "it.u.", P_LOCK_YN = "Y", P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, Ct);
+        var page = await db.Sp.QueryPageAsync<UserAdminDto>(UserAdminService.ListSp, new { P_PROGRAM_ID = Sys, P_COMPANY_CD = Partner, P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, Ct);
+        var locked = await db.Sp.QueryPageAsync<UserAdminDto>(UserAdminService.ListSp, new { P_PROGRAM_ID = Sys, P_KEYWORD = "it.u.", P_LOCK_YN = "Y", P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, Ct);
 
         var row = Assert.Single(page.Items);
         Assert.Equal((PtnUser, "PARTNER", "Y", "PARTNER_USER", "사용", 5), (row.UserId, row.CompanyTypeCd, row.MfaYn, row.RoleIds, row.UserStatNm, row.LoginFailCnt));
@@ -218,9 +234,9 @@ public sealed class UserAdminSpTests(DbFixture fixture)
         await using var db = await BeginAsync(fixture);
         await db.ExecAsync("UPDATE FW.TB_USER SET MFA_SECRET_ENC = 0x01, MFA_LAST_STEP = 99, LOCK_YN = 'Y', LOCK_DT = SYSUTCDATETIME(), LOGIN_FAIL_CNT = 5 WHERE USER_ID = @U", ("@U", PtnUser));
 
-        var unlock = await db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_TARGET_USER_ID = PtnUser, P_ACTION_CD = UserResetActions.Unlock }, Ct);
-        var mfa = await db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_TARGET_USER_ID = PtnUser, P_ACTION_CD = UserResetActions.MfaReset }, Ct);
-        var again = await db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_TARGET_USER_ID = PtnUser, P_ACTION_CD = UserResetActions.MfaReset }, Ct);
+        var unlock = await db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_PROGRAM_ID = Sys, P_TARGET_USER_ID = PtnUser, P_ACTION_CD = UserResetActions.Unlock }, Ct);
+        var mfa = await db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_PROGRAM_ID = Sys, P_TARGET_USER_ID = PtnUser, P_ACTION_CD = UserResetActions.MfaReset }, Ct);
+        var again = await db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_PROGRAM_ID = Sys, P_TARGET_USER_ID = PtnUser, P_ACTION_CD = UserResetActions.MfaReset }, Ct);
 
         Assert.Equal((1, 1, 0), (unlock.AffectedCnt, mfa.AffectedCnt, again.AffectedCnt));
         Assert.Equal("N|0|-|-", await db.ScalarAsync<string>("SELECT CONCAT(LOCK_YN, '|', LOGIN_FAIL_CNT, '|', ISNULL(CAST(MFA_LAST_STEP AS VARCHAR), '-'), '|', IIF(MFA_SECRET_ENC IS NULL, '-', 'x')) FROM FW.TB_USER WHERE USER_ID = @U", ("@U", PtnUser)));
@@ -232,7 +248,7 @@ public sealed class UserAdminSpTests(DbFixture fixture)
     {
         await using var db = await BeginAsync(fixture);
 
-        var ex = await Assert.ThrowsAsync<BizException>(() => db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_TARGET_USER_ID = Admin, P_ACTION_CD = UserResetActions.MfaReset }, Ct));
+        var ex = await Assert.ThrowsAsync<BizException>(() => db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_PROGRAM_ID = Sys, P_TARGET_USER_ID = Admin, P_ACTION_CD = UserResetActions.MfaReset }, Ct));
         Assert.Equal(UserAdminMessageKeys.SelfChange, ex.MessageKey);
     }
 
@@ -242,7 +258,93 @@ public sealed class UserAdminSpTests(DbFixture fixture)
         await using var db = await BeginAsync(fixture);
         await db.ExecAsync("INSERT INTO FW.TB_USER_ROLE (USER_ID, ROLE_ID) VALUES (@U, 'SYS_ADMIN')", ("@U", EmpUser));
 
-        var ex = await Assert.ThrowsAsync<BizException>(() => db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_TARGET_USER_ID = EmpUser, P_ACTION_CD = UserResetActions.MfaReset }, Ct));
+        var ex = await Assert.ThrowsAsync<BizException>(() => db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_PROGRAM_ID = Sys, P_TARGET_USER_ID = EmpUser, P_ACTION_CD = UserResetActions.MfaReset }, Ct));
         Assert.Equal(UserAdminMessageKeys.SysAdminOnly, ex.MessageKey);
+    }
+
+    [Fact]
+    public async Task 프로그램ID가_사용자관리화면이아니면거부()
+    {
+        await using var db = await BeginAsync(fixture);
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => db.Sp.QueryPageAsync<UserAdminDto>(UserAdminService.ListSp, new { P_PROGRAM_ID = "SYS_CODE_MGT", P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, Ct));
+        Assert.Equal(MessageKeys.InvalidInput, ex.MessageKey);
+    }
+
+    [Fact]
+    public async Task 협력사관리자_목록은자기회사사용자만_본사화면으로는아무도안보인다()
+    {
+        await using var db = await BeginPartnerAdminAsync(fixture);
+
+        var own = await db.Sp.QueryPageAsync<UserAdminDto>(UserAdminService.ListSp, new { P_PROGRAM_ID = Ptn, P_KEYWORD = "it.u.", P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, Ct);
+        var other = await db.Sp.QueryPageAsync<UserAdminDto>(UserAdminService.ListSp, new { P_PROGRAM_ID = Ptn, P_COMPANY_CD = Partner2, P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, Ct);
+        var sys = await db.Sp.QueryPageAsync<UserAdminDto>(UserAdminService.ListSp, new { P_PROGRAM_ID = Sys, P_KEYWORD = "it.u.", P_PAGE_NO = 1, P_PAGE_SIZE = 50 }, Ct);
+
+        Assert.Equal([PtnAdmin, PtnUser], own.Items.Select(u => u.UserId).Order(StringComparer.Ordinal));
+        Assert.Equal(2, own.TotalCount);
+        Assert.Equal((0, 0), (other.Items.Count, other.TotalCount));
+        Assert.Equal((0, 0), (sys.Items.Count, sys.TotalCount));
+    }
+
+    [Fact]
+    public async Task 협력사관리자_자기회사사용자에게협력사역할만보이고줄수있다()
+    {
+        await using var db = await BeginPartnerAdminAsync(fixture);
+
+        var roles = (await RolesAsync(db, PtnUser, Ptn)).ToDictionary(r => r.RoleId);
+        await SaveAsync(db, PtnUser, ["PARTNER_ADMIN", "PARTNER_USER"], program: Ptn);
+
+        Assert.Equal(("Y", "Y"), (roles["PARTNER_ADMIN"].AssignableYn, roles["PARTNER_USER"].AssignableYn));
+        Assert.Equal(["PARTNER_ADMIN", "PARTNER_USER"], roles.Keys.Order(StringComparer.Ordinal)); // 본사 역할은 목록에도 없다
+        Assert.Equal("PARTNER_ADMIN,PARTNER_USER", (await GetAsync(db, PtnUser, Ptn)).RoleIds);
+    }
+
+    [Fact]
+    public async Task 협력사관리자_다른회사사용자의역할은없는것으로()
+    {
+        await using var db = await BeginPartnerAdminAsync(fixture);
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => RolesAsync(db, PtnUser2, Ptn));
+        Assert.Equal(MessageKeys.NotFound, ex.MessageKey);
+    }
+
+    [Fact]
+    public async Task 협력사관리자_다른회사사용자저장은없는것으로()
+    {
+        await using var db = await BeginPartnerAdminAsync(fixture);
+        var rowVer = await db.ScalarAsync<byte[]>("SELECT ROW_VER FROM FW.TB_USER WHERE USER_ID = @U", ("@U", PtnUser2));
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => SaveAsync(db, PtnUser2, ["PARTNER_USER"], stat: "RETIRED", rowVer: rowVer, program: Ptn));
+        Assert.Equal(MessageKeys.NotFound, ex.MessageKey);
+    }
+
+    [Fact]
+    public async Task 협력사관리자_본사사용자초기화는없는것으로()
+    {
+        await using var db = await BeginPartnerAdminAsync(fixture);
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_PROGRAM_ID = Ptn, P_TARGET_USER_ID = EmpUser, P_ACTION_CD = UserResetActions.Unlock }, Ct));
+        Assert.Equal(MessageKeys.NotFound, ex.MessageKey);
+    }
+
+    [Fact]
+    public async Task 협력사관리자_자기회사사용자잠금해제()
+    {
+        await using var db = await BeginPartnerAdminAsync(fixture);
+        await db.ExecAsync("UPDATE FW.TB_USER SET LOCK_YN = 'Y', LOGIN_FAIL_CNT = 5 WHERE USER_ID = @U", ("@U", PtnUser));
+
+        var result = await db.Sp.ExecuteAsync(UserAdminService.ResetSp, new { P_PROGRAM_ID = Ptn, P_TARGET_USER_ID = PtnUser, P_ACTION_CD = UserResetActions.Unlock }, Ct);
+
+        Assert.Equal(1, result.AffectedCnt);
+        Assert.Equal("N", await db.ScalarAsync<string>("SELECT LOCK_YN FROM FW.TB_USER WHERE USER_ID = @U", ("@U", PtnUser)));
+    }
+
+    [Fact]
+    public async Task 협력사관리자_협력사화면에서도본사역할은거부()
+    {
+        await using var db = await BeginPartnerAdminAsync(fixture);
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => SaveAsync(db, PtnUser, ["PARTNER_USER", "EMP_USER"], program: Ptn));
+        Assert.Equal(UserAdminMessageKeys.RoleType, ex.MessageKey);
     }
 }

@@ -1,4 +1,4 @@
-// 사용자 관리 (SYS_USER_MGT): 표준 화면 3(마스터-디테일).
+// 사용자 관리 (SYS_USER_MGT 본사, PTN_USER_MGT 협력사 관리자): 표준 화면 3(마스터-디테일). 협력사 화면에는 회사·유형 검색이 없다.
 // 왼쪽 사용자 목록에서 고르면 오른쪽에서 이름·상태·사용 기한·역할을 고치고, 잠금 해제·2단계 인증 초기화를 한다.
 // 역할 선택지는 서버가 이 사용자에게 줄 수 있는지(회사 유형, SYS_ADMIN)를 함께 주므로 줄 수 없는 역할은 잠근다. 저장할 때 SP가 다시 확인한다.
 // 자기 자신의 상태·역할·잠금·2단계 인증은 바꿀 수 없다. 버튼은 서버가 권한으로 그린다(fw-button).
@@ -154,8 +154,8 @@ function showDetail(row) {
 async function load(pageNo = 1, keepId = null) {
     const query = new URLSearchParams({
         keyword: $('#user-keyword').value.trim(),
-        companyCd: $('#user-company-filter').value,
-        userTypeCd: $('#user-type-filter').value,
+        companyCd: $('#user-company-filter')?.value ?? '',
+        userTypeCd: $('#user-type-filter')?.value ?? '',
         userStatCd: $('#user-stat-filter').value,
         lockYn: $('#user-locked-filter').checked ? 'Y' : '',
         pageNo,

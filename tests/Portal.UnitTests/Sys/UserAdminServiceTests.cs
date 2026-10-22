@@ -6,7 +6,7 @@ using Portal.Web.Areas.Sys.Services;
 
 namespace Portal.UnitTests.Sys;
 
-/// <summary>사용자 관리 Service: 역할 목록 정리, 빈 역할 ID 거부, 초기화 결과.</summary>
+/// <summary>사용자 관리 Service: 역할 목록 정리, 빈 역할 ID 거부, 초기화 결과, 화면 프로그램 ID 전달.</summary>
 public sealed class UserAdminServiceTests
 {
     private readonly FakeSpExecutor _sp = new();
@@ -19,16 +19,16 @@ public sealed class UserAdminServiceTests
     [Fact]
     public async Task 저장_이름을다듬고_역할은중복없이JSON으로()
     {
-        await Service.SaveAsync(Request("EMP_USER", " PORTAL_ADMIN", "EMP_USER"));
+        await Service.SaveAsync("SYS_USER_MGT", Request("EMP_USER", " PORTAL_ADMIN", "EMP_USER"));
 
         var p = _sp.LastCall(UserAdminService.SaveSp).Parameters;
-        Assert.Equal(("홍길동", """["EMP_USER","PORTAL_ADMIN"]"""), ((string)p["P_USER_NM"]!, (string)p["P_ROLE_IDS"]!));
+        Assert.Equal(("홍길동", """["EMP_USER","PORTAL_ADMIN"]""", "SYS_USER_MGT"), ((string)p["P_USER_NM"]!, (string)p["P_ROLE_IDS"]!, (string)p["P_PROGRAM_ID"]!));
     }
 
     [Fact]
     public async Task 저장_역할을모두빼면_빈배열()
     {
-        await Service.SaveAsync(Request());
+        await Service.SaveAsync("SYS_USER_MGT", Request());
 
         Assert.Equal("[]", _sp.LastCall(UserAdminService.SaveSp).Parameters["P_ROLE_IDS"]);
     }
@@ -36,7 +36,7 @@ public sealed class UserAdminServiceTests
     [Fact]
     public async Task 저장_빈역할ID는_SP를부르지않고거부()
     {
-        var ex = await Assert.ThrowsAsync<BizException>(() => Service.SaveAsync(Request("EMP_USER", "  ")));
+        var ex = await Assert.ThrowsAsync<BizException>(() => Service.SaveAsync("SYS_USER_MGT", Request("EMP_USER", "  ")));
 
         Assert.Equal(MessageKeys.InvalidInput, ex.MessageKey);
         Assert.Empty(_sp.Calls);
@@ -47,6 +47,7 @@ public sealed class UserAdminServiceTests
     {
         _sp.Returns(UserAdminService.ResetSp, new Portal.Data.SaveResult(0, null));
 
-        Assert.False(await Service.ResetAsync("u1", UserResetActions.Unlock));
+        Assert.False(await Service.ResetAsync("PTN_USER_MGT", "u1", UserResetActions.Unlock));
+        Assert.Equal("PTN_USER_MGT", _sp.LastCall(UserAdminService.ResetSp).Parameters["P_PROGRAM_ID"]);
     }
 }

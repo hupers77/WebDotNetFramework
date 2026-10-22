@@ -1,9 +1,11 @@
--- 계정 잠금 해제 / 2단계 인증 초기화 (실행 SP). 프로그램: SYS_USER_MGT
+-- 계정 잠금 해제 / 2단계 인증 초기화 (실행 SP). 프로그램: SYS_USER_MGT, PTN_USER_MGT
 -- @P_ACTION_CD = 'UNLOCK': 비밀번호 실패로 잠긴 계정을 풀고 실패 횟수를 0으로 (관리자 잠금은 상태 USER_STAT_CD로 따로 다룬다).
 -- @P_ACTION_CD = 'MFA_RESET': 인증 앱 등록을 지워 다음 로그인에서 QR 등록 화면이 다시 나오게 한다(휴대폰 교체·분실).
--- 규칙: 자기 자신에게는 할 수 없고, SYS_ADMIN 사용자는 SYS_ADMIN만 할 수 있다. 감사 로그를 남긴다(비밀키 값은 남기지 않음).
+-- 규칙: 자기 자신에게는 할 수 없고, SYS_ADMIN 사용자는 SYS_ADMIN만 할 수 있다.
+--       대상은 @P_PROGRAM_ID의 데이터 범위(UFN_DATA_SCOPE) 안이어야 한다(밖이면 없는 것으로 본다). 감사 로그를 남긴다(비밀키 값은 남기지 않음).
 -- 결과: AFFECTED_CNT (이미 풀려 있거나 등록 전이면 0)
 CREATE PROCEDURE [FW].[USP_USER_ACCOUNT_RESET_EXEC]
+  @P_PROGRAM_ID      VARCHAR(30),
   @P_TARGET_USER_ID  VARCHAR(30),
   @P_ACTION_CD       VARCHAR(10),
   @P_USER_ID         VARCHAR(30),
@@ -14,7 +16,7 @@ BEGIN
   SET NOCOUNT ON;
   SET XACT_ABORT ON;
 
-  IF @P_ACTION_CD NOT IN ('UNLOCK', 'MFA_RESET')
+  IF @P_PROGRAM_ID NOT IN ('SYS_USER_MGT', 'PTN_USER_MGT') OR @P_ACTION_CD NOT IN ('UNLOCK', 'MFA_RESET')
     THROW 50005, 'MSG.INVALID_INPUT', 1;
   IF @P_TARGET_USER_ID = @P_USER_ID
     THROW 50003, 'MSG.USER_SELF_CHANGE', 1;
@@ -24,7 +26,11 @@ BEGIN
   BEGIN TRY
     BEGIN TRAN;
 
-    IF NOT EXISTS (SELECT 1 FROM [FW].[TB_USER] WITH (UPDLOCK, HOLDLOCK) WHERE [USER_ID] = @P_TARGET_USER_ID)
+    IF NOT EXISTS (SELECT 1 FROM [FW].[TB_USER] U WITH (UPDLOCK, HOLDLOCK)
+                    WHERE U.[USER_ID] = @P_TARGET_USER_ID
+                      AND EXISTS (SELECT 1 FROM [FW].[UFN_DATA_SCOPE](@P_USER_ID, @P_PROGRAM_ID) S
+                    WHERE S.[COMPANY_CD] = U.[COMPANY_CD] AND (S.[DEPT_ID] IS NULL OR S.[DEPT_ID] = U.[DEPT_ID])
+                      AND (S.[USER_ID] IS NULL OR S.[USER_ID] = U.[USER_ID])))
       THROW 50004, 'MSG.NOT_FOUND', 1;
     IF EXISTS (SELECT 1 FROM [FW].[TB_USER_ROLE] WHERE [USER_ID] = @P_TARGET_USER_ID AND [ROLE_ID] = 'SYS_ADMIN')
        AND NOT EXISTS (SELECT 1 FROM [FW].[UFN_USER_ROLES](@P_USER_ID) WHERE [ROLE_ID] = 'SYS_ADMIN')
