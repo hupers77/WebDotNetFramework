@@ -127,9 +127,18 @@ Controller에는 업무 로직을 두지 않습니다. 사용자 ID·언어·IP�
 
 **첨부 파일**: 화면은 첨부를 직접 받지 않고 공통 API(`/File/Upload`, `/File/List`, `/File/Download/{id}`, `/File/Delete`)를 씁니다. 업무 테이블에는 `FILE_GROUP_ID BIGINT NULL` 컬럼 하나만 두고, 순서는 다음과 같습니다.
 
-1. 화면이 `/File/Upload?programId=PUR_VENDOR_MGT`로 파일을 하나씩 올립니다. 처음 올리면 임시 묶음이 생기고 응답의 `fileGroupId`를 다음 업로드와 저장 요청에 함께 보냅니다.
+1. 화면은 첨부 부품 `FileBox`(`wwwroot/js/fw-file.js`)를 붙입니다. 파일 선택·끌어 놓기, 목록, 삭제, 모두 받기(ZIP)를 부품이 처리하고, 처음 올리면 임시 묶음이 생깁니다. 저장 요청에는 `files.getFileGroupId()`를 담습니다.
+
+   ```js
+   import { FileBox } from '../fw-file.js';
+   const files = new FileBox(document.getElementById('vendor-files'), {
+       programId: 'PUR_VENDOR_MGT',
+       fileGroupId: vendor.fileGroupId,              // 새로 등록하면 null
+       editable: !!document.getElementById('vendor-save'), // 저장 권한이 있을 때만 서버가 그린 버튼
+   });
+   ```
 2. 업무 저장 SP가 업무 행에 `FILE_GROUP_ID`를 저장하고, 같은 트랜잭션에서 `EXEC [FW].[USP_FILE_GROUP_CONFIRM_EXEC] @P_FILE_GROUP_ID, @P_PROGRAM_ID = 'PUR_VENDOR_MGT', @P_SHARE_YN = NULL, @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD`를 부릅니다. 확정하지 않은 묶음은 정리 작업이 지웁니다.
-3. 권한은 묶음의 프로그램으로 확인합니다. 목록·다운로드는 `READ`, 업로드·삭제는 `CREATE` 또는 `UPDATE`가 필요합니다. 협력사 사용자는 자기 회사 묶음만 보고, 본사가 협력사에게 보여 줄 첨부(공지 등)는 확정할 때 `@P_SHARE_YN = 'Y'`를 넘깁니다.
+3. 권한은 묶음의 프로그램으로 확인합니다. 목록·다운로드(ZIP 포함)는 `READ`, 업로드·삭제는 `CREATE` 또는 `UPDATE`가 필요합니다. 협력사 사용자는 자기 회사 묶음만 보고, 본사가 협력사에게 보여 줄 첨부(공지 등)는 확정할 때 `@P_SHARE_YN = 'Y'`를 넘깁니다.
 
 허용 확장자는 공통코드 `FILE_EXT`, 크기·개수는 설정 `FILE.MAX_SIZE_MB`·`FILE.MAX_COUNT`가 정합니다. 실행·스크립트 형식(exe, js, html, svg 등)은 코드에 추가해도 `FileService`가 막고, 내용이 확장자와 맞는지(매직 넘버)도 확인합니다. 저장소 폴더는 `appsettings.json`의 `Portal:File:StorageRoot`(웹 루트 밖, 실행 권한 없음, 백업 대상)이고, 파일 이름은 GUID라 원래 이름은 DB에만 있습니다. IIS는 요청 본문 한도가 따로 있으므로 `FILE.MAX_SIZE_MB`를 30MB보다 크게 올리면 `web.config`의 `requestLimits maxAllowedContentLength`도 함께 올립니다.
 
@@ -180,6 +189,7 @@ Microsoft .NET 기본 명명 규칙을 따르고, 여기서 정한 규칙은 `.e
 - 사용자 데이터는 `textContent` 또는 그리드 컴포넌트로만 넣고 `innerHTML`에 직접 넣지 않습니다.
 - 메시지는 `fw.t('MSG.SAVED')`, 확인창은 `await fw.dialog.confirm(fw.t('CNF.SAVE'))`(브라우저 `confirm()` 금지)를 씁니다. 날짜·숫자 표시용 `fw.format`은 조회형 화면 작업에서 추가합니다.
 - 편집 그리드는 `fw-grid.js`의 `Grid`를 씁니다. 컬럼에 `required`, `maxLength`, `pattern`을 주면 `validate()`가 서버와 같은 메시지 키로 검사하고 오류 칸으로 이동합니다. 여러 행 저장은 `getChanges()`(I/U/D 행)를 보내 TVP 일괄 저장 SP로 처리합니다. 행마다 요청을 보내지 않습니다. 저장하지 않은 변경이 있으면(`hasChanges()`) 다른 항목으로 옮기기 전에 `CNF.LEAVE`로 확인합니다. 행마다 칸 종류가 다르면 `type`·`required`·`placeholder`에 `(row) => 값` 함수를 주고(예: 설정 관리의 형식별 값 칸), 읽기 전용 칸의 표시는 `format`, 행별 버튼은 `type: 'button'`으로 그립니다. 행 추가·삭제가 없는 수정 전용 그리드는 `selectable: false`로 선택 칸을 뺍니다. 서버의 UTC 일시는 `fw.format.dateTime()`으로 보여 줍니다.
+- 첨부는 `fw-file.js`의 `FileBox`를 씁니다(3장 "첨부 파일"). 파일 올리기는 `fw.upload()`, 크기 표시는 `fw.format.fileSize()`입니다. 첨부 API를 화면에서 직접 부르지 않습니다.
 
 **웹 접근성 (KWCAG 2.2 기준, 공통 컴포넌트가 기본 지원)**
 

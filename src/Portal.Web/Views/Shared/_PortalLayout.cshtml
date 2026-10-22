@@ -20,6 +20,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
     <meta name="fw-i18n" content="@Url.Content($"~/i18n/{CurrentUser.LangCd}.json?v={Lang.Version}")" />
+    <meta name="fw-file-max-mb" content="@Config.GetInt(ConfigKeys.FileMaxSizeMb)" />
+    <meta name="fw-file-max-count" content="@Config.GetInt(ConfigKeys.FileMaxCount)" />
     <meta name="fw-user" content="@user?.UserId" />
     <title>@ViewData["Title"] - @L["SITE.NAME"]</title>
     <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />

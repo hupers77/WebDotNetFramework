@@ -178,4 +178,31 @@ public sealed class FileControllerTests : IClassFixture<PortalWebFactory>
         Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
         Assert.Equal(before + 1, CallCount("FW.USP_FILE_DEL"));
     }
+
+    [Fact]
+    public async Task ZIP다운로드_조회권한이면ZIP_없으면403()
+    {
+        var reader = _web.SignIn("file.reader.zip", [Home, $"{Program}:READ"]);
+        var other = _web.SignIn("file.other.zip", [Home, "SYS_CODE_MGT:READ"]);
+
+        var ok = await _web.NewClient(reader).GetAsync($"/File/DownloadZip/{GroupId}", Ct);
+        var denied = await _web.NewClient(other).GetAsync($"/File/DownloadZip/{GroupId}", Ct);
+
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        Assert.Equal("application/zip", ok.Content.Headers.ContentType?.MediaType);
+        using var archive = new System.IO.Compression.ZipArchive(await ok.Content.ReadAsStreamAsync(Ct));
+        Assert.Equal(["견적서 최종.pdf"], archive.Entries.Select(e => e.FullName));
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+    }
+
+    [Fact]
+    public async Task 화면레이아웃이_첨부한도설정을내려준다()
+    {
+        var token = _web.SignIn("file.layout", [Home]);
+
+        var html = await (await _web.NewClient(token).GetAsync("/", Ct)).Content.ReadAsStringAsync(Ct);
+
+        Assert.Contains("<meta name=\"fw-file-max-mb\" content=\"20\" />", html, StringComparison.Ordinal);
+        Assert.Contains("<meta name=\"fw-file-max-count\" content=\"10\" />", html, StringComparison.Ordinal);
+    }
 }

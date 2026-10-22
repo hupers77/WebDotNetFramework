@@ -13,7 +13,7 @@ namespace Portal.Web.Controllers;
 
 /// <summary>
 /// 첨부 파일 공통 API (모든 화면의 첨부 부품이 쓴다). 권한은 첨부 묶음의 프로그램으로 확인한다:
-/// 목록·다운로드는 READ, 업로드·삭제는 CREATE 또는 UPDATE. 다른 회사 묶음은 SP가 없는 것처럼 응답한다(공유 묶음은 조회만 허용).
+/// 목록·다운로드(ZIP 포함)는 READ, 업로드·삭제는 CREATE 또는 UPDATE. 다른 회사 묶음은 SP가 없는 것처럼 응답한다(공유 묶음은 조회만 허용).
 /// </summary>
 [ProgramFromData]
 public sealed class FileController(FileService files) : PortalController
@@ -97,6 +97,22 @@ public sealed class FileController(FileService files) : PortalController
         var content = await files.OpenDownloadAsync(file, HttpContext.RequestAborted);
         Response.Headers.CacheControl = "no-store";
         return File(content, "application/octet-stream", file.OrgFileNm);
+    }
+
+    /// <summary>묶음의 파일을 ZIP 하나로 다운로드.</summary>
+    [HttpGet]
+    public async Task<IActionResult> DownloadZip(long id)
+    {
+        var list = await files.GetListAsync(id, HttpContext.RequestAborted) ?? throw new BizException(MessageKeys.NotFound);
+        await DemandAnyFuncAsync(list.Group.ProgramId, FuncCodes.Read);
+        if (list.Files.Count == 0)
+        {
+            throw new BizException(MessageKeys.NotFound);
+        }
+
+        var content = await files.OpenZipAsync(list, HttpContext.RequestAborted);
+        Response.Headers.CacheControl = "no-store";
+        return File(content, "application/zip", $"files-{id}.zip");
     }
 
     /// <summary>삭제 (삭제 표시만, 업무 저장 전 취소해도 되돌릴 수 있게).</summary>

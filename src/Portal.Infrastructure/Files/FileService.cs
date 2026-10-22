@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using Portal.Core.Config;
@@ -85,6 +86,43 @@ public sealed class FileService(ISpExecutor sp, IFileStorage storage, IPortalCon
         return stream;
     }
 
+    /// <summary>
+    /// 묶음의 파일을 ZIP 하나로 묶는다(파일마다 다운로드 횟수를 올린다). 호출자가 READ 권한을 확인한 뒤 부른다.
+    /// 임시 파일에 만들고 스트림을 닫으면 지워진다. 같은 이름은 "이름 (2).확장자"로 바꾼다.
+    /// </summary>
+    public async Task<Stream> OpenZipAsync(FileListResult list, CancellationToken cancellationToken = default)
+    {
+        var zipPath = Path.Combine(Path.GetTempPath(), "portal-zip-" + Guid.NewGuid().ToString("N"));
+        var zip = new FileStream(zipPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 81920, System.IO.FileOptions.DeleteOnClose | System.IO.FileOptions.Asynchronous);
+        try
+        {
+            using (var archive = new ZipArchive(zip, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var item in list.Files)
+                {
+                    var file = await GetAsync(item.FileId, cancellationToken) ?? throw new BizException(MessageKeys.NotFound);
+                    var entry = archive.CreateEntry(UniqueName(file.OrgFileNm, used), CompressionLevel.Fastest);
+                    await using (var source = storage.OpenRead(file.StoredPath))
+                    await using (var target = entry.Open())
+                    {
+                        await source.CopyToAsync(target, cancellationToken);
+                    }
+
+                    await sp.ExecuteAsync("FW.USP_FILE_DOWNLOAD_EXEC", new { P_FILE_ID = file.FileId }, cancellationToken);
+                }
+            }
+
+            zip.Position = 0;
+            return zip;
+        }
+        catch
+        {
+            await zip.DisposeAsync();
+            throw;
+        }
+    }
+
     /// <summary>삭제 표시. 저장소의 내용은 정리 작업이 지운다(업무 저장 전 취소해도 되돌릴 수 있게).</summary>
     public Task DeleteAsync(long fileId, CancellationToken cancellationToken = default) =>
         sp.ExecuteAsync("FW.USP_FILE_DEL", new { P_FILE_ID = fileId }, cancellationToken);
@@ -155,6 +193,20 @@ public sealed class FileService(ISpExecutor sp, IFileStorage storage, IPortalCon
         }
 
         return name;
+    }
+
+    /// <summary>ZIP 안에서 겹치지 않는 이름.</summary>
+    internal static string UniqueName(string name, HashSet<string> used)
+    {
+        var candidate = name;
+        var ext = ExtensionOf(name);
+        var stem = ext.Length == 0 ? name : name[..^(ext.Length + 1)];
+        for (var n = 2; !used.Add(candidate); n++)
+        {
+            candidate = ext.Length == 0 ? $"{stem} ({n})" : $"{stem} ({n}).{ext}";
+        }
+
+        return candidate;
     }
 
     /// <summary>소문자 확장자 (점 없이). 없으면 빈 문자열.</summary>
