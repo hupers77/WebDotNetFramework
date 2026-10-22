@@ -11,7 +11,7 @@ internal static class SpParameterBuilder
     public const string LangCd = "P_LANG_CD";
     public const string ClientIp = "P_CLIENT_IP";
 
-    private static readonly ConcurrentDictionary<Type, (string Name, Func<object, object?> Get)[]> Getters = new();
+    private static readonly ConcurrentDictionary<Type, (string Name, Type Type, Func<object, object?> Get)[]> Getters = new();
 
     /// <summary>
     /// 파라미터 이름 → 값 목록. 공통 파라미터 3개는 항상 마지막에 현재 사용자 값으로 들어가고,
@@ -59,14 +59,26 @@ internal static class SpParameterBuilder
                 var getters = Getters.GetOrAdd(parameters.GetType(), static t => t
                     .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                     .Where(p => p.GetMethod is not null && p.GetIndexParameters().Length == 0)
-                    .Select(p => (p.Name, (Func<object, object?>)p.GetValue))
+                    .Select(p => (p.Name, p.PropertyType, (Func<object, object?>)p.GetValue))
                     .ToArray());
-                foreach (var (name, get) in getters)
+                foreach (var (name, type, get) in getters)
                 {
-                    yield return (name, get(parameters));
+                    // 형식 없는 NULL은 nvarchar로 가서 BINARY 파라미터(ROW_VER 등)에 넣을 수 없으므로 바이너리 NULL로 보낸다
+                    var value = get(parameters);
+                    yield return (name, value is null && type == typeof(byte[]) ? NullBinary.Value : value);
                 }
 
                 yield break;
         }
+    }
+}
+
+/// <summary>값이 null인 <c>byte[]</c> 파라미터. <see cref="SqlParameterFactory"/>가 VARBINARY NULL로 보낸다.</summary>
+internal sealed class NullBinary
+{
+    public static readonly NullBinary Value = new();
+
+    private NullBinary()
+    {
     }
 }

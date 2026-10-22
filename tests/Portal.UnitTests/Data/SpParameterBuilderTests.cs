@@ -50,4 +50,15 @@ public sealed class SpParameterBuilderTests
     [Fact]
     public void Build_규칙에맞지않는파라미터이름_예외() =>
         Assert.Throws<ArgumentException>(() => SpParameterBuilder.Build(new { GroupCd = "X" }, new FakeCurrentUser()));
+
+    [Fact]
+    public void Build_null인byte배열은_바이너리NULL_다른null은그대로()
+    {
+        var result = SpParameterBuilder.Build(new { P_ROW_VER = (byte[]?)null, P_NAME = (string?)null }, new FakeCurrentUser());
+
+        Assert.Same(NullBinary.Value, result.Single(p => p.Key == "P_ROW_VER").Value);
+        Assert.Null(result.Single(p => p.Key == "P_NAME").Value);
+        var parameter = SqlParameterFactory.Create("P_ROW_VER", NullBinary.Value);
+        Assert.Equal((System.Data.SqlDbType.VarBinary, (object)DBNull.Value), (parameter.SqlDbType, parameter.Value));
+    }
 }

@@ -17,6 +17,11 @@ internal static class SqlParameterFactory
             case null:
                 parameter.Value = DBNull.Value;
                 break;
+            case NullBinary:
+                parameter.SqlDbType = SqlDbType.VarBinary;
+                parameter.Size = 8000;
+                parameter.Value = DBNull.Value;
+                break;
             case Tvp tvp:
                 parameter.SqlDbType = SqlDbType.Structured;
                 parameter.TypeName = tvp.TypeName;
