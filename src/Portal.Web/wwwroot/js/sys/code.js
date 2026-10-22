@@ -9,8 +9,8 @@ await fw.ready;
 const $ = (selector) => document.querySelector(selector);
 const root = $('#code-screen');
 const langs = JSON.parse(root.dataset.langs);
-const urls = { groups: root.dataset.urlGroups, list: root.dataset.urlList, save: root.dataset.urlSave };
-const buttons = { add: $('#code-add'), del: $('#code-del'), save: $('#code-save') };
+const urls = { groups: root.dataset.urlGroups, list: root.dataset.urlList, save: root.dataset.urlSave, export: root.dataset.urlExport };
+const buttons = { add: $('#code-add'), del: $('#code-del'), save: $('#code-save'), export: $('#code-export') };
 const groupList = $('#group-list');
 const CODE_PATTERN = /^[A-Za-z0-9_.-]{1,30}$/;
 
@@ -31,6 +31,10 @@ function setButtons(group) {
 
     if (buttons.save) {
         buttons.save.disabled = !group;
+    }
+
+    if (buttons.export) {
+        buttons.export.disabled = !group;
     }
 }
 
@@ -226,6 +230,10 @@ buttons.del?.addEventListener('click', () => {
 });
 
 buttons.save?.addEventListener('click', save);
+// 엑셀: 첨부 응답이라 화면은 그대로 두고 브라우저가 내려받는다
+buttons.export?.addEventListener('click', () => {
+    window.location.assign(`${urls.export}?groupCd=${encodeURIComponent(current.groupCd)}`);
+});
 
 window.addEventListener('beforeunload', (e) => {
     if (grid?.hasChanges()) {

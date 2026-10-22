@@ -326,6 +326,7 @@ USING (VALUES
   (N'GET', N'/Sys/Code/Groups', N'SYS_CODE_MGT', N'READ'),
   (N'GET', N'/Sys/Code/List', N'SYS_CODE_MGT', N'READ'),
   (N'POST', N'/Sys/Code/Save', N'SYS_CODE_MGT', N'UPDATE'),
+  (N'GET', N'/Sys/Code/Export', N'SYS_CODE_MGT', N'EXPORT'),
   (N'GET', N'/Sys/Config', N'SYS_CONFIG_MGT', N'READ'),
   (N'GET', N'/Sys/Config/List', N'SYS_CONFIG_MGT', N'READ'),
   (N'GET', N'/Sys/Config/History', N'SYS_CONFIG_MGT', N'READ'),

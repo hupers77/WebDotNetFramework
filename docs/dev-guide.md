@@ -123,6 +123,8 @@ Controller에는 업무 로직을 두지 않습니다. 사용자 ID·언어·IP�
 
 **그리드 일괄 저장 권한**: 저장 Action은 `[Func("UPDATE")]`로 열고, 본문에서 `await DemandRowFuncsAsync(request.Rows)`를 먼저 부릅니다. 추가 행(I)이 있으면 `CREATE`, 삭제 행(D)이 있으면 `DELETE` 권한이 추가로 필요하며, 없으면 403입니다. 행 DTO는 `IGridRow`(`RowStat`)를 구현합니다. 실제 예는 공통코드 화면(`src/Portal.Web/Areas/Sys`)입니다.
 
+**엑셀 다운로드**: 목록 화면의 엑셀 버튼은 `<fw-button func="EXPORT" text-key="BTN.EXCEL">`으로 그리고, Action은 `[HttpGet, Func(FuncCodes.Export)]`로 엽니다. Service가 화면 그리드와 같은 컬럼으로 `ExcelSheet<T>`를 만들어 `ExcelWriter.Write`에 넘기고, Controller는 `Excel(stream, "파일명.xlsx")`로 돌려줍니다. 머리글은 `IPortalLocalizer`로 사용자 언어 문구를 씁니다. 문자열은 항상 글자 칸으로 써서 `=`로 시작해도 수식이 실행되지 않고(수식 주입 방지), 날짜는 엑셀 날짜 서식으로 들어갑니다. 행은 흘려 쓰므로 목록 SP 결과를 그대로 넘기면 됩니다. 예: 공통코드 화면의 `Export`.
+
 **프레임워크 시스템 화면**(공통코드, 설정 관리 등)은 업무 모듈과 같은 구조로 `src/Portal.Web/Areas/Sys/`(Controllers, Services, Models, Views)와 `wwwroot/js/sys/`에 둡니다.
 
 **첨부 파일**: 화면은 첨부를 직접 받지 않고 공통 API(`/File/Upload`, `/File/List`, `/File/Download/{id}`, `/File/Delete`)를 씁니다. 업무 테이블에는 `FILE_GROUP_ID BIGINT NULL` 컬럼 하나만 두고, 순서는 다음과 같습니다.

@@ -51,4 +51,11 @@ public abstract class PortalController : Controller
             throw new PermissionDeniedException(programId, funcs[0]);
         }
     }
+
+    /// <summary>엑셀 파일 응답 (항상 첨부, 캐시하지 않음). 내용은 <c>ExcelWriter.Write</c>가 만든 스트림을 넘긴다.</summary>
+    protected FileStreamResult Excel(Stream content, string fileName)
+    {
+        Response.Headers.CacheControl = "no-store";
+        return File(content, Portal.Infrastructure.Excel.ExcelWriter.ContentType, fileName);
+    }
 }
