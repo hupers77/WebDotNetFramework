@@ -21,40 +21,6 @@ public static class RoleAuthMessageKeys
 /// <summary>역할별 권한 화면 모델: 표의 기능 열 (코드, 이름, 공통코드 FUNC_CD 순서).</summary>
 public sealed record RoleAuthIndexModel(IReadOnlyList<(string Code, string Name)> Funcs);
 
-/// <summary>역할 (<c>FW.USP_ROLE_GET_LIST</c>).</summary>
-public sealed class RoleDto
-{
-    /// <summary>역할 ID.</summary>
-    public string RoleId { get; set; } = "";
-
-    /// <summary>역할명.</summary>
-    public string RoleNm { get; set; } = "";
-
-    /// <summary>설명.</summary>
-    public string? Description { get; set; }
-
-    /// <summary>줄 수 있는 회사 유형 (HQ/PARTNER, 없으면 모두).</summary>
-    public string? CompanyTypeCd { get; set; }
-
-    /// <summary>데이터 범위.</summary>
-    public string DataScopeCd { get; set; } = "";
-
-    /// <summary>시스템 역할 (삭제 불가).</summary>
-    public string SystemYn { get; set; } = "N";
-
-    /// <summary>사용 여부.</summary>
-    public string UseYn { get; set; } = "Y";
-
-    /// <summary>부여된 기능 수 (사용 중인 프로그램).</summary>
-    public int FuncCnt { get; set; }
-
-    /// <summary>현재 사용자가 가진 역할인지 (직접·부서 역할).</summary>
-    public string MyRoleYn { get; set; } = "N";
-
-    /// <summary>동시성 확인용.</summary>
-    public byte[] RowVer { get; set; } = [];
-}
-
 /// <summary>권한표 원천 행 (<c>FW.USP_ROLE_AUTH_GET_LIST</c>, 프로그램 × 기능).</summary>
 public sealed class RoleAuthRow
 {
