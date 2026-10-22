@@ -1,0 +1,69 @@
+@model DeptIndexModel
+@{
+    var title = Menus.ProgramTitle(DeptController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/dept.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="dept-screen" class="md-layout"
+     data-url-list="@Url.Action("List")"
+     data-url-roles="@Url.Action("Roles")"
+     data-url-create="@Url.Action("Create")"
+     data-url-save="@Url.Action("Save")"
+     data-url-delete="@Url.Action("Delete")">
+    <section class="md-master" aria-labelledby="dept-tree-heading">
+        <h2 id="dept-tree-heading">@L["LBL.DEPT_TREE"]</h2>
+        <form id="dept-search" class="search-bar" role="search">
+            <label for="dept-company">@L["LBL.COMPANY"]</label>
+            <select id="dept-company">
+                @foreach (var (code, name) in Model.Companies)
+                {
+                    <option value="@code">@name</option>
+                }
+            </select>
+            <label><input id="dept-unused" type="checkbox" /> @L["LBL.INCLUDE_UNUSED"]</label>
+        </form>
+        <div class="toolbar">
+            <p id="dept-total" class="hint toolbar-spacer" aria-live="polite"></p>
+            <fw-button func="CREATE" text-key="BTN.NEW" id="dept-new" />
+        </div>
+        <p id="dept-empty" class="hint" hidden>@L["SYS.DEPT.EMPTY"]</p>
+        <ul id="dept-tree"></ul>
+    </section>
+    <section class="md-detail" aria-labelledby="dept-heading">
+        <h2 id="dept-heading">@L["LBL.DEPT_DETAIL"]</h2>
+        <p id="dept-hint" class="hint">@L["SYS.DEPT.SELECT"]</p>
+        <div id="dept-detail" hidden>
+            <dl class="detail-list">
+                <dt>@L["LBL.USER_CNT"]</dt><dd data-field="userCnt"></dd>
+                <dt>@L["LBL.CHILD_DEPT_CNT"]</dt><dd data-field="childCnt"></dd>
+                <dt>@L["LBL.UPD_DT"]</dt><dd data-field="upd"></dd>
+            </dl>
+            <p id="dept-ad-hint" class="hint" hidden>@L["SYS.DEPT.AD_HINT"]</p>
+            <form id="dept-form" class="form" novalidate>
+                <label for="dept-id">@L["LBL.DEPT_ID"]</label>
+                <input id="dept-id" maxlength="20" readonly placeholder="@L["SYS.DEPT.ID_AUTO"]" />
+                <label for="dept-nm">@L["LBL.DEPT_NM"]</label>
+                <input id="dept-nm" maxlength="100" autocomplete="off" required />
+                <label for="dept-parent">@L["LBL.PARENT_DEPT"]</label>
+                <select id="dept-parent"></select>
+                <label for="dept-sort">@L["LBL.SORT_NO"]</label>
+                <input id="dept-sort" type="number" min="0" max="99999" step="1" />
+                <label><input id="dept-use" type="checkbox" /> @L["LBL.USE_YN"]</label>
+                <fieldset id="dept-roles" class="role-list">
+                    <legend>@L["LBL.ROLES"]</legend>
+                    <p class="hint">@L["SYS.DEPT.ROLE_HINT"]</p>
+                    <div id="dept-role-items"></div>
+                </fieldset>
+            </form>
+            <p id="dept-delete-hint" class="hint" hidden>@L["SYS.DEPT.DELETE_HINT"]</p>
+            <div class="toolbar">
+                <fw-button func="DELETE" text-key="BTN.DELETE" id="dept-delete" />
+                <fw-button func="CREATE" text-key="BTN.SAVE" id="dept-create" class="primary" />
+                <fw-button func="UPDATE" text-key="BTN.SAVE" id="dept-save" class="primary" />
+            </div>
+        </div>
+    </section>
+</div>
