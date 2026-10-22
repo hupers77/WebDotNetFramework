@@ -319,6 +319,9 @@ GO
 -- 요청 경로별 프로그램·기능 (코드의 [Program]/[Func]과 같아야 한다. 권한 매트릭스 테스트가 확인)
 MERGE [FW].[TB_PROGRAM_API] AS T
 USING (VALUES
+  (N'GET', N'/', N'DSH_HOME', N'READ'),
+  (N'GET', N'/My/Password', N'MY_PWD_CHG', N'READ'),
+  (N'POST', N'/My/Password', N'MY_PWD_CHG', N'UPDATE'),
   (N'GET', N'/Sys/Code', N'SYS_CODE_MGT', N'READ'),
   (N'GET', N'/Sys/Code/Groups', N'SYS_CODE_MGT', N'READ'),
   (N'GET', N'/Sys/Code/List', N'SYS_CODE_MGT', N'READ'),

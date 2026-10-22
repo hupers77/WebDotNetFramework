@@ -77,7 +77,7 @@ dotnet test
 4. **DTO와 Service를 만듭니다.** `IVendorService` 인터페이스와 구현에 업무 규칙을 둡니다. SP 호출은 `ISpExecutor`로만 합니다.
 5. **Controller를 만듭니다.** `PortalController`를 상속하고 클래스에 `[Program]`, 변경 Action에 `[Func]`를 붙입니다.
 6. **View와 JS를 만듭니다.** 예제 폴더를 복사해 이름만 바꾸고, 화면 문구는 모두 다국어 키로 씁니다(한국어·영어·중국어 3개 언어 모두 입력).
-7. **테스트를 작성합니다.** SP당 통합 테스트 1개 이상, Service 업무 규칙 단위 테스트. 권한 매트릭스 테스트는 3단계의 `TB_PROGRAM_API`에서 자동 생성됩니다.
+7. **테스트를 작성합니다.** SP당 통합 테스트 1개 이상, Service 업무 규칙 단위 테스트. 권한 매트릭스 테스트(`tests/Portal.IntegrationTests/Web/PermissionMatrixTests.cs`)는 3단계의 `TB_PROGRAM_API`에서 경로별·역할별 케이스를 자동으로 만들므로 따로 작성하지 않습니다. 대신 Action을 추가하면 `TB_PROGRAM_API`에 `(메서드, 경로, 프로그램, 기능)` 한 줄을 꼭 함께 넣어야 합니다. 경로는 `/{Area}/{Controller}/{Action}`이고 `Index`는 생략하며, 메서드 특성이 없는 Action은 GET으로 적습니다. 코드의 `[Program]`/`[Func]`와 한 줄이라도 다르면 테스트가 실패합니다.
 8. **로컬에서 확인하고 MR을 올립니다.** 역할에 권한을 주고 버튼 표시·차단을 확인한 뒤, 10장 체크리스트를 MR 본문에 붙입니다.
 
 **파일 배치**
