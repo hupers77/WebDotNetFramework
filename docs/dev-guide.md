@@ -171,7 +171,7 @@ Microsoft .NET 기본 명명 규칙을 따르고, 여기서 정한 규칙은 `.e
 - 문구 묶음은 비동기로 읽으므로 `fw.t`는 `await fw.ready` 이후에 씁니다. 짧은 안내는 `fw.notify(문구)`를 씁니다(셸 하단 안내 영역, 스크린리더가 읽음).
 - 사용자 데이터는 `textContent` 또는 그리드 컴포넌트로만 넣고 `innerHTML`에 직접 넣지 않습니다.
 - 메시지는 `fw.t('MSG.SAVED')`, 확인창은 `await fw.dialog.confirm(fw.t('CNF.SAVE'))`(브라우저 `confirm()` 금지)를 씁니다. 날짜·숫자 표시용 `fw.format`은 조회형 화면 작업에서 추가합니다.
-- 편집 그리드는 `fw-grid.js`의 `Grid`를 씁니다. 컬럼에 `required`, `maxLength`, `pattern`을 주면 `validate()`가 서버와 같은 메시지 키로 검사하고 오류 칸으로 이동합니다. 여러 행 저장은 `getChanges()`(I/U/D 행)를 보내 TVP 일괄 저장 SP로 처리합니다. 행마다 요청을 보내지 않습니다. 저장하지 않은 변경이 있으면(`hasChanges()`) 다른 항목으로 옮기기 전에 `CNF.LEAVE`로 확인합니다.
+- 편집 그리드는 `fw-grid.js`의 `Grid`를 씁니다. 컬럼에 `required`, `maxLength`, `pattern`을 주면 `validate()`가 서버와 같은 메시지 키로 검사하고 오류 칸으로 이동합니다. 여러 행 저장은 `getChanges()`(I/U/D 행)를 보내 TVP 일괄 저장 SP로 처리합니다. 행마다 요청을 보내지 않습니다. 저장하지 않은 변경이 있으면(`hasChanges()`) 다른 항목으로 옮기기 전에 `CNF.LEAVE`로 확인합니다. 행마다 칸 종류가 다르면 `type`·`required`·`placeholder`에 `(row) => 값` 함수를 주고(예: 설정 관리의 형식별 값 칸), 읽기 전용 칸의 표시는 `format`, 행별 버튼은 `type: 'button'`으로 그립니다. 행 추가·삭제가 없는 수정 전용 그리드는 `selectable: false`로 선택 칸을 뺍니다. 서버의 UTC 일시는 `fw.format.dateTime()`으로 보여 줍니다.
 
 **웹 접근성 (KWCAG 2.2 기준, 공통 컴포넌트가 기본 지원)**
 
@@ -352,6 +352,7 @@ MR을 올릴 때 아래 체크리스트를 MR 본문에 붙이고 해당 항목�
 | 외부 API 클라이언트 추가 | 연계 관리 > API 클라이언트 (비밀값은 발급 시 1회만 표시) | 없음 |
 | 새 언어 추가 | `TB_LANG`에 행 추가 → 다국어 관리에서 엑셀로 일괄 번역 입력 | 없음 |
 | 새 설정 키 필요 | `ConfigKeys`에 상수 추가 + `db/seed`에 기본값 + 초기 데이터 정의서 갱신 | 있음 |
+| 비밀값 설정 (SMTP·AD 계정 비밀번호 등) | 설정 관리에서 새 값을 입력하면 Data Protection(`ISecretProtector`)으로 암호화해 저장합니다. 화면·이력·감사 로그에는 값이 남지 않고, 키 폴더(`Portal:DataProtection:KeyPath`)를 잃으면 다시 입력해야 합니다 | 없음 |
 | 화면 변경이 반영 안 됨 | 운영 모니터링 > 캐시 강제 갱신. 자주 발생하면 해당 SP의 `TB_CACHE_VERSION` 누락 확인 | 경우에 따라 |
 
 관리 화면에서 바꾼 값은 설정 이력·감사 로그에 남으므로 누가 언제 바꿈는지 나중에 확인할 수 있습니다.
