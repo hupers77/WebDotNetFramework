@@ -9,8 +9,8 @@ await fw.ready;
 const $ = (selector) => document.querySelector(selector);
 const root = $('#code-screen');
 const langs = JSON.parse(root.dataset.langs);
-const urls = { groups: root.dataset.urlGroups, list: root.dataset.urlList, save: root.dataset.urlSave, export: root.dataset.urlExport };
-const buttons = { add: $('#code-add'), del: $('#code-del'), save: $('#code-save'), export: $('#code-export') };
+const urls = { groups: root.dataset.urlGroups, list: root.dataset.urlList, save: root.dataset.urlSave, export: root.dataset.urlExport, upload: root.dataset.urlUpload };
+const buttons = { add: $('#code-add'), del: $('#code-del'), save: $('#code-save'), export: $('#code-export'), upload: $('#code-upload') };
 const groupList = $('#group-list');
 const CODE_PATTERN = /^[A-Za-z0-9_.-]{1,30}$/;
 
@@ -35,6 +35,11 @@ function setButtons(group) {
 
     if (buttons.export) {
         buttons.export.disabled = !group;
+    }
+
+    if (buttons.upload) {
+        // 반영한 행은 저장으로 저장하므로 저장 권한이 없으면 쓰지 않는다
+        buttons.upload.disabled = !group || !buttons.save;
     }
 }
 
@@ -130,6 +135,7 @@ async function loadCodes(group) {
     }
 
     $('#code-hint').textContent = hints.join(' ');
+    showUploadErrors([]);
     grid = new Grid($('#code-grid'), { label: group.groupNm, columns: columnsFor(group), editable: !!buttons.save });
     grid.setRows(codes.items);
     setButtons(group);
@@ -233,6 +239,45 @@ buttons.save?.addEventListener('click', save);
 // 엑셀: 첨부 응답이라 화면은 그대로 두고 브라우저가 내려받는다
 buttons.export?.addEventListener('click', () => {
     window.location.assign(`${urls.export}?groupCd=${encodeURIComponent(current.groupCd)}`);
+});
+
+// 엑셀 업로드: 서버가 양식·값을 검사한 행만 그리드에 반영하고, 저장은 사용자가 저장 버튼으로 한다
+const uploadInput = $('#code-upload-file');
+const uploadErrors = $('#code-upload-errors');
+
+function showUploadErrors(errors) {
+    uploadErrors.hidden = errors.length === 0;
+    uploadErrors.querySelector('ul').replaceChildren(...errors.map((e) => {
+        const li = document.createElement('li');
+        li.textContent = fw.t('LBL.EXCEL_ROW_ERROR', e.rowNo, e.message);
+        return li;
+    }));
+}
+
+buttons.upload?.addEventListener('click', () => uploadInput.click());
+uploadInput.addEventListener('change', async () => {
+    const file = uploadInput.files[0];
+    uploadInput.value = '';
+    if (!file || !current) {
+        return;
+    }
+
+    buttons.upload.disabled = true;
+    try {
+        const result = await fw.upload(`${urls.upload}?groupCd=${encodeURIComponent(current.groupCd)}`, file);
+        if (!result.success) {
+            showUploadErrors([]);
+            fw.notify(result.error.message);
+            return;
+        }
+
+        const { rows, errors, unchangedCnt } = result.data;
+        grid.applyChanges(rows, 'code');
+        showUploadErrors(errors);
+        fw.notify(fw.t('MSG.EXCEL_APPLIED', rows.length, unchangedCnt, errors.length));
+    } finally {
+        buttons.upload.disabled = !current;
+    }
 });
 
 window.addEventListener('beforeunload', (e) => {

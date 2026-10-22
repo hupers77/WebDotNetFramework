@@ -1,9 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
+using Portal.Core.Config;
+using Portal.Core.Errors;
 using Portal.Core.Keys;
 using Portal.Core.Results;
 using Portal.Framework.Web.Authorization;
 using Portal.Framework.Web.Mvc;
+using Portal.Infrastructure.Files;
 using Portal.Infrastructure.Localization;
 using Portal.Web.Areas.Sys.Models;
 using Portal.Web.Areas.Sys.Services;
@@ -16,7 +19,7 @@ namespace Portal.Web.Areas.Sys.Controllers;
 /// </summary>
 [Area("Sys")]
 [Program(ProgramId)]
-public sealed class CodeController(ICodeAdminService codes, LangResources langs) : PortalController
+public sealed class CodeController(ICodeAdminService codes, LangResources langs, IPortalConfig config) : PortalController
 {
     /// <summary>프로그램 ID.</summary>
     public const string ProgramId = "SYS_CODE_MGT";
@@ -50,4 +53,29 @@ public sealed class CodeController(ICodeAdminService codes, LangResources langs)
         [Required(ErrorMessage = "MSG.INVALID_INPUT"), StringLength(30, ErrorMessage = "MSG.INVALID_INPUT")] string groupCd,
         CancellationToken cancellationToken) =>
         Excel(await codes.ExportAsync(groupCd, cancellationToken), $"{groupCd}.xlsx");
+
+    /// <summary>
+    /// 엑셀 업로드 미리보기 (멀티파트 <c>file</c>). 저장하지 않고 그리드에 반영할 행과 행별 오류를 돌려준다.
+    /// 크기 한도는 첨부와 같은 <c>FILE.MAX_SIZE_MB</c>를 쓴다.
+    /// </summary>
+    [HttpPost, Func(FuncCodes.Upload)]
+    public async Task<ApiResult<CodeUploadResult>> Upload(
+        [Required(ErrorMessage = "MSG.INVALID_INPUT"), StringLength(30, ErrorMessage = "MSG.INVALID_INPUT")] string groupCd,
+        IFormFile? file,
+        CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+        {
+            throw new BizException(MessageKeys.InvalidInput);
+        }
+
+        var maxMb = config.GetInt(ConfigKeys.FileMaxSizeMb);
+        if (file.Length > maxMb * 1024L * 1024L)
+        {
+            throw new BizException(FileMessageKeys.TooLarge, maxMb);
+        }
+
+        await using var content = file.OpenReadStream();
+        return Ok(await codes.PreviewUploadAsync(groupCd, content, cancellationToken));
+    }
 }

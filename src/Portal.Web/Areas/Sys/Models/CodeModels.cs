@@ -155,6 +155,24 @@ public sealed class CodeSaveRow : IGridRow
     public byte[]? RowVer { get; set; }
 }
 
+/// <summary>엑셀 업로드 미리보기 결과.</summary>
+public sealed class CodeUploadResult
+{
+    /// <summary>그리드에 반영할 행 (추가 I, 수정 U). 수정 행은 현재 ROW_VER를 담는다.</summary>
+    public List<CodeSaveRow> Rows { get; init; } = [];
+
+    /// <summary>행별 오류 (이 행들은 <see cref="Rows"/>에 없다).</summary>
+    public List<CodeUploadError> Errors { get; init; } = [];
+
+    /// <summary>현재 값과 같아 건너뛴 행 수.</summary>
+    public int UnchangedCnt { get; set; }
+}
+
+/// <summary>엑셀 업로드 행 오류.</summary>
+/// <param name="RowNo">엑셀 행 번호.</param>
+/// <param name="Message">사용자 언어 메시지.</param>
+public sealed record CodeUploadError(int RowNo, string Message);
+
 /// <summary>공통코드 화면 모델: 명칭 컬럼을 사용 중인 언어 수만큼 만든다.</summary>
 /// <param name="Languages">사용 중인 언어 (기본 언어 포함).</param>
 public sealed record CodeIndexModel(IReadOnlyList<LanguageInfo> Languages)

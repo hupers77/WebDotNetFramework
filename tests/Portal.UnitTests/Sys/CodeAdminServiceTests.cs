@@ -164,12 +164,110 @@ public sealed class CodeAdminServiceTests
         Assert.Equal(CodeAdminService.MaxRows, _sp.LastCall(CodeAdminService.ListSp).Parameters["P_PAGE_SIZE"]);
     }
 
-    /// <summary>번역 대신 키를 그대로 돌려준다.</summary>
+    private static readonly CodeGroupDto Group = new() { GroupCd = "G", GroupNm = "그룹", Attr1Nm = "속성1" };
+
+    private void Existing(CodeGroupDto group, params CodeDto[] codes)
+    {
+        _sp.Returns(CodeAdminService.GroupListSp, new PageResult<CodeGroupDto> { Items = [group], TotalCount = 1, PageNo = 1, PageSize = CodeAdminService.MaxRows });
+        _sp.Returns(CodeAdminService.ListSp, new PageResult<CodeDto> { Items = [.. codes], TotalCount = codes.Length, PageNo = 1, PageSize = CodeAdminService.MaxRows });
+        _sp.Returns(CodeAdminService.NameListSp, codes.SelectMany(c => c.Names.Select(n => new CodeAdminService.NameRow { Code = c.Code, LangCd = n.Key, CodeNm = n.Value })).ToList());
+    }
+
+    private static CodeDto Code(string code, string ko, int sortNo = 10) => new()
+    {
+        Code = code, CodeNm = ko, SortNo = sortNo, UseYn = "Y", RowVer = RowVer,
+        StartDt = new DateOnly(2000, 1, 1), EndDt = new DateOnly(9999, 12, 31), Names = new() { ["ko"] = ko },
+    };
+
+    /// <summary>업로드할 엑셀: 첫 행이 머리글이고 값은 모두 글자.</summary>
+    private static Stream Sheet(string[] headers, params string?[][] rows) => Portal.Infrastructure.Excel.ExcelWriter.Write(
+        new Portal.Infrastructure.Excel.ExcelSheet<string?[]>("S", [.. headers.Select((h, i) => new Portal.Infrastructure.Excel.ExcelColumn<string?[]>(h, r => r[i]))], rows));
+
+    private static readonly string[] Headers = ["LBL.CODE", "LBL.CODE_NM_IN:한국어", "LBL.CODE_NM_IN:English", "LBL.SORT_NO", "속성1", "LBL.END_DT", "LBL.USE_YN"];
+
+    [Fact]
+    public async Task ExportAsync_업로드양식과같은머리글()
+    {
+        Existing(Group, Code("A", "가"));
+
+        await using var stream = await _service.ExportAsync("G", TestContext.Current.CancellationToken);
+
+        Assert.Equal(Headers, Portal.Infrastructure.Excel.ExcelReader.Read(stream, 10).Headers.Where(h => h != "LBL.PARENT_CODE" && h != "LBL.START_DT"));
+    }
+
+    [Fact]
+    public async Task PreviewUploadAsync_추가수정행과_변경없음과_행별오류를나눈다()
+    {
+        Existing(Group, Code("A", "가"), Code("B", "나", 20));
+        using var file = Sheet(Headers,
+            ["a", "가", null, "10", null, "9999-12-31", "Y"],    // 기존 그대로 (대소문자 무시) → 변경 없음
+            ["B", "나나", "Nana", "20", "x", "2030-12-31", "n"], // 수정
+            ["NEW", "새", null, null, null, null, null],        // 추가
+            ["", "이름만", null, null, null, null, null],       // 코드 없음
+            ["NEW", "또", null, null, null, null, null],        // 중복
+            ["C", "다", null, "열", null, null, null],          // 정렬 형식 오류
+            ["D", "라", null, null, null, "2030/01/01", null],  // 날짜 형식 오류
+            ["E", "", null, null, null, null, null],            // 기본 언어 명칭 없음
+            ["F G", "마", null, null, null, null, null]);       // 코드 형식 오류
+
+        var result = await _service.PreviewUploadAsync("G", file, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, result.UnchangedCnt);
+        Assert.Equal(["B:U", "NEW:I"], result.Rows.Select(r => $"{r.Code}:{r.RowStat}"));
+        var updated = result.Rows[0];
+        Assert.Equal(RowVer, updated.RowVer);
+        Assert.Equal(("나나", "Nana", "x", "N"), (updated.Names["ko"], updated.Names["en"], updated.Attr1, updated.UseYn));
+        Assert.Equal(new DateOnly(2030, 12, 31), updated.EndDt);
+        Assert.Equal(new DateOnly(2000, 1, 1), updated.StartDt);
+        Assert.Equal("Y", result.Rows[1].UseYn);
+        Assert.Equal(
+            ["5:VAL.REQUIRED:LBL.CODE", "6:VAL.DUP_ROW:NEW", "7:VAL.EXCEL_FORMAT:LBL.SORT_NO", "8:VAL.EXCEL_FORMAT:LBL.END_DT",
+             "9:VAL.REQUIRED:LBL.CODE_NM_IN:ko", "10:VAL.CODE_FORMAT"],
+            result.Errors.Select(e => $"{e.RowNo}:{e.Message}"));
+        Assert.DoesNotContain(_sp.Calls, c => c.SpName == CodeAdminService.SaveSp);
+    }
+
+    [Fact]
+    public async Task PreviewUploadAsync_추가할수없는시스템그룹_새코드는오류()
+    {
+        Existing(new CodeGroupDto { GroupCd = "G", SystemYn = "Y", AllowAddYn = "N" }, Code("A", "가"));
+        using var file = Sheet(["LBL.CODE", "LBL.CODE_NM_IN:한국어"], ["A", "가가"], ["NEW", "새"]);
+
+        var result = await _service.PreviewUploadAsync("G", file, TestContext.Current.CancellationToken);
+
+        Assert.Equal("A", Assert.Single(result.Rows).Code);
+        Assert.Equal($"3:{MessageKeys.SystemCode}", $"{Assert.Single(result.Errors).RowNo}:{result.Errors[0].Message}");
+    }
+
+    [Theory]
+    [InlineData("LBL.CODE", "모르는칸")]
+    [InlineData("LBL.CODE_NM_IN:한국어", "LBL.SORT_NO")]
+    public async Task PreviewUploadAsync_양식에없는머리글또는코드칸없음_업무오류(string first, string second)
+    {
+        Existing(Group);
+        using var file = Sheet([first, second], ["A", "1"]);
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => _service.PreviewUploadAsync("G", file, TestContext.Current.CancellationToken));
+
+        Assert.Equal(Portal.Infrastructure.Excel.ExcelMessageKeys.HeaderMismatch, ex.MessageKey);
+    }
+
+    [Fact]
+    public async Task PreviewUploadAsync_없는그룹_NOT_FOUND()
+    {
+        _sp.Returns(CodeAdminService.GroupListSp, new PageResult<CodeGroupDto> { Items = [], TotalCount = 0, PageNo = 1, PageSize = CodeAdminService.MaxRows });
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => _service.PreviewUploadAsync("G", Stream.Null, TestContext.Current.CancellationToken));
+
+        Assert.Equal(MessageKeys.NotFound, ex.MessageKey);
+    }
+
+    /// <summary>번역 대신 키를 그대로 돌려준다 (인자가 있으면 "키:인자1|인자2").</summary>
     private sealed class KeyLocalizer : IPortalLocalizer
     {
         public string this[string key] => key;
 
-        public string this[string key, params object?[] args] => key;
+        public string this[string key, params object?[] args] => args.Length == 0 ? key : $"{key}:{string.Join("|", args)}";
 
         public string Get(string langCd, string key, params object?[] args) => key;
     }
