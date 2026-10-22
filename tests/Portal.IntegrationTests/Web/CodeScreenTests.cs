@@ -187,4 +187,42 @@ public sealed class CodeScreenTests : IClassFixture<PortalWebFactory>
         var denied = await _web.NewClient(reader).GetAsync("/Sys/Code/Export?groupCd=G", Ct);
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
     }
+
+    [Fact]
+    public async Task 엑셀_업로드권한이면버튼과미리보기_없으면버튼없고403()
+    {
+        _web.Sp.Returns(CodeAdminService.GroupListSp, new PageResult<CodeGroupDto>
+        {
+            Items = [new() { GroupCd = "G", GroupNm = "그룹" }],
+            TotalCount = 1,
+            PageNo = 1,
+            PageSize = CodeAdminService.MaxRows,
+        });
+        var uploader = _web.SignIn("code.uploader", [.. AllFuncs, $"{Program}:UPLOAD"]);
+        var reader = _web.SignIn("code.reader.upload", AllFuncs);
+
+        Assert.Contains("id=\"code-upload\"", await PageAsync(uploader), StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"code-upload\"", await PageAsync(reader), StringComparison.Ordinal);
+
+        var ok = await JsonAsync(await UploadAsync(uploader));
+        Assert.True(ok.GetProperty("success").GetBoolean());
+        var rows = ok.GetProperty("data").GetProperty("rows");
+        Assert.Equal(["A:U", "NEW:I"], rows.EnumerateArray().Select(r => $"{r.GetProperty("code").GetString()}:{r.GetProperty("rowStat").GetString()}"));
+        Assert.Equal("AAAAAAAAAAE=", rows[0].GetProperty("rowVer").GetString());
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await UploadAsync(reader)).StatusCode);
+    }
+
+    /// <summary>코드·기본 언어 명칭 두 칸짜리 엑셀을 올린다 (테스트 번역에 없는 머리글은 키 그대로다).</summary>
+    private async Task<HttpResponseMessage> UploadAsync(string token)
+    {
+        var (csrf, cookie) = await GetCsrfAsync(_web.NewClient(token), "/");
+        var request = Ajax(HttpMethod.Post, "/Sys/Code/Upload?groupCd=G");
+        request.Headers.Add("X-CSRF-TOKEN", csrf);
+        string[][] lines = [["A", "가가"], ["NEW", "새"]];
+        var xlsx = Portal.Infrastructure.Excel.ExcelWriter.Write(new Portal.Infrastructure.Excel.ExcelSheet<string[]>(
+            "G", [new("LBL.CODE", r => r[0]), new("LBL.CODE_NM_IN", r => r[1])], lines));
+        request.Content = new MultipartFormDataContent { { new StreamContent(xlsx), "file", "G.xlsx" } };
+        return await _web.NewClient(token, cookie).SendAsync(request, Ct);
+    }
 }

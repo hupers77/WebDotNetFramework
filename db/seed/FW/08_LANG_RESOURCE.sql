@@ -456,7 +456,28 @@ USING (VALUES
   (N'MSG.FILE_UPLOADED', N'zh-CN', N'已上传{0}。', N'MSG'),
   (N'CNF.FILE_DELETE', N'ko', N'{0} 파일을 삭제하시겠습니까?', N'MSG'),
   (N'CNF.FILE_DELETE', N'en', N'Do you want to delete {0}?', N'MSG'),
-  (N'CNF.FILE_DELETE', N'zh-CN', N'确定要删除{0}吗？', N'MSG')
+  (N'CNF.FILE_DELETE', N'zh-CN', N'确定要删除{0}吗？', N'MSG'),
+  (N'MSG.EXCEL_INVALID', N'ko', N'엑셀 파일(.xlsx)을 읽을 수 없습니다. 엑셀 버튼으로 받은 양식에 입력해 올리세요.', N'MSG'),
+  (N'MSG.EXCEL_INVALID', N'en', N'The Excel file (.xlsx) cannot be read. Fill in the template downloaded with the Excel button.', N'MSG'),
+  (N'MSG.EXCEL_INVALID', N'zh-CN', N'无法读取Excel文件（.xlsx）。请在通过Excel按钮下载的模板中填写后上传。', N'MSG'),
+  (N'MSG.EXCEL_TOO_MANY_ROWS', N'ko', N'한 번에 {0}행까지 올릴 수 있습니다.', N'MSG'),
+  (N'MSG.EXCEL_TOO_MANY_ROWS', N'en', N'You can upload up to {0} rows at a time.', N'MSG'),
+  (N'MSG.EXCEL_TOO_MANY_ROWS', N'zh-CN', N'一次最多可上传{0}行。', N'MSG'),
+  (N'MSG.EXCEL_HEADER_MISMATCH', N'ko', N'양식과 맞지 않는 머리글이 있습니다: {0}. 엑셀 버튼으로 받은 양식을 쓰세요.', N'MSG'),
+  (N'MSG.EXCEL_HEADER_MISMATCH', N'en', N'Some headers do not match the template: {0}. Use the template downloaded with the Excel button.', N'MSG'),
+  (N'MSG.EXCEL_HEADER_MISMATCH', N'zh-CN', N'有与模板不符的表头：{0}。请使用通过Excel按钮下载的模板。', N'MSG'),
+  (N'VAL.EXCEL_FORMAT', N'ko', N'{0} 값의 형식이 올바르지 않습니다.', N'MSG'),
+  (N'VAL.EXCEL_FORMAT', N'en', N'The value of {0} is not in the correct format.', N'MSG'),
+  (N'VAL.EXCEL_FORMAT', N'zh-CN', N'{0}的值格式不正确。', N'MSG'),
+  (N'MSG.EXCEL_APPLIED', N'ko', N'{0}행을 그리드에 반영했습니다(변경 없음 {1}행, 오류 {2}행). 저장을 눌러야 저장됩니다.', N'MSG'),
+  (N'MSG.EXCEL_APPLIED', N'en', N'{0} rows were applied to the grid ({1} unchanged, {2} with errors). Select Save to save them.', N'MSG'),
+  (N'MSG.EXCEL_APPLIED', N'zh-CN', N'已将{0}行应用到表格（未变更{1}行，错误{2}行）。点击保存后才会保存。', N'MSG'),
+  (N'LBL.EXCEL_ERRORS', N'ko', N'엑셀 업로드 오류', N'LABEL'),
+  (N'LBL.EXCEL_ERRORS', N'en', N'Excel upload errors', N'LABEL'),
+  (N'LBL.EXCEL_ERRORS', N'zh-CN', N'Excel上传错误', N'LABEL'),
+  (N'LBL.EXCEL_ROW_ERROR', N'ko', N'{0}행: {1}', N'LABEL'),
+  (N'LBL.EXCEL_ROW_ERROR', N'en', N'Row {0}: {1}', N'LABEL'),
+  (N'LBL.EXCEL_ROW_ERROR', N'zh-CN', N'第{0}行：{1}', N'LABEL')
 ) AS S ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE])
    ON T.[RES_KEY] = S.[RES_KEY] AND T.[LANG_CD] = S.[LANG_CD]
 WHEN NOT MATCHED THEN INSERT ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE]) VALUES (S.[RES_KEY], S.[LANG_CD], S.[RES_TEXT], S.[RES_TYPE]);

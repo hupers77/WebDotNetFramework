@@ -125,6 +125,15 @@ Controller에는 업무 로직을 두지 않습니다. 사용자 ID·언어·IP�
 
 **엑셀 다운로드**: 목록 화면의 엑셀 버튼은 `<fw-button func="EXPORT" text-key="BTN.EXCEL">`으로 그리고, Action은 `[HttpGet, Func(FuncCodes.Export)]`로 엽니다. Service가 화면 그리드와 같은 컬럼으로 `ExcelSheet<T>`를 만들어 `ExcelWriter.Write`에 넘기고, Controller는 `Excel(stream, "파일명.xlsx")`로 돌려줍니다. 머리글은 `IPortalLocalizer`로 사용자 언어 문구를 씁니다. 문자열은 항상 글자 칸으로 써서 `=`로 시작해도 수식이 실행되지 않고(수식 주입 방지), 날짜는 엑셀 날짜 서식으로 들어갑니다. 행은 흘려 쓰므로 목록 SP 결과를 그대로 넘기면 됩니다. 예: 공통코드 화면의 `Export`.
 
+**엑셀 업로드**: 내려받은 엑셀을 그대로 업로드 양식으로 씁니다(같은 컬럼 정의를 내보내기와 업로드가 함께 씁니다). 순서는 양식 받기 → 입력 → 업로드(미리보기) → 그리드 확인 → 저장입니다.
+
+1. 버튼은 `<fw-button func="UPLOAD" text-key="BTN.UPLOAD">`과 숨긴 `<input type="file" accept=".xlsx">`로 그리고, `fw.upload(url, file)`로 올립니다.
+2. Action은 `[HttpPost, Func(FuncCodes.Upload)]`로 열고 `IFormFile` 크기를 `FILE.MAX_SIZE_MB`로 확인합니다. Service는 `ExcelReader.Read(stream, 최대행수)`로 첫 시트를 읽습니다. 형식이 아닌 파일, 행 수 초과는 업무 오류가 됩니다.
+3. Service는 머리글을 양식과 맞춰 보고(모르는 머리글이면 `MSG.EXCEL_HEADER_MISMATCH`), 행마다 저장 검증과 같은 규칙으로 검사해 **추가(I)·수정(U) 행과 행별 오류**를 돌려줍니다. 미리보기는 저장하지 않습니다.
+4. 화면은 `grid.applyChanges(rows, 키필드)`로 행을 그리드에 반영하고 오류 목록을 보여 줍니다. 사용자가 확인한 뒤 저장 버튼으로 저장하며, 저장 Action이 행 상태별 권한과 값을 다시 검사합니다.
+
+빈 칸은 값을 지우고(필수 값은 오류), 날짜는 엑셀 날짜 서식 또는 `yyyy-MM-dd` 글자로 받습니다. 예: 공통코드 화면의 `Upload`.
+
 **프레임워크 시스템 화면**(공통코드, 설정 관리 등)은 업무 모듈과 같은 구조로 `src/Portal.Web/Areas/Sys/`(Controllers, Services, Models, Views)와 `wwwroot/js/sys/`에 둡니다.
 
 **첨부 파일**: 화면은 첨부를 직접 받지 않고 공통 API(`/File/Upload`, `/File/List`, `/File/Download/{id}`, `/File/Delete`)를 씁니다. 업무 테이블에는 `FILE_GROUP_ID BIGINT NULL` 컬럼 하나만 두고, 순서는 다음과 같습니다.

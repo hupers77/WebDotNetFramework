@@ -12,7 +12,8 @@
      data-url-groups="@Url.Action("Groups")"
      data-url-list="@Url.Action("List")"
      data-url-save="@Url.Action("Save")"
-     data-url-export="@Url.Action("Export")">
+     data-url-export="@Url.Action("Export")"
+     data-url-upload="@Url.Action("Upload")">
     <section class="md-master" aria-labelledby="group-heading">
         <h2 id="group-heading">@L["LBL.CODE_GROUP"]</h2>
         <form id="group-search" class="search-bar" role="search">
@@ -28,9 +29,15 @@
         <p id="code-hint" class="hint">@L["SYS.CODE.SELECT_GROUP"]</p>
         <div class="toolbar">
             <fw-button func="EXPORT" text-key="BTN.EXCEL" id="code-export" disabled />
+            <fw-button func="UPLOAD" text-key="BTN.UPLOAD" id="code-upload" disabled />
             <fw-button func="CREATE" text-key="BTN.ADD_ROW" id="code-add" disabled />
             <fw-button func="DELETE" text-key="BTN.DEL_ROW" id="code-del" disabled />
             <fw-button func="UPDATE" text-key="BTN.SAVE" id="code-save" class="primary" disabled />
+        </div>
+        <input id="code-upload-file" type="file" accept=".xlsx" hidden />
+        <div id="code-upload-errors" class="upload-errors" role="alert" hidden>
+            <h3>@L["LBL.EXCEL_ERRORS"]</h3>
+            <ul></ul>
         </div>
         <div id="code-grid" class="grid-wrap"></div>
         <p class="hint">@L["SYS.CODE.DELETE_HINT"]</p>

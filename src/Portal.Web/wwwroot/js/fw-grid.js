@@ -95,6 +95,27 @@ export class Grid {
         return true;
     }
 
+    /**
+     * 서버가 만든 추가(I)·수정(U) 행을 반영한다 (엑셀 업로드 미리보기). 키가 같은 행은 값을 바꾸고, 없으면 끝에 추가한다.
+     * 이미 추가한 행은 추가 상태를 유지하고, 삭제 표시한 행은 수정 상태로 되돌린다. 반영한 행 수를 돌려준다.
+     */
+    applyChanges(rows, keyField) {
+        const key = (data) => String(getPath(data, keyField) ?? '').toUpperCase();
+        for (const { rowStat, ...data } of rows) {
+            const found = this.rows.find((r) => key(r.data) === key(data));
+            if (found) {
+                found.data = structuredClone(data);
+                found.state = found.state === 'I' ? 'I' : 'U';
+                found.modified = true;
+            } else {
+                this.rows.push({ data: structuredClone(data), state: rowStat === 'U' ? 'U' : 'I', modified: true });
+            }
+        }
+
+        this.render();
+        return rows.length;
+    }
+
     /** 선택한 행의 상태 목록 ('' 조회한 그대로, I 추가, U 수정, D 삭제 표시). */
     selectedStates() {
         return this.rows.filter((r) => r.selected).map((r) => r.state);

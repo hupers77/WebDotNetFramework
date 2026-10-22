@@ -5,7 +5,6 @@ using Portal.Core.Localization;
 using Portal.Core.Results;
 using Portal.Data;
 using Portal.Framework.Web.Mvc;
-using Portal.Infrastructure.Excel;
 using Portal.Infrastructure.Localization;
 using Portal.Web.Areas.Sys.Models;
 
@@ -25,6 +24,12 @@ public interface ICodeAdminService
 
     /// <summary>그룹의 코드를 화면 그리드와 같은 컬럼으로 엑셀에 쓴다. 그룹이 없으면 업무 오류(NOT_FOUND).</summary>
     Task<Stream> ExportAsync(string groupCd, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 엑셀 업로드 미리보기: 내려받은 양식과 같은 머리글의 파일을 읽어 추가(I)·수정(U) 행과 행별 오류를 돌려준다.
+    /// 저장하지 않으며, 화면이 행을 그리드에 반영한 뒤 사용자가 저장한다(저장은 <see cref="SaveAsync"/>가 다시 검사).
+    /// </summary>
+    Task<CodeUploadResult> PreviewUploadAsync(string groupCd, Stream content, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
@@ -62,36 +67,6 @@ public sealed partial class CodeAdminService(ISpExecutor sp, LangResources langs
         }
 
         return new CodeListDto { Codes = codes };
-    }
-
-    /// <inheritdoc />
-    public async Task<Stream> ExportAsync(string groupCd, CancellationToken cancellationToken = default)
-    {
-        var group = (await GetGroupsAsync(groupCd, cancellationToken)).Items.FirstOrDefault(g => g.GroupCd == groupCd)
-            ?? throw new BizException(MessageKeys.NotFound);
-        var codes = (await GetCodesAsync(groupCd, cancellationToken)).Codes.Items;
-
-        var columns = new List<ExcelColumn<CodeDto>> { new(localizer["LBL.CODE"], c => c.Code) };
-        columns.AddRange(langs.Languages.Select(l => new ExcelColumn<CodeDto>(
-            localizer["LBL.CODE_NM_IN", l.LangNm], c => c.Names.GetValueOrDefault(l.LangCd), 30)));
-        columns.Add(new(localizer["LBL.PARENT_CODE"], c => c.ParentCode));
-        columns.Add(new(localizer["LBL.SORT_NO"], c => c.SortNo));
-        string?[] attrNames = [group.Attr1Nm, group.Attr2Nm, group.Attr3Nm, group.Attr4Nm, group.Attr5Nm];
-        Func<CodeDto, string?>[] attrs = [c => c.Attr1, c => c.Attr2, c => c.Attr3, c => c.Attr4, c => c.Attr5];
-        for (var i = 0; i < attrNames.Length; i++)
-        {
-            // 화면과 같이 그룹에 의미가 정해진 속성만 내보낸다
-            if (attrNames[i] is { Length: > 0 } name)
-            {
-                var attr = attrs[i];
-                columns.Add(new(name, c => attr(c)));
-            }
-        }
-
-        columns.Add(new(localizer["LBL.START_DT"], c => c.StartDt));
-        columns.Add(new(localizer["LBL.END_DT"], c => c.EndDt));
-        columns.Add(new(localizer["LBL.USE_YN"], c => c.UseYn));
-        return ExcelWriter.Write(new ExcelSheet<CodeDto>(group.GroupCd, columns, codes));
     }
 
     /// <inheritdoc />

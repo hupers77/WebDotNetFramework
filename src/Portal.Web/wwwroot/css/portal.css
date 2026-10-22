@@ -34,6 +34,9 @@ a.button:hover { background: var(--fw-hover); }
 .fw-file-list { list-style: none; margin: .5rem 0 0; padding: 0; }
 .fw-file-list li { display: flex; gap: .6rem; align-items: center; padding: .25rem 0; border-bottom: 1px solid var(--fw-border); }
 .fw-file-list a { overflow-wrap: anywhere; }
+.upload-errors { margin: .5rem 0; padding: .5rem .75rem; border: 1px solid var(--fw-error); border-radius: 4px; }
+.upload-errors h3 { margin: 0 0 .25rem; font-size: 1rem; color: var(--fw-error); }
+.upload-errors ul { margin: 0; padding-left: 1.25rem; max-height: 10rem; overflow: auto; }
 .fw-file-del { margin-left: auto; padding: .15rem .5rem; font-size: .8125rem; }
 
 @media (prefers-color-scheme: dark) {
