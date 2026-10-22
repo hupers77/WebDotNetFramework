@@ -206,4 +206,21 @@ public sealed class UserScreenTests : IClassFixture<PortalWebFactory>
         Assert.Equal("MSG.PII_REASON_REQUIRED", (await JsonAsync(response)).GetProperty("error").GetProperty("code").GetString());
         Assert.Equal(before, _web.Sp.Calls.Count(c => c.SpName == Portal.Framework.Web.Logging.PiiAccessLog.WriteSp));
     }
+
+    [Fact]
+    public async Task 협력사화면_엑셀은EXPORT권한으로열고_협력사프로그램ID로기록한다()
+    {
+        var token = _web.SignIn("ptn.export", [Home, "PTN_USER_MGT:READ", "PTN_USER_MGT:EXPORT"]);
+        var html = await (await _web.NewClient(token).GetAsync("/Ptn/User?_layout=tab", Ct)).Content.ReadAsStringAsync(Ct);
+
+        var ok = await PostAsync(token, "Export", new { search = new { }, reason = "협력사 계정 점검" }, "Ptn");
+
+        Assert.Contains("data-url-export=\"/Ptn/User/Export\"", html, StringComparison.Ordinal);
+        Assert.Contains("id=\"user-export\"", html, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        Assert.Equal("PTN_USER_MGT", _web.Sp.LastCall(UserAdminService.ListSp).Parameters["P_PROGRAM_ID"]);
+        Assert.Equal("PTN_USER_MGT", _web.Sp.LastCall(Portal.Framework.Web.Logging.PiiAccessLog.WriteSp).Parameters["P_PROGRAM_ID"]);
+        var noExport = _web.SignIn("ptn.noexport", [Home, "PTN_USER_MGT:READ", "PTN_USER_MGT:UPDATE"]);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(noExport, "Export", new { search = new { }, reason = "협력사 계정 점검" }, "Ptn")).StatusCode);
+    }
 }
