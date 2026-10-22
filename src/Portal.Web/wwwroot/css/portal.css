@@ -181,6 +181,10 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .detail-list { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0 0 1rem; }
 .detail-list dt { color: var(--fw-muted); }
 .detail-list dd { margin: 0; overflow-wrap: anywhere; }
+.role-list { border: 1px solid var(--fw-border); border-radius: 4px; padding: .5rem .75rem; margin: .5rem 0 0; }
+.role-list legend { padding: 0 .25rem; }
+.role-list label { display: flex; gap: .4rem; align-items: baseline; padding: .15rem 0; }
+.role-list label.unassignable { color: var(--fw-muted); }
 .mfa-qr svg { width: 12rem; height: 12rem; display: block; }
 .mfa-key { font-size: 1.1rem; letter-spacing: .05em; overflow-wrap: anywhere; }
 

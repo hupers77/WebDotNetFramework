@@ -1,0 +1,99 @@
+@model UserAdminIndexModel
+@{
+    var title = Menus.ProgramTitle(UserController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/user.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="user-screen" class="md-layout"
+     data-url-list="@Url.Action("List")"
+     data-url-roles="@Url.Action("Roles")"
+     data-url-save="@Url.Action("Save")"
+     data-url-unlock="@Url.Action("Unlock")"
+     data-url-reset-mfa="@Url.Action("ResetMfa")"
+     data-me="@CurrentUser.UserId">
+    <section class="md-master" aria-labelledby="user-list-heading">
+        <h2 id="user-list-heading">@L["LBL.USER_LIST"]</h2>
+        <form id="user-search" class="search-bar" role="search">
+            <label for="user-company-filter">@L["LBL.COMPANY"]</label>
+            <select id="user-company-filter">
+                <option value="">@L["LBL.ALL"]</option>
+                @foreach (var (code, name) in Model.Companies)
+                {
+                    <option value="@code">@name</option>
+                }
+            </select>
+            <label for="user-type-filter">@L["LBL.USER_TYPE"]</label>
+            <select id="user-type-filter">
+                <option value="">@L["LBL.ALL"]</option>
+                @foreach (var (code, name) in Model.Types)
+                {
+                    <option value="@code">@name</option>
+                }
+            </select>
+            <label for="user-stat-filter">@L["LBL.USER_STAT"]</label>
+            <select id="user-stat-filter">
+                <option value="">@L["LBL.ALL"]</option>
+                @foreach (var (code, name) in Model.Stats)
+                {
+                    <option value="@code">@name</option>
+                }
+            </select>
+            <label><input id="user-locked-filter" type="checkbox" /> @L["LBL.LOCKED_ONLY"]</label>
+            <label for="user-keyword">@L["LBL.KEYWORD"]</label>
+            <input id="user-keyword" type="search" maxlength="100" autocomplete="off" />
+            <button type="submit">@L["BTN.SEARCH"]</button>
+        </form>
+        <p id="user-total" class="hint" aria-live="polite"></p>
+        <ul id="user-list" class="pick-list" role="listbox" aria-labelledby="user-list-heading"></ul>
+        <div id="user-pager" class="pager" hidden>
+            <button type="button" id="user-prev">@L["BTN.PREV"]</button>
+            <span id="user-page" aria-live="polite"></span>
+            <button type="button" id="user-next">@L["BTN.NEXT"]</button>
+        </div>
+    </section>
+    <section class="md-detail" aria-labelledby="user-heading">
+        <h2 id="user-heading">@L["LBL.USER_DETAIL"]</h2>
+        <p id="user-hint" class="hint">@L["SYS.USER.SELECT"]</p>
+        <div id="user-detail" hidden>
+            <dl class="detail-list">
+                <dt>@L["LBL.USER_ID"]</dt><dd data-field="userId"></dd>
+                <dt>@L["LBL.COMPANY"]</dt><dd data-field="company"></dd>
+                <dt>@L["LBL.DEPT"]</dt><dd data-field="dept"></dd>
+                <dt>@L["LBL.USER_TYPE"]</dt><dd data-field="type"></dd>
+                <dt>@L["LBL.LAST_LOGIN"]</dt><dd data-field="lastLogin"></dd>
+                <dt>@L["LBL.PWD_CHG_DT"]</dt><dd data-field="pwdChg"></dd>
+                <dt>@L["LBL.MFA"]</dt><dd data-field="mfa"></dd>
+                <dt>@L["LBL.LOGIN_FAIL"]</dt><dd data-field="lock"></dd>
+                <dt>@L["LBL.UPD_DT"]</dt><dd data-field="upd"></dd>
+            </dl>
+            <p id="user-self-hint" class="hint" hidden>@L["SYS.USER.SELF_HINT"]</p>
+            <form id="user-form" class="form" novalidate>
+                <label for="user-nm">@L["LBL.USER_NM"]</label>
+                <input id="user-nm" maxlength="100" autocomplete="off" required />
+                <label for="user-stat">@L["LBL.USER_STAT"]</label>
+                <select id="user-stat" aria-describedby="user-stat-hint">
+                    @foreach (var (code, name) in Model.Stats)
+                    {
+                        <option value="@code" data-settable="@(code is "ACTIVE" or "LOCKED" or "DORMANT" or "RETIRED" ? "Y" : "N")">@name</option>
+                    }
+                </select>
+                <p id="user-stat-hint" class="hint">@L["SYS.USER.STAT_HINT"]</p>
+                <label for="user-end">@L["LBL.ACCOUNT_END_DT"]</label>
+                <input id="user-end" type="date" />
+                <fieldset id="user-roles" class="role-list">
+                    <legend>@L["LBL.ROLES"]</legend>
+                    <p class="hint">@L["SYS.USER.ROLE_HINT"]</p>
+                    <div id="user-role-items"></div>
+                </fieldset>
+            </form>
+            <div class="toolbar">
+                <fw-button func="UPDATE" text-key="BTN.UNLOCK" id="user-unlock" />
+                <fw-button func="UPDATE" text-key="BTN.MFA_RESET" id="user-mfa-reset" />
+                <fw-button func="UPDATE" text-key="BTN.SAVE" id="user-save" class="primary" />
+            </div>
+        </div>
+    </section>
+</div>

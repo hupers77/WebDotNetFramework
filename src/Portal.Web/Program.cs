@@ -14,6 +14,7 @@ builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IConfigAdminService, Po
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IPartnerApproveService, Portal.Web.Areas.Sys.Services.PartnerApproveService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IJobAdminService, Portal.Web.Areas.Sys.Services.JobAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.ICompanyAdminService, Portal.Web.Areas.Sys.Services.CompanyAdminService>();
+builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IUserAdminService, Portal.Web.Areas.Sys.Services.UserAdminService>();
 
 var app = builder.Build();
 

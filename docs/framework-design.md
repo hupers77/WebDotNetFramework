@@ -140,6 +140,7 @@ Portal.sln
 3. 웹 세션은 ID/PW와 같은 쿠키 세션으로 전환 (매 요청 Kerberos 현상 방지)
 4. 도메인 밖(모바일, 외부)에서는 AD 계정 ID/PW를 LDAPS(636) Bind로 검증하는 폼 로그인 제공
 5. Portal.Worker가 야간에 LDAPS로 조직·사용자를 동기화 (퇴사자 = AD 비활성 → 포털 계정 잠금). AD 그룹 → 포털 역할 매핑(`TB_AD_GROUP_ROLE`) 지원
+6. 협력사 사용자는 AD 계정이 없으므로 **협력사 전용 로그인 화면**(ID/PW + 2단계 인증, 가입 신청 링크)을 본사 SSO 진입과 따로 둡니다. 본사 사용자는 기본 주소에서 SSO로 바로 들어오고, 협력사 사용자는 협력사 로그인 주소로 들어옵니다(3단계 AD SSO 적용 때 만듦, 2026-10-22 요구사항)
 
 향후 ADFS 또는 Microsoft Entra ID를 도입하면 OpenID Connect 핸들러(Microsoft 제공)를 추가하는 것만으로 확장되도록 인증 제공자를 인터페이스(`IAuthProvider`)로 분리합니다.
 
@@ -174,6 +175,8 @@ Portal.sln
 4. 메뉴 노출 = 해당 프로그램에 `READ` 권한이 있거나, 폴더인 경우 하위에 노출 메뉴가 하나 이상 있을 때
 5. 데이터 범위 = 역할별 `DATA_SCOPE`(전체 / 소속 회사 / 소속 부서+하위 / 소속 부서 / 본인) 중 가장 넓은 값. SP가 `@P_USER_ID`로 판단
 6. `SYS_ADMIN` 역할은 모든 기능 허용(단, 감사 로그는 삭제 불가)
+
+**역할 부여 규칙**: 역할마다 줄 수 있는 회사 유형(`TB_ROLE.COMPANY_TYPE_CD`)을 두어 협력사 사용자에게 본사 역할을, 본사 사용자에게 협력사 역할을 줄 수 없게 합니다(저장 SP가 검사). 관리자는 자기 계정의 상태·역할을 바꿀 수 없고, `SYS_ADMIN` 역할을 주고 빼는 일과 `SYS_ADMIN` 계정을 고치는 일은 `SYS_ADMIN`만 합니다. 역할이나 상태가 바뀌면 권한 캐시(`AUTH`)를 갱신합니다.
 
 **회사 간 공개와 격리**: 메뉴는 하나의 트리를 모두가 공유하고, 메뉴별 공개 대상(`OPEN_SCOPE_CD` = `ALL` 모든 회사 / `EMP` 본사만 / `PARTNER` 협력사만)을 정합니다. 게시판·각종 조회 화면처럼 어느 회사 사용자든 보는 화면은 `ALL`로 두고, 역할로 기능 권한만 나눕니다. 공개 대상은 메뉴 표시만 정하고, 화면·API 접근은 공개 대상과 관계없이 세션과 권한(역할 × 프로그램 × 기능)으로만 검사합니다. 따라서 협력사 역할에는 본사 전용(`EMP`) 프로그램 권한을 주지 않고, 함께 보는(`ALL`) 화면에는 조회 권한을 줍니다. 초기 데이터는 권한 매트릭스 테스트가 이 규칙을 확인합니다. 데이터는 두 종류로 구분합니다.
 
@@ -263,6 +266,7 @@ CREATE TABLE FW.TB_ROLE (
   ROLE_ID        VARCHAR(30)   NOT NULL PRIMARY KEY,
   ROLE_NM        NVARCHAR(100) NOT NULL,
   DATA_SCOPE_CD  VARCHAR(10)   NOT NULL DEFAULT 'SELF', -- ALL/COMPANY/DEPT_SUB/DEPT/SELF
+  COMPANY_TYPE_CD VARCHAR(10)  NULL,                    -- 줄 수 있는 회사 유형 HQ/PARTNER (NULL: 모두)
   SORT_NO        INT           NOT NULL DEFAULT 0,
   USE_YN         CHAR(1)       NOT NULL DEFAULT 'Y'
 );
