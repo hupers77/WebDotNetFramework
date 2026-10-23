@@ -1,0 +1,20 @@
+@{
+    var title = Menus.ProgramTitle(ApiOutboundController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/api-outbound.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="apiout-screen"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")">
+    <div class="toolbar">
+        <p id="apiout-total" class="hint toolbar-spacer" aria-live="polite"></p>
+        <fw-button func="CREATE" text-key="BTN.ADD_ROW" id="apiout-add" />
+        <fw-button func="DELETE" text-key="BTN.DEL_ROW" id="apiout-delete" />
+        <fw-button func="UPDATE" text-key="BTN.SAVE" id="apiout-save" class="primary" />
+    </div>
+    <p class="hint">@L["SYS.APIOUT.HINT"]</p>
+    <div id="apiout-grid" class="grid-wrap"></div>
+</div>

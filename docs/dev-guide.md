@@ -333,7 +333,13 @@ SP 오류 번호 대역: `FW` 50001\~50999, `BRD` 51000\~51999, `RPT` 52000\~529
 - 오류 형식: 관문이 막은 요청은 위 형식의 JSON(`invalid_token` 401, `access_denied`/`insufficient_scope` 403, `too_many_requests` 429 + `Retry-After`)입니다. 토큰 발급 실패만 OAuth2 형식(`error`, `error_description`)입니다.
 - 클라이언트 설정(사용 중지, 허용 코드·IP)은 최대 30초 뒤 반영됩니다.
 
-외부 시스템을 호출할 때는 주소를 코드에 쓰지 않고 `TB_API_OUTBOUND`에 등록한 대상 키로 `IOutboundApiClient`를 씁니다. 타임아웃·재시도는 등록값을 따릅니다.
+**송신 API 쓰는 법**: 외부 시스템을 호출할 때는 주소를 코드에 쓰지 않고, 외부 연계 > 송신 대상 화면(`TB_API_OUTBOUND`)에 등록한 대상 키로 `IOutboundApiClient.SendAsync(new OutboundRequest("ERP", HttpMethod.Get, "/orders?id=7"))`를 부릅니다. 주소는 `기본 주소 + 경로`로 만들어지고 대상 밖으로 나가는 경로(절대 주소, `..`)는 거부됩니다.
+- 인증(BASIC, BEARER, API_KEY 헤더)·제한 시간은 등록값을 따르고, 인증 비밀값은 암호화되어 저장되며 화면에 다시 나오지 않습니다.
+- 재시도는 GET·HEAD·PUT·DELETE처럼 다시 보내도 되는 호출에만 적용됩니다. POST를 재시도하려면 상대 시스템이 중복 요청을 걸러 줄 때만 `Idempotent: true`를 줍니다. 연속 5번 실패하면 30초간 호출 없이 바로 `OutboundApiException`(CircuitOpen)이 납니다.
+- 4xx·5xx 응답은 예외가 아니라 `OutboundResponse.StatusCode`로 돌아옵니다(`IsSuccess`로 확인). 대상이 없거나 막혔거나 응답을 못 받았을 때만 `OutboundApiException`이 나며, 그 메시지에는 주소·비밀값이 없습니다.
+- 사내망(사설 IP) 시스템은 대상에 `사내망 허용`을 켜야 하고(그때만 http 가능), 루프백·링크로컬(169.254.x) 주소는 언제나 막힙니다. 리디렉트는 따라가지 않고, 프록시를 거치지 않습니다. 응답 본문은 1MB까지만 읽습니다.
+- 모든 호출은 방향 OUT으로 `LOG.TB_API_LOG`에 남습니다(비밀번호·토큰 등의 필드는 `***`).
+- 설정 변경은 최대 30초 뒤 반영됩니다.
 
 ## 9. 테스트 작성 규칙
 
