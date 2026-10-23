@@ -149,6 +149,8 @@ Controller에는 업무 로직을 두지 않습니다. 사용자 ID·언어·IP�
 
 예: 월별 접속기록 점검(`RPT_LOG_MONTHLY`, `LOG.USP_RPT_ACCESS_MONTHLY_GET_LIST`, 템플릿 `AccessMonthly`).
 
+**화면 인쇄**: 조회 화면에 `<fw-button func="PRINT" text-key="BTN.PRINT" id="xxx-print" data-print-area="#xxx-screen" />`를 넣으면 [인쇄] 버튼이 생깁니다. 버튼은 그 화면 프로그램의 PRINT 권한이 있을 때만 그려지고, 누르면 `fw.js`가 인쇄 영역 안의 검색 조건(`form.search-bar`의 라벨과 값, 빈 값 제외)과 보이는 표(머리글과 칸 글자, 숨긴 표·빈 행 제외)를 모아 `/Rpt/Print/Pdf`로 보냅니다. 서버는 PRINT 권한을 다시 확인한 뒤 레포트와 같은 머리글(제목·조건·출력자·일시)과 바닥글·쪽 번호를 붙여 PDF를 내려 줍니다. HTML이 아닌 글자만 보내므로 서버가 인코딩해 그립니다. 열이 7개보다 많으면 가로로 출력합니다. 지금 쪽에 보이는 행만 나오고(표 5개, 행 합 5,000행까지) 전체 자료는 엑셀이나 레포트를 씁니다. 개인정보가 보이는 화면은 버튼에 `data-pii="Y"`를 붙여 사유를 묻고, 프로그램이 `PII_YN = 'Y'`이면 서버도 사유를 요구합니다(다운로드로 개인정보 접속기록). 브라우저 인쇄(Ctrl+P)는 머리·메뉴·버튼을 빼고 표를 펼쳐 찍습니다(`portal.css`의 `@media print`). 예: 로그 화면 3개.
+
 **프레임워크 시스템 화면**(공통코드, 설정 관리 등)은 업무 모듈과 같은 구조로 `src/Portal.Web/Areas/Sys/`(Controllers, Services, Models, Views)와 `wwwroot/js/sys/`에 둡니다.
 
 **첨부 파일**: 화면은 첨부를 직접 받지 않고 공통 API(`/File/Upload`, `/File/List`, `/File/Download/{id}`, `/File/Delete`)를 씁니다. 업무 테이블에는 `FILE_GROUP_ID BIGINT NULL` 컬럼 하나만 두고, 순서는 다음과 같습니다.

@@ -105,12 +105,12 @@ Oct 21, 2026 · @사랑나무아빠
 | 연계 관리 > 송신 대상 | `SYS_API_OUTBOUND_MGT` | EMP | PORTAL\_ADMIN: R, C, U, D |
 | 운영 > 스케줄 관리 | `SYS_JOB_MGT` | EMP | PORTAL\_ADMIN: R, U, EXEC |
 | 운영 > 운영 모니터링 | `SYS_MONITOR_INQ` | EMP | PORTAL\_ADMIN: R |
-| 로그 > 로그인·접근 기록 | `LOG_ACCESS_INQ` | EMP | PORTAL\_ADMIN, SECURITY\_AUDITOR: R, E |
-| 로그 > 데이터 변경 기록 | `LOG_AUDIT_INQ` | EMP | SECURITY\_AUDITOR: R, E |
-| 로그 > 개인정보 접속기록 | `LOG_PII_INQ` | EMP | SECURITY\_AUDITOR: R, E |
+| 로그 > 로그인·접근 기록 | `LOG_ACCESS_INQ` | EMP | PORTAL\_ADMIN, SECURITY\_AUDITOR: R, E, PRINT |
+| 로그 > 데이터 변경 기록 | `LOG_AUDIT_INQ` | EMP | SECURITY\_AUDITOR: R, E, PRINT |
+| 로그 > 개인정보 접속기록 | `LOG_PII_INQ` | EMP | SECURITY\_AUDITOR: R, E, PRINT |
 | 로그 > 월별 접속기록 점검 | `RPT_LOG_MONTHLY` | EMP | SECURITY\_AUDITOR: R, E, PRINT |
 
-`EXEC`(작업 수동 실행)는 `FUNC_CD`에 추가되는 사용자 정의 기능입니다. `PRINT`는 레포트 PDF 출력입니다(8장). 메뉴는 고정 키(`TB_MENU.MENU_KEY`, 위 표의 프로그램 ID 또는 폴더 키 `MY`, `BRD`, `PTN`, `SYS`, `INTG`, `OPS`, `LOG`)로 식별하므로 운영 중 메뉴를 옮기거나 이름을 바꿔도 다음 배포의 시드가 덮어쓰지 않습니다. 시드 원본은 `db/seed/FW/06_PROGRAM.sql`, `07_MENU.sql`입니다. 같은 `06_PROGRAM.sql`의 `TB_PROGRAM_API`는 요청 경로(예: `POST /Sys/Code/Save`)별 프로그램·기능으로, 코드의 `[Program]`/`[Func]`와 같아야 하며 화면이 만들어질 때마다 추가됩니다(이 표는 운영자가 바꾸는 값이 아니므로 시드가 항상 덮어씁니다). 표준 화면 예제 8종(`SMP_*`)은 개발계에만 등록하고 운영계에서는 메뉴에 넣지 않습니다.
+`EXEC`(작업 수동 실행)는 `FUNC_CD`에 추가되는 사용자 정의 기능입니다. `PRINT`는 레포트 PDF와 화면의 [인쇄] 버튼(현재 화면 PDF)입니다(8장). 메뉴는 고정 키(`TB_MENU.MENU_KEY`, 위 표의 프로그램 ID 또는 폴더 키 `MY`, `BRD`, `PTN`, `SYS`, `INTG`, `OPS`, `LOG`)로 식별하므로 운영 중 메뉴를 옮기거나 이름을 바꿔도 다음 배포의 시드가 덮어쓰지 않습니다. 시드 원본은 `db/seed/FW/06_PROGRAM.sql`, `07_MENU.sql`입니다. 같은 `06_PROGRAM.sql`의 `TB_PROGRAM_API`는 요청 경로(예: `POST /Sys/Code/Save`)별 프로그램·기능으로, 코드의 `[Program]`/`[Func]`와 같아야 하며 화면이 만들어질 때마다 추가됩니다(이 표는 운영자가 바꾸는 값이 아니므로 시드가 항상 덮어씁니다). 표준 화면 예제 8종(`SMP_*`)은 개발계에만 등록하고 운영계에서는 메뉴에 넣지 않습니다.
 
 ## 5. 공통코드 그룹과 값
 

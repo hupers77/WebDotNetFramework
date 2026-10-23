@@ -11,6 +11,10 @@ internal static class ReportFormat
     public static bool IsNumber(object? value) =>
         value is byte or short or int or long or decimal or double or float;
 
+    /// <summary>화면 출력의 칸 글자가 숫자인지 (<c>1,234</c>, <c>-5.5</c>, <c>12%</c>). 오른쪽 정렬에만 쓴다.</summary>
+    public static bool LooksNumeric(string? text) =>
+        text is { Length: > 0 and <= 30 } t && decimal.TryParse(t.Trim().TrimEnd('%'), NumberStyles.Number, CultureInfo.InvariantCulture, out _);
+
     /// <summary>
     /// 표에 찍을 글자. 날짜(<see cref="DateOnly"/>)는 yyyy-MM-dd, 일시(<see cref="DateTime"/>, UTC)는 서버 현지 시간 yyyy-MM-dd HH:mm,
     /// 정수는 천 단위 쉼표, 소수는 둘째 자리까지.

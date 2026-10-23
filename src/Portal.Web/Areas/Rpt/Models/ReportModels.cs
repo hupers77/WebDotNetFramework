@@ -101,7 +101,55 @@ public sealed class ReportResult
 /// <param name="Report">실행 결과.</param>
 /// <param name="InlineStyle">PDF용: 문서에 넣을 <c>&lt;style&gt;</c> (wwwroot의 <c>css/report.css</c> 내용, 사용자 입력 아님).
 /// null이면 <c>/css/report.css</c>를 연결한다(미리보기).</param>
-public sealed record ReportDocumentModel(ReportResult Report, IHtmlContent? InlineStyle);
+/// <param name="Tables">화면 출력(<c>Screen</c> 템플릿)의 표. 레포트는 null.</param>
+public sealed record ReportDocumentModel(ReportResult Report, IHtmlContent? InlineStyle, IReadOnlyList<ScreenTable>? Tables = null);
+
+/// <summary>화면 출력 요청 (<c>/Rpt/Print/Pdf</c>): 화면에 보이는 검색 조건과 표를 글자 그대로 받는다(HTML은 받지 않는다).</summary>
+public sealed class ScreenPrintRequest
+{
+    /// <summary>출력하는 화면의 프로그램 ID (PRINT 권한을 확인한다).</summary>
+    [Required(ErrorMessage = MessageKeys.InvalidInput), StringLength(30, ErrorMessage = MessageKeys.InvalidInput)]
+    public string ProgramId { get; set; } = "";
+
+    /// <summary>검색 조건 (이름, 값).</summary>
+    public List<ScreenCondition> Conditions { get; set; } = [];
+
+    /// <summary>표 (화면에 보이는 것만).</summary>
+    public List<ScreenTable> Tables { get; set; } = [];
+
+    /// <summary>다운로드 사유 (개인정보 화면만).</summary>
+    [StringLength(200, ErrorMessage = MessageKeys.PiiReasonRequired)]
+    public string? Reason { get; set; }
+}
+
+/// <summary>화면의 검색 조건 하나.</summary>
+public sealed class ScreenCondition
+{
+    /// <summary>이름 (입력란 라벨).</summary>
+    public string Label { get; set; } = "";
+
+    /// <summary>값 (선택 목록은 보이는 글자).</summary>
+    public string? Value { get; set; }
+}
+
+/// <summary>화면의 표 하나: 머리글과 행(칸 글자).</summary>
+public sealed class ScreenTable
+{
+    /// <summary>표 제목 (없으면 생략).</summary>
+    public string? Caption { get; set; }
+
+    /// <summary>머리글.</summary>
+    public List<string> Columns { get; set; } = [];
+
+    /// <summary>행. 칸 수는 머리글 수와 같다.</summary>
+    public List<List<string?>> Rows { get; set; } = [];
+}
+
+/// <summary>프로그램 (<c>FW.USP_PROGRAM_GET</c>).</summary>
+/// <param name="ProgramId">프로그램 ID.</param>
+/// <param name="ModuleCd">모듈.</param>
+/// <param name="PiiYn">개인정보 처리 화면.</param>
+public sealed record ProgramInfo(string ProgramId, string ModuleCd, string PiiYn);
 
 /// <summary>레포트 화면 모델.</summary>
 /// <param name="Definition">정의.</param>

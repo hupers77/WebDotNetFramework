@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc;
 using Portal.Core.Context;
 using Portal.Core.Errors;
@@ -59,9 +58,6 @@ public sealed partial class ReportService(
 {
     internal const string GetSp = "FW.USP_REPORT_GET";
 
-    /// <summary>미리보기·PDF가 연결하거나 넣는 CSS (wwwroot 기준).</summary>
-    internal const string CssPath = "css/report.css";
-
     private const string TemplateFolder = "~/Areas/Rpt/Views/Templates/";
     private const string DefaultTemplate = "Default";
 
@@ -108,7 +104,7 @@ public sealed partial class ReportService(
     {
         var reason = RequireReason(definition, request);
         var result = await RunAsync(definition, request.Params, cancellationToken);
-        var html = await renderer.RenderAsync(context, TemplatePath(definition), new ReportDocumentModel(result, await ReadStyleAsync(cancellationToken)));
+        var html = await renderer.RenderAsync(context, TemplatePath(definition), new ReportDocumentModel(result, await ReportStyle.InlineAsync(environment, cancellationToken)));
         var bytes = await pdf.ConvertAsync(html, new PdfPageOptions(Printed(result), definition.Landscape), cancellationToken);
         if (definition.HasPii)
         {
@@ -200,21 +196,6 @@ public sealed partial class ReportService(
 
         var reason = request.Reason?.Trim();
         return reason is { Length: >= 2 } ? reason : throw new BizException(MessageKeys.PiiReasonRequired);
-    }
-
-    /// <summary>PDF 문서에 넣을 CSS. PDF 변환기는 외부 자원을 막으므로 연결 대신 문서 안에 넣는다. 배포된 정적 파일이라 인코딩하지 않는다.</summary>
-    private async Task<IHtmlContent> ReadStyleAsync(CancellationToken cancellationToken)
-    {
-        var file = environment.WebRootFileProvider.GetFileInfo(CssPath);
-        if (!file.Exists)
-        {
-            throw new InvalidOperationException($"wwwroot/{CssPath}가 없습니다.");
-        }
-
-        await using var stream = file.CreateReadStream();
-        using var reader = new StreamReader(stream);
-        var css = await reader.ReadToEndAsync(cancellationToken);
-        return new HtmlString("<style>" + css.Replace("</", "<\\/", StringComparison.Ordinal) + "</style>");
     }
 
     [GeneratedRegex("^[A-Z][A-Z0-9_]{1,29}$", RegexOptions.CultureInvariant)]
