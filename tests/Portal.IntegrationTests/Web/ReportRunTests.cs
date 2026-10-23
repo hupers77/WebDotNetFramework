@@ -121,9 +121,11 @@ public sealed class ReportRunTests : IClassFixture<PortalWebFactory>
         Assert.True(pdf.GetProperty("success").GetBoolean(), pdf.ToString());
         Assert.Equal(77, pdf.GetProperty("data").GetProperty("runId").GetInt64());
         Assert.True(excel.GetProperty("success").GetBoolean());
-        var saves = _web.Sp.Calls.Where(c => c.SpName == ReportRunService.SaveSp).ToList();
-        Assert.Equal(("RPT_BG", "PDF", """{"P_MONTH":"2026-09","P_KEYWORD":"ab"}"""), ((string?)saves[0].Parameters["P_REPORT_ID"], (string?)saves[0].Parameters["P_FORMAT_CD"], (string?)saves[0].Parameters["P_PARAMS_JSON"]));
-        Assert.Equal("EXCEL", (string?)saves[1].Parameters["P_FORMAT_CD"]);
+        // 다른 시험이 남긴 호출과 섞이지 않게 이 시험의 요청만 찾는다
+        var saves = _web.Sp.Calls.Where(c => c.SpName == ReportRunService.SaveSp && (string?)c.Parameters["P_REPORT_ID"] == Report).ToList();
+        var pdfCall = saves.Last(c => ((string?)c.Parameters["P_PARAMS_JSON"])!.Contains("ab", StringComparison.Ordinal));
+        Assert.Equal(("PDF", """{"P_MONTH":"2026-09","P_KEYWORD":"ab"}"""), ((string?)pdfCall.Parameters["P_FORMAT_CD"], (string?)pdfCall.Parameters["P_PARAMS_JSON"]));
+        Assert.Equal("EXCEL", (string?)saves[^1].Parameters["P_FORMAT_CD"]);
     }
 
     [Fact]
