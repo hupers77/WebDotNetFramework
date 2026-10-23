@@ -1,6 +1,6 @@
 # 01. 프레임워크 사용·확장 안내 (업무 개발자용 요약)
 
-기준 시점: 2026-10-23 (`main` `4395f87`). 자세한 규칙은 [개발 표준 가이드](../dev-guide.md)와 [설계서](../framework-design.md)가 기준입니다. 이 문서는 업무 화면을 만들 때 꼭 알아야 할 것만 모았습니다. 기능별 구현 여부는 [02-framework-status.md](02-framework-status.md)를 봅니다.
+기준 시점: 2026-10-23 (`main` `cdecf6f`). 자세한 규칙은 [개발 표준 가이드](../dev-guide.md)와 [설계서](../framework-design.md)가 기준입니다. 이 문서는 업무 화면을 만들 때 꼭 알아야 할 것만 모았습니다. 기능별 구현 여부는 [02-framework-status.md](02-framework-status.md)를 봅니다.
 
 ## 1. 한눈에 보기
 
@@ -10,7 +10,7 @@
 | 기술 | .NET 10 (LTS), ASP.NET Core MVC/Razor 모듈형 모놀리스, 배치는 Windows 서비스 `Portal.Worker` |
 | DB 접근 | **SP만** 사용. EF Core·인라인 SQL 금지. `ISpExecutor`(Microsoft.Data.SqlClient 위 자체 구현) 하나로 호출. 앱 DB 계정은 SP `EXECUTE` 권한만 가짐(DB 역할 `portal_app`) |
 | 사용자 | 본사 임직원 + 다수 협력사. 협력사는 자기 회사 데이터만 봄(데이터 범위 함수) |
-| 로그인 | 지금은 ID/PW(`AUTH.MODE = FORM`) + 관리자·협력사 2단계 인증(TOTP 또는 이메일 인증번호). 협력사 전용 로그인 `/Account/PartnerLogin`. AD SSO(도메인 PC 자동 로그인)는 **처리 방식 미정** |
+| 로그인 | ID/PW + 관리자·협력사 2단계 인증(TOTP 또는 이메일 인증번호). 협력사 전용 로그인 `/Account/PartnerLogin`. AD SSO(도메인 PC 자동 로그인)는 **프레임워크 범위 밖, 업무 저장소에서 개발** |
 | 언어 | 한국어 `ko`, 영어 `en`, 중국어 `zh-CN`. 화면 문구는 모두 다국어 키 |
 | UI | 헤더 + 좌측 메뉴 트리 + 멀티 탭. 자체 JS 컴포넌트(`fw.*`), Bootstrap 5. 외부 CDN 없음 |
 | OSS | 허용 목록(`eng/allowed-packages.txt`)에 있는 것만. GPL/AGPL·매출 기준 유료 라이선스 금지 |
@@ -131,7 +131,7 @@ tests/
 
 외부 API 수신·송신(관리 화면 포함)과 LDAP 조회 모듈은 **프레임워크가 제공**하며 구현이 끝났습니다(02 문서). 업무 저장소에서 따로 만들지 말고 가져다 씁니다. 자세한 작성법은 개발 표준 가이드 8장과 3장 "LDAP 조회 쓰는 법".
 
-**전자결재 연동과 AD master 연동(조직 동기화)은 프레임워크 제공 범위 밖입니다**(사용자 결정 2026-10-23). 사이트마다 결재 시스템과 AD 원천이 다르므로 **각 업무 저장소가 업무 개발 때** 만듭니다. 프레임워크에는 전자결재 골격(`IApprovalGateway`, `TB_APPROVAL_LINK`)과 AD 동기화 작업(`JOB_AD_SYNC`)을 넣지 않습니다. 전자결재 구성안(`IApprovalGateway`, `APPROVAL.VIEW_URL`)과 이전 AD 뷰 동기화 설계안은 설계서에 참고용으로 남아 있고, 아래 표의 해당 행은 그 요약입니다.
+**전자결재 연동, AD master 연동(조직 동기화), AD SSO(도메인 PC 자동 로그인)는 프레임워크 제공 범위 밖입니다**(사용자 결정 2026-10-23). 사이트마다 결재 시스템과 AD 원천이 다르므로 **각 업무 저장소가 업무 개발 때** 만듭니다. 프레임워크에는 전자결재 골격(`IApprovalGateway`, `TB_APPROVAL_LINK`)과 AD 동기화 작업(`JOB_AD_SYNC`)을 넣지 않습니다. 전자결재 구성안(`IApprovalGateway`, `APPROVAL.VIEW_URL`)과 이전 AD 뷰 동기화 설계안은 설계서에 참고용으로 남아 있고, 아래 표의 해당 행은 그 요약입니다.
 
 | 연동 | 설계(현재 기준) | 업무에서 쓰는 방법 |
 | --- | --- | --- |
@@ -141,7 +141,20 @@ tests/
 | 전자결재 (**업무 저장소에서 구현**) | 참고 설계: 결재 과정은 사내 전자결재에 위임, 포털은 결재 화면 URI를 띄우고 결과(진행·승인·반려)만 확인. 업무 키 ↔ 결재 문서 매핑 테이블, 결과 확인 방식(API / DB 뷰 / 콜백)은 사이트별로 결정. 업무 스키마(예: `GAT`)에 테이블·SP를 두고, 결재 시스템 주소는 설정(`TB_CONFIG`), 외부 호출은 프레임워크 외부 API 송신 사용 | 반출입의 승인·불가 "사유 입력"은 전자결재가 아니라 단순 텍스트입니다. 결재가 필요한 업무가 생길 때 구현 |
 | LDAP 조회 모듈 (**프레임워크 제공**, 선택) | **읽기 전용 조회**만: `ILdapDirectory.FindUserAsync("계정")`, `SearchUsersAsync("검색어", 최대건수)`. 아무것도 저장하지 않고, 비밀번호를 받아 AD 인증을 하지 않으며, 조회 값은 필터 인젝션 방지 이스케이프. **기본 꺼짐 `LDAP.ENABLED = N`**. 사이트에서 설정 관리로 `LDAP.HOST`, `LDAP.PORT`(636), `LDAP.USE_SSL`(Y), `LDAP.BASE_DN`, `LDAP.BIND_DN`, `LDAP.BIND_PASSWORD`(암호화), `LDAP.USER_FILTER`, `LDAP.USER_SEARCH_FILTER`, `LDAP.TIMEOUT_SEC`를 채우고 켬. 꺼져 있거나 설정이 비면 `LdapNotConfiguredException`, 연결·조회 실패는 `LdapQueryException`(메시지에 서버 주소·계정 없음) | 업무 저장소의 AD master 연동(사용자·조직 동기화, 퇴사자 잠금)이 원천 조회에 쓸 수 있음. 동기화 자체는 업무 저장소가 개발 |
 | AD master 연동·조직 동기화 (**업무 저장소에서 구현**) | 참고 설계: AD master 테이블을 링크드 서버 뷰(또는 LDAP 모듈)로 읽어 배치 작업(`스키마.USP_JOB_…_EXEC` 또는 `IScheduledJob`)으로 `FW.TB_DEPT`/`TB_USER`/`TB_USER_LOGIN_MAP`/`TB_USER_AD_GROUP`에 반영, 원천에 없거나 비활성이면 잠금. FW 테이블은 프레임워크 SP(`USP_USER_SAVE`, `USP_DEPT_SAVE` 등)나 업무 SP로 갱신하고 감사 로그를 남김 | 기존 시스템의 사용자 동기화 배치(`ADM_DOODREAM_INTERFACE_BATCH_STR`)를 참고하고 이관 후 중지. AD 그룹 → 역할 매핑(`TB_AD_GROUP_ROLE`, 프레임워크 테이블)으로 업무 역할 자동 부여 가능. AD 뷰 컬럼·위치는 사이트마다 확인 |
-| AD SSO (**미정**) | 도메인 PC 자동 로그인(Negotiate/Windows 인증). 프레임워크에 넣을지 업무 저장소로 넘길지 사용자 답을 기다리는 중이며, 지금은 코드 없음. 그 전까지 본사 직원도 ID/PW(`AUTH.MODE = FORM`) | 협력사는 협력사 전용 로그인 |
+| AD SSO (**업무 저장소에서 구현**) | 사용자 결정 2026-10-23: 도메인 PC 자동 로그인(Negotiate/Windows 인증)은 프레임워크에서 빼고 업무 저장소에서 개발. 프레임워크는 ID/PW + 2단계 인증만 | 아래 "이미 있는 AD 관련 부분의 취급"과 SSO 구현 방법 참고. 협력사는 협력사 전용 로그인 |
+
+**프레임워크에 이미 있는 AD 관련 부분의 취급**(사용자 결정 2026-10-23, AD SSO도 업무 저장소로): 아래는 지우지 않고 **업무 저장소가 채워 쓰는 확장 지점**으로 둡니다. 프레임워크는 이 값을 채우는 로직(SSO, 동기화)을 갖지 않습니다.
+
+| 이미 있는 것 | 프레임워크에서의 상태 | 업무 저장소가 할 일 |
+| --- | --- | --- |
+| `FW.TB_USER_LOGIN_MAP`(외부 계정 ↔ 포털 사용자, `PROVIDER_CD`=AD, `EXTERNAL_ID`=objectSid, `EXTERNAL_LOGIN`=sAMAccountName) | 테이블만 있음, 쓰는 코드 없음 | AD master 연동이 채우고, SSO가 Windows 계정으로 포털 사용자를 찾을 때 씀 |
+| `FW.TB_USER_AD_GROUP` + `FW.TB_AD_GROUP_ROLE`, `FW.UFN_USER_ROLES` | 유효 역할 계산에 이미 포함(AD 그룹 → 역할) | 동기화가 `TB_USER_AD_GROUP`을 채우고, 그룹-역할 매핑은 업무 시드로 |
+| `FW.TB_DEPT.AD_OU_PATH`, 부서 관리 화면의 "AD 동기화 부서는 역할·정렬만 수정" 규칙 | 동작함(값이 있으면 AD 부서로 봄) | 동기화가 채움 |
+| `FW.TB_USER.PWD_HASH` NULL 허용(AD 전용 계정) | ID/PW 로그인은 비밀번호 없는 계정을 거부 | SSO 전용 계정 생성 시 사용 |
+| 설정 `AUTH.MODE`(시드 `BOTH`), `AUTH.AD_AUTO_PROVISION`, `AD.SYNC_VIEW` | 키만 있고 프레임워크 코드는 읽지 않음(프레임워크는 항상 ID/PW) | 업무 저장소의 SSO·동기화가 이 키를 읽어 씀. 의미를 바꾸면 업무 문서에 적음 |
+| 협력사 전용 로그인 `/Account/PartnerLogin` | 동작함 | SSO 적용 후 본사 로그인 화면을 SSO 진입으로 바꿔도 협력사는 이 주소 유지 |
+
+SSO 구현 방법(제안): 업무 저장소 영역에 SSO 진입 Action을 두고 Windows 인증(Negotiate)으로 받은 계정을 `TB_USER_LOGIN_MAP`으로 찾아 포털 세션을 발급합니다. 지금 프레임워크에는 "외부에서 인증된 사용자로 세션을 발급하는" 공개 API가 없으므로(`AuthService`는 ID/PW·MFA만), 이 진입점 하나는 프레임워크에 확장 지점으로 추가하는 것을 권합니다(04 문서 5장). 로그인 기록·잠금·세션 규칙은 프레임워크 것을 그대로 따릅니다.
 
 ## 9. 테스트 규칙 (사용자 규칙 2026-10-23)
 
