@@ -16,4 +16,8 @@
   <ItemGroup>
     <PostDeploy Include="Scripts\PostDeployment.sql" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- 시스템 카탈로그 뷰(sys.partition_functions 등) 참조용. 로그 파티션 작업 SP가 쓴다 -->
+    <PackageReference Include="Microsoft.SqlServer.Dacpacs.Master" />
+  </ItemGroup>
 </Project>

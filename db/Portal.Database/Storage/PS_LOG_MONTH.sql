@@ -1,3 +1,3 @@
--- 로그 파티션 스킴. 처음에는 모두 PRIMARY에 두고, 운영 스크립트가 오래된 파티션을 읽기 전용 파일그룹으로 옮긴다.
+-- 로그 파티션 스킴. 모든 파티션을 PRIMARY에 둔다(읽기 전용 파일그룹으로 옮기지 않는다, 2026-10-23 결정).
 CREATE PARTITION SCHEME [PS_LOG_MONTH]
 AS PARTITION [PF_LOG_MONTH] ALL TO ([PRIMARY]);

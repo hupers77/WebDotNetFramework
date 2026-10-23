@@ -1,5 +1,5 @@
 -- 로그 테이블 월 단위 파티션 함수(설계서 7장). 다음 달 경계는 배치 JOB_LOG_PARTITION이 매월 추가하고,
--- 1년 지난 파티션은 읽기 전용 파일그룹으로 옮기며, LOG.RETENTION_YEARS가 지난 파티션은 파티션 단위로 삭제한다.
+-- LOG.RETENTION_YEARS(오류 로그는 LOG.ERROR_RETENTION_DAYS)가 지난 파티션은 파티션 단위로 비운다. 배포는 경계 차이를 무시한다(publish.xml).
 CREATE PARTITION FUNCTION [PF_LOG_MONTH] (DATETIME2(3))
 AS RANGE RIGHT FOR VALUES (
   '2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01', '2026-05-01', '2026-06-01',
