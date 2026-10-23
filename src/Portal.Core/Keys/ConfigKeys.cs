@@ -153,6 +153,36 @@ public static class ConfigKeys
     /// <summary>AD 마스터 뷰 이름(조직·사용자 동기화 원본).</summary>
     public const string AdSyncView = "AD.SYNC_VIEW";
 
+    /// <summary>LDAP 조회 모듈 사용 여부.</summary>
+    public const string LdapEnabled = "LDAP.ENABLED";
+
+    /// <summary>LDAP 서버 주소.</summary>
+    public const string LdapHost = "LDAP.HOST";
+
+    /// <summary>LDAP 포트 (LDAPS 636, 일반 389).</summary>
+    public const string LdapPort = "LDAP.PORT";
+
+    /// <summary>LDAPS(SSL) 사용 여부.</summary>
+    public const string LdapUseSsl = "LDAP.USE_SSL";
+
+    /// <summary>검색 시작 위치(Base DN).</summary>
+    public const string LdapBaseDn = "LDAP.BASE_DN";
+
+    /// <summary>조회용 계정(Bind DN 또는 UPN). 비우면 익명 조회.</summary>
+    public const string LdapBindDn = "LDAP.BIND_DN";
+
+    /// <summary>조회용 계정 비밀번호(비밀값).</summary>
+    public const string LdapBindPassword = "LDAP.BIND_PASSWORD";
+
+    /// <summary>계정 한 명을 찾는 필터({0} 자리에 계정).</summary>
+    public const string LdapUserFilter = "LDAP.USER_FILTER";
+
+    /// <summary>사용자 검색 필터({0} 자리에 검색어).</summary>
+    public const string LdapUserSearchFilter = "LDAP.USER_SEARCH_FILTER";
+
+    /// <summary>LDAP 응답 제한 시간(초).</summary>
+    public const string LdapTimeoutSec = "LDAP.TIMEOUT_SEC";
+
     /// <summary>전자결재 연동 구현 이름(재시작 필요).</summary>
     public const string ApprovalGateway = "APPROVAL.GATEWAY";
 

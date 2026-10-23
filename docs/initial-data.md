@@ -194,6 +194,16 @@ Oct 21, 2026 · @사랑나무아빠
 | `API.TOKEN_MINUTES` | 30 | INT | N | 외부 API 토큰 유효 시간 |
 | `API.DEFAULT_RATE_PER_MIN` | 600 | INT | N | 클라이언트 기본 호출 한도 |
 | `AD.SYNC_VIEW` | (입력) | STRING | N | AD 마스터 뷰 이름 (조직·사용자 동기화 원본) |
+| `LDAP.ENABLED` | N | BOOL | N | LDAP 조회 모듈 사용 여부 (선택 모듈) |
+| `LDAP.HOST` | (입력) | STRING | N | LDAP 서버 주소 |
+| `LDAP.PORT` | 636 | INT | N | 포트 (LDAPS 636) |
+| `LDAP.USE_SSL` | Y | BOOL | N | LDAPS 사용 |
+| `LDAP.BASE_DN` | (입력) | STRING | N | 검색 시작 DN |
+| `LDAP.BIND_DN` | (입력) | STRING | N | 조회 전용 계정 DN |
+| `LDAP.BIND_PASSWORD` | (입력) | SECRET | Y | 조회 계정 비밀번호 (암호화 저장, 화면에 다시 보이지 않음) |
+| `LDAP.USER_FILTER` | `(&(objectCategory=person)(objectClass=user)(sAMAccountName={0}))` | STRING | N | 계정 하나 조회 필터 (`{0}` 필수) |
+| `LDAP.USER_SEARCH_FILTER` | `(&(objectCategory=person)(objectClass=user)(\|(sAMAccountName={0}*)(displayName=*{0}*)))` | STRING | N | 사용자 검색 필터 (`{0}` 필수) |
+| `LDAP.TIMEOUT_SEC` | 15 | INT | N | 연결·검색 제한 시간 |
 | `APPROVAL.GATEWAY` | NONE | STRING | Y | 전자결재 연동 구현 이름 (업무 개발 시 지정) |
 | `APPROVAL.VIEW_URL` | (입력) | STRING | N | 전자결재 화면 주소 (결재 문서 번호 자리에 `{DOC_ID}`) |
 | `NOTIFY.POLL_SECONDS` | 60 | INT | N | 알림 확인 주기 (헤더 배지, 세션을 연장하지 않는 요청) |
