@@ -34,9 +34,12 @@ unit-test:
   script:
     - dotnet test Portal.sln -c $env:CONFIGURATION --no-build --filter "Category!=Integration"
 
+# 통합 테스트는 기능 MR마다 돌리지 않고 단계가 끝날 때(또는 배포 전) 수동으로 돌린다
 db-integration:
   stage: test
   needs: [build]
+  when: manual
+  allow_failure: false
   script:
     - dotnet tool restore
     - dotnet sqlpackage /Action:Publish /SourceFile:db/Portal.Database/bin/$env:CONFIGURATION/Portal.Database.dacpac /Profile:db/Portal.Database/Portal.Database.publish.xml /TargetConnectionString:$env:PORTAL_TEST_DB

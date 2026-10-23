@@ -79,31 +79,7 @@ public sealed class AccessLogService(ISpExecutor sp, MenuCatalog menus, ICurrent
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<(string Code, string Name)> GetPrograms()
-    {
-        var result = new List<(string, string)>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-
-        void Walk(MenuNode node)
-        {
-            if (node.ProgramId is { } programId && seen.Add(programId))
-            {
-                result.Add((programId, menus.ProgramTitle(programId, currentUser.LangCd)));
-            }
-
-            foreach (var child in node.Children)
-            {
-                Walk(child);
-            }
-        }
-
-        foreach (var root in menus.Roots(MenuSets.Portal))
-        {
-            Walk(root);
-        }
-
-        return result;
-    }
+    public IReadOnlyList<(string Code, string Name)> GetPrograms() => LogPrograms.List(menus, currentUser.LangCd);
 
     /// <summary>개인정보 접속기록의 대상: 종류·건수·기간과 조건을 넣었는지. 사용자 ID·IP는 남기지 않는다.</summary>
     internal static string TargetDesc(AccessLogSearch search, int count) =>

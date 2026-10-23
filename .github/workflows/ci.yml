@@ -5,6 +5,8 @@ on:
   push:
     branches: [main, develop]
   pull_request:
+  # 단계 종료 통합 테스트: Actions 화면에서 수동 실행 (db-integration은 이때만 돈다)
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -33,7 +35,9 @@ jobs:
             exit 1
           fi
 
+  # 통합 테스트는 기능 PR마다 돌리지 않고 단계가 끝날 때 수동으로 돌린다 (개발 표준 가이드 테스트 절)
   db-integration:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
