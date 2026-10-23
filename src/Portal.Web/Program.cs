@@ -34,6 +34,7 @@ builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IDeptAdminService, Port
 builder.Services.AddScoped<Portal.Web.Areas.Board.Services.IBoardService, Portal.Web.Areas.Board.Services.BoardService>();
 builder.Services.AddScoped<Portal.Web.Areas.Board.Services.IBoardAdminService, Portal.Web.Areas.Board.Services.BoardAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Dash.Services.IDashService, Portal.Web.Areas.Dash.Services.DashService>();
+builder.Services.AddScoped<Portal.Web.Areas.Dash.Services.IWidgetAdminService, Portal.Web.Areas.Dash.Services.WidgetAdminService>();
 
 var app = builder.Build();
 

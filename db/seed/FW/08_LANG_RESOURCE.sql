@@ -1737,7 +1737,28 @@ USING (VALUES
   (N'DSH.EMPTY', N'zh-CN', N'没有可显示的小组件。', N'LABEL'),
   (N'DSH.LOADING', N'ko', N'불러오는 중…', N'LABEL'),
   (N'DSH.LOADING', N'en', N'Loading…', N'LABEL'),
-  (N'DSH.LOADING', N'zh-CN', N'加载中…', N'LABEL')
+  (N'DSH.LOADING', N'zh-CN', N'加载中…', N'LABEL'),
+  (N'VAL.NUM_RANGE', N'ko', N'{0}은(는) {1}~{2} 사이로 입력하세요.', N'MSG'),
+  (N'VAL.NUM_RANGE', N'en', N'{0} must be between {1} and {2}.', N'MSG'),
+  (N'VAL.NUM_RANGE', N'zh-CN', N'{0}必须在{1}到{2}之间。', N'MSG'),
+  (N'DSH.ADM_HINT', N'ko', N'위젯의 제목, 칸 수(12칸 중), 캐시 시간, 순서, 사용 여부를 바꿉니다. 위젯 추가와 데이터 연결은 개발팀에 요청하세요.', N'LABEL'),
+  (N'DSH.ADM_HINT', N'en', N'Change widget titles, width (out of 12 columns), cache time, order and use. Ask the development team to add a widget or change its data.', N'LABEL'),
+  (N'DSH.ADM_HINT', N'zh-CN', N'修改小组件的标题、宽度(共12栏)、缓存时间、顺序和使用状态。新增小组件或更改数据请联系开发团队。', N'LABEL'),
+  (N'DSH.ADM_CODE', N'ko', N'위젯 코드', N'LABEL'),
+  (N'DSH.ADM_CODE', N'en', N'Widget code', N'LABEL'),
+  (N'DSH.ADM_CODE', N'zh-CN', N'小组件代码', N'LABEL'),
+  (N'DSH.ADM_TYPE', N'ko', N'유형', N'LABEL'),
+  (N'DSH.ADM_TYPE', N'en', N'Type', N'LABEL'),
+  (N'DSH.ADM_TYPE', N'zh-CN', N'类型', N'LABEL'),
+  (N'DSH.ADM_DATA_SP', N'ko', N'데이터 SP', N'LABEL'),
+  (N'DSH.ADM_DATA_SP', N'en', N'Data SP', N'LABEL'),
+  (N'DSH.ADM_DATA_SP', N'zh-CN', N'数据SP', N'LABEL'),
+  (N'DSH.ADM_SPAN', N'ko', N'칸 수', N'LABEL'),
+  (N'DSH.ADM_SPAN', N'en', N'Columns', N'LABEL'),
+  (N'DSH.ADM_SPAN', N'zh-CN', N'栏数', N'LABEL'),
+  (N'DSH.ADM_CACHE', N'ko', N'캐시(초)', N'LABEL'),
+  (N'DSH.ADM_CACHE', N'en', N'Cache (sec)', N'LABEL'),
+  (N'DSH.ADM_CACHE', N'zh-CN', N'缓存(秒)', N'LABEL')
 ) AS S ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE])
    ON T.[RES_KEY] = S.[RES_KEY] AND T.[LANG_CD] = S.[LANG_CD]
 WHEN NOT MATCHED THEN INSERT ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE]) VALUES (S.[RES_KEY], S.[LANG_CD], S.[RES_TEXT], S.[RES_TYPE]);
