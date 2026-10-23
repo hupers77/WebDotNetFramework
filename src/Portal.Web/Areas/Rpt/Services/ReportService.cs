@@ -40,6 +40,18 @@ public interface IReportService
     /// <summary>엑셀 (머리글 = 컬럼 문구, 합계 행 포함).</summary>
     Task<Stream> ExcelAsync(ReportDefinition definition, ReportRunRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// 백그라운드 서비스용: 요청자의 권한으로 PDF 또는 엑셀을 만든다. 화면에서 바로 만드는 행 수 한도(<see cref="ReportService.SyncMaxRows"/>)가 아니라
+    /// 레포트의 <c>MAX_ROWS</c>까지 허용한다.
+    /// </summary>
+    Task<ReportOutput> GenerateAsync(ActionContext context, ReportDefinition definition, ReportRunRequest request, string formatCd, CancellationToken cancellationToken = default);
+
+    /// <summary>조건 값이 정의에 맞는지 확인한다(요청을 받을 때 바로 알려 주려고). 틀리면 <see cref="BizException"/>.</summary>
+    void Validate(ReportDefinition definition, IReadOnlyDictionary<string, string?> input);
+
+    /// <summary>개인정보 레포트의 다운로드 사유를 확인해 돌려준다. 개인정보 레포트가 아니면 null, 사유가 없으면 <see cref="BizException"/>.</summary>
+    string? RequireReason(ReportDefinition definition, ReportRunRequest request);
+
     /// <summary>내려받을 파일 이름 (<c>레포트ID-yyyyMMddHHmm.확장자</c>).</summary>
     string FileName(ReportDefinition definition, string extension);
 }
@@ -57,6 +69,9 @@ public sealed partial class ReportService(
     TimeProvider time) : IReportService
 {
     internal const string GetSp = "FW.USP_REPORT_GET";
+
+    /// <summary>화면에서 바로(미리보기·PDF·엑셀) 만드는 최대 행 수. 레포트의 <c>MAX_ROWS</c>가 더 커도 이 수를 넘으면 백그라운드 생성을 써야 한다.</summary>
+    public const int SyncMaxRows = 5000;
 
     private const string TemplateFolder = "~/Areas/Rpt/Views/Templates/";
     private const string DefaultTemplate = "Default";
@@ -89,7 +104,7 @@ public sealed partial class ReportService(
     /// <inheritdoc />
     public async Task<ReportPreview> PreviewAsync(ActionContext context, ReportDefinition definition, IReadOnlyDictionary<string, string?> input, CancellationToken cancellationToken = default)
     {
-        var result = await RunAsync(definition, input, cancellationToken);
+        var result = await RunAsync(definition, input, SyncLimit(definition), cancellationToken);
         if (definition.HasPii)
         {
             await pii.WriteAsync(definition.ReportId, PiiActions.View, TargetDesc(result, "PREVIEW"), null, cancellationToken);
@@ -100,36 +115,23 @@ public sealed partial class ReportService(
     }
 
     /// <inheritdoc />
-    public async Task<byte[]> PdfAsync(ActionContext context, ReportDefinition definition, ReportRunRequest request, CancellationToken cancellationToken = default)
-    {
-        var reason = RequireReason(definition, request);
-        var result = await RunAsync(definition, request.Params, cancellationToken);
-        var html = await renderer.RenderAsync(context, TemplatePath(definition), new ReportDocumentModel(result, await ReportStyle.InlineAsync(environment, cancellationToken)));
-        var bytes = await pdf.ConvertAsync(html, new PdfPageOptions(Printed(result), definition.Landscape), cancellationToken);
-        if (definition.HasPii)
-        {
-            await pii.WriteAsync(definition.ReportId, PiiActions.Download, TargetDesc(result, "PDF"), reason, cancellationToken);
-        }
-
-        return bytes;
-    }
+    public async Task<byte[]> PdfAsync(ActionContext context, ReportDefinition definition, ReportRunRequest request, CancellationToken cancellationToken = default) =>
+        (await BuildAsync(context, definition, request, ReportFormats.Pdf, SyncLimit(definition), cancellationToken)).Content;
 
     /// <inheritdoc />
-    public async Task<Stream> ExcelAsync(ReportDefinition definition, ReportRunRequest request, CancellationToken cancellationToken = default)
-    {
-        var reason = RequireReason(definition, request);
-        var result = await RunAsync(definition, request.Params, cancellationToken);
-        var columns = result.Columns
-            .Select((c, i) => new ExcelColumn<SpRow>(c.Label, r => ReportFormat.Cell(r[i]), c.Numeric ? 14 : 20))
-            .ToList();
-        IEnumerable<SpRow> rows = result.Totals is { } totals ? [.. result.Rows, totals] : result.Rows;
-        if (definition.HasPii)
-        {
-            await pii.WriteAsync(definition.ReportId, PiiActions.Download, TargetDesc(result, "EXCEL"), reason, cancellationToken);
-        }
+    public async Task<Stream> ExcelAsync(ReportDefinition definition, ReportRunRequest request, CancellationToken cancellationToken = default) =>
+        new MemoryStream((await BuildAsync(null, definition, request, ReportFormats.Excel, SyncLimit(definition), cancellationToken)).Content, writable: false);
 
-        return ExcelWriter.Write(new ExcelSheet<SpRow>(result.Title, columns, rows));
-    }
+    /// <inheritdoc />
+    public Task<ReportOutput> GenerateAsync(ActionContext context, ReportDefinition definition, ReportRunRequest request, string formatCd, CancellationToken cancellationToken = default) =>
+        BuildAsync(context, definition, request, formatCd, definition.MaxRows, cancellationToken);
+
+    /// <inheritdoc />
+    public void Validate(ReportDefinition definition, IReadOnlyDictionary<string, string?> input) =>
+        ReportParams.Bind(ReportParams.Parse(definition.ParamsJson), input, key => localizer[key]);
+
+    /// <inheritdoc />
+    public string? RequireReason(ReportDefinition definition, ReportRunRequest request) => RequireReasonCore(definition, request);
 
     /// <inheritdoc />
     public string FileName(ReportDefinition definition, string extension) =>
@@ -148,15 +150,17 @@ public sealed partial class ReportService(
     internal static string TargetDesc(ReportResult result, string format) =>
         JsonSerializer.Serialize(new { cnt = result.Rows.Count, format, conditions = result.Conditions.Select(c => c.Label) });
 
-    private async Task<ReportResult> RunAsync(ReportDefinition definition, IReadOnlyDictionary<string, string?> input, CancellationToken cancellationToken)
+    private async Task<ReportResult> RunAsync(ReportDefinition definition, IReadOnlyDictionary<string, string?> input, int limit, CancellationToken cancellationToken)
     {
         var (parameters, conditions) = ReportParams.Bind(ReportParams.Parse(definition.ParamsJson), input, key => localizer[key]);
-        parameters.Add(new(ReportParams.MaxRowsParam, definition.MaxRows));
+        parameters.Add(new(ReportParams.MaxRowsParam, limit));
 
         var rows = await sp.QueryAsync<SpRow>(definition.DataSp, parameters, cancellationToken);
-        if (rows.Count > definition.MaxRows)
+        if (rows.Count > limit)
         {
-            throw new BizException(ReportMessageKeys.TooMany, definition.MaxRows);
+            throw limit < definition.MaxRows
+                ? new BizException(ReportMessageKeys.UseBackground, limit)
+                : new BizException(ReportMessageKeys.TooMany, limit);
         }
 
         var names = rows.Count > 0 ? rows[0].Columns : [];
@@ -187,7 +191,51 @@ public sealed partial class ReportService(
     private string Printed(ReportResult result) =>
         localizer["RPT.PRINTED", result.PrintedBy, result.PrintedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)];
 
-    private static string? RequireReason(ReportDefinition definition, ReportRunRequest request)
+    /// <summary>화면에서 바로 만들 때의 최대 행 수.</summary>
+    private static int SyncLimit(ReportDefinition definition) => Math.Min(definition.MaxRows, SyncMaxRows);
+
+    /// <summary>PDF 또는 엑셀을 만들고 개인정보 레포트면 다운로드 접속기록을 남긴다. <paramref name="context"/>는 PDF에만 쓴다.</summary>
+    private async Task<ReportOutput> BuildAsync(ActionContext? context, ReportDefinition definition, ReportRunRequest request, string formatCd, int limit, CancellationToken cancellationToken)
+    {
+        var reason = RequireReasonCore(definition, request);
+        var result = await RunAsync(definition, request.Params, limit, cancellationToken);
+        byte[] content;
+        string extension;
+        if (formatCd == ReportFormats.Pdf)
+        {
+            var html = await renderer.RenderAsync(
+                context ?? throw new ArgumentNullException(nameof(context)),
+                TemplatePath(definition),
+                new ReportDocumentModel(result, await ReportStyle.InlineAsync(environment, cancellationToken)));
+            content = await pdf.ConvertAsync(html, new PdfPageOptions(Printed(result), definition.Landscape), cancellationToken);
+            extension = "pdf";
+        }
+        else if (formatCd == ReportFormats.Excel)
+        {
+            var columns = result.Columns
+                .Select((c, i) => new ExcelColumn<SpRow>(c.Label, r => ReportFormat.Cell(r[i]), c.Numeric ? 14 : 20))
+                .ToList();
+            IEnumerable<SpRow> rows = result.Totals is { } totals ? [.. result.Rows, totals] : result.Rows;
+            await using var stream = ExcelWriter.Write(new ExcelSheet<SpRow>(result.Title, columns, rows));
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, cancellationToken);
+            content = buffer.ToArray();
+            extension = "xlsx";
+        }
+        else
+        {
+            throw new BizException(MessageKeys.InvalidInput);
+        }
+
+        if (definition.HasPii)
+        {
+            await pii.WriteAsync(definition.ReportId, PiiActions.Download, TargetDesc(result, formatCd == ReportFormats.Pdf ? "PDF" : "EXCEL"), reason, cancellationToken);
+        }
+
+        return new ReportOutput(content, result.Rows.Count, FileName(definition, extension));
+    }
+
+    private static string? RequireReasonCore(ReportDefinition definition, ReportRunRequest request)
     {
         if (!definition.HasPii)
         {

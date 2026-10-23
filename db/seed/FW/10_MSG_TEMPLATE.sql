@@ -13,7 +13,9 @@ USING (VALUES
   (N'TPL_DORMANT_NOTICE', N'휴면 전환 사전 안내', N'Y', N'N', NULL),
   (N'TPL_PWD_EXPIRE', N'비밀번호 만료 사전 안내', N'Y', N'Y', N'MY_PWD_CHG'),
   (N'TPL_ACCOUNT_EXPIRE', N'협력사 계정 만료 사전 안내', N'Y', N'N', NULL),
-  (N'TPL_JOB_FAILED', N'배치 작업 실패 알림', N'Y', N'Y', N'SYS_JOB_MGT')
+  (N'TPL_JOB_FAILED', N'배치 작업 실패 알림', N'Y', N'Y', N'SYS_JOB_MGT'),
+  (N'TPL_REPORT_DONE', N'레포트 백그라운드 생성 완료', N'N', N'Y', N'RPT_RUNS'),
+  (N'TPL_REPORT_FAILED', N'레포트 백그라운드 생성 실패', N'N', N'Y', N'RPT_RUNS')
 ) AS S ([TEMPLATE_ID], [TEMPLATE_NM], [MAIL_YN], [PORTAL_YN], [LINK_PROGRAM_ID])
    ON T.[TEMPLATE_ID] = S.[TEMPLATE_ID]
 WHEN MATCHED AND T.[LINK_PROGRAM_ID] IS NULL AND S.[LINK_PROGRAM_ID] IS NOT NULL THEN UPDATE SET T.[LINK_PROGRAM_ID] = S.[LINK_PROGRAM_ID]
@@ -43,7 +45,13 @@ USING (VALUES
   (N'TPL_ACCOUNT_EXPIRE', N'zh-CN', N'[{{SITE_NM}}] 您的账户将于{{EXPIRE_DT}}到期', N'<p>{{USER_NM}}，您好：</p><p>账户 <strong>{{USER_ID}}</strong> 的使用期限将于 <strong>{{EXPIRE_DT}}</strong>（剩余{{DAYS_LEFT}}天）结束。到期后账户将失效，无法登录。</p><p>如合同已续签或仍需使用，请联系总部负责人延长使用期限。</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
   (N'TPL_JOB_FAILED', N'ko', N'[{{SITE_NM}}] 배치 작업 실패: {{JOB_NM}}', N'<p>배치 작업 <strong>{{JOB_NM}}</strong>({{JOB_ID}})이(가) 실패했습니다.</p><p>사유: {{RESULT_MSG}}</p><p>운영 > 스케줄 관리에서 실행 이력을 확인하세요. 같은 작업이 계속 실패해도 다시 성공할 때까지는 이 메일을 다시 보내지 않습니다.</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
   (N'TPL_JOB_FAILED', N'en', N'[{{SITE_NM}}] Scheduled job failed: {{JOB_NM}}', N'<p>The scheduled job <strong>{{JOB_NM}}</strong> ({{JOB_ID}}) failed.</p><p>Reason: {{RESULT_MSG}}</p><p>Check the run history in Operations > Schedules. If the job keeps failing, this mail is not sent again until it succeeds.</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
-  (N'TPL_JOB_FAILED', N'zh-CN', N'[{{SITE_NM}}] 计划任务失败：{{JOB_NM}}', N'<p>计划任务 <strong>{{JOB_NM}}</strong>（{{JOB_ID}}）运行失败。</p><p>原因：{{RESULT_MSG}}</p><p>请在“运维 > 计划任务”中查看运行记录。在任务再次成功之前，即使继续失败也不会重复发送此邮件。</p><p><a href="{{LINK}}">{{LINK}}</a></p>')
+  (N'TPL_JOB_FAILED', N'zh-CN', N'[{{SITE_NM}}] 计划任务失败：{{JOB_NM}}', N'<p>计划任务 <strong>{{JOB_NM}}</strong>（{{JOB_ID}}）运行失败。</p><p>原因：{{RESULT_MSG}}</p><p>请在“运维 > 计划任务”中查看运行记录。在任务再次成功之前，即使继续失败也不会重复发送此邮件。</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
+  (N'TPL_REPORT_DONE', N'ko', N'[{{SITE_NM}}] 레포트를 만들었습니다', N'<p>요청하신 레포트 <strong>{{REPORT_ID}}</strong>({{FILE_NM}})를 만들었습니다. 내 정보 > 내 레포트에서 내려받으세요.</p>'),
+  (N'TPL_REPORT_DONE', N'en', N'[{{SITE_NM}}] Your report is ready', N'<p>The report <strong>{{REPORT_ID}}</strong> ({{FILE_NM}}) you requested is ready. Download it in My page > My reports.</p>'),
+  (N'TPL_REPORT_DONE', N'zh-CN', N'[{{SITE_NM}}] 报表已生成', N'<p>您请求的报表 <strong>{{REPORT_ID}}</strong>（{{FILE_NM}}）已生成。请在“我的信息 > 我的报表”中下载。</p>'),
+  (N'TPL_REPORT_FAILED', N'ko', N'[{{SITE_NM}}] 레포트를 만들지 못했습니다', N'<p>요청하신 레포트 <strong>{{REPORT_ID}}</strong>를 만들지 못했습니다. 내 정보 > 내 레포트에서 사유를 확인하고 조건을 바꿔 다시 요청하세요.</p>'),
+  (N'TPL_REPORT_FAILED', N'en', N'[{{SITE_NM}}] Your report could not be built', N'<p>The report <strong>{{REPORT_ID}}</strong> you requested could not be built. Check the reason in My page > My reports, change the conditions and request again.</p>'),
+  (N'TPL_REPORT_FAILED', N'zh-CN', N'[{{SITE_NM}}] 报表生成失败', N'<p>您请求的报表 <strong>{{REPORT_ID}}</strong> 生成失败。请在“我的信息 > 我的报表”中查看原因，调整条件后重新提交。</p>')
 ) AS S ([TEMPLATE_ID], [LANG_CD], [SUBJECT], [BODY])
    ON T.[TEMPLATE_ID] = S.[TEMPLATE_ID] AND T.[LANG_CD] = S.[LANG_CD]
 WHEN NOT MATCHED THEN INSERT ([TEMPLATE_ID], [LANG_CD], [SUBJECT], [BODY]) VALUES (S.[TEMPLATE_ID], S.[LANG_CD], S.[SUBJECT], S.[BODY]);

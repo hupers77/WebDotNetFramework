@@ -25,6 +25,10 @@ builder.Services.AddScoped<Portal.Web.Areas.Log.Services.IPiiLogService, Portal.
 builder.Services.AddScoped<Portal.Web.Areas.Rpt.Services.IReportService, Portal.Web.Areas.Rpt.Services.ReportService>();
 builder.Services.AddSingleton<Portal.Web.Areas.Rpt.Services.ReportRenderer>();
 builder.Services.AddScoped<Portal.Web.Areas.Rpt.Services.IScreenPrintService, Portal.Web.Areas.Rpt.Services.ScreenPrintService>();
+builder.Services.AddScoped<Portal.Web.Areas.Rpt.Services.IReportRunService, Portal.Web.Areas.Rpt.Services.ReportRunService>();
+builder.Services.AddOptions<Portal.Web.Areas.Rpt.Services.ReportRunOptions>().Bind(builder.Configuration.GetSection(Portal.Web.Areas.Rpt.Services.ReportRunOptions.SectionName));
+builder.Services.AddSingleton<Portal.Web.Areas.Rpt.Services.ReportRunProcessor>();
+builder.Services.AddHostedService<Portal.Web.Areas.Rpt.Services.ReportRunWorker>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IDeptAdminService, Portal.Web.Areas.Sys.Services.DeptAdminService>();
 
 var app = builder.Build();

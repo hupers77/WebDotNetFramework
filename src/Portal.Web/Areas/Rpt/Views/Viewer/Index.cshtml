@@ -12,6 +12,7 @@
      data-url-preview="@Url.Action("Preview", new { id })"
      data-url-pdf="@Url.Action("Pdf", new { id })"
      data-url-excel="@Url.Action("Excel", new { id })"
+     data-url-queue="@Url.Action("Queue", new { id })"
      data-pii="@Model.Definition.PiiYn">
     <form id="rpt-params" class="search-bar" role="search">
         @foreach (var p in Model.Params)
@@ -28,6 +29,8 @@
         <p class="hint toolbar-spacer">@L["RPT.PREVIEW_HINT"]</p>
         <fw-button func="PRINT" program="@id" text-key="BTN.PDF" id="rpt-pdf" />
         <fw-button func="EXPORT" program="@id" text-key="BTN.EXCEL" id="rpt-excel" />
+        <fw-button func="PRINT" program="@id" text-key="BTN.PDF_BACKGROUND" id="rpt-pdf-bg" />
+        <fw-button func="EXPORT" program="@id" text-key="BTN.EXCEL_BACKGROUND" id="rpt-excel-bg" />
     </div>
     <iframe id="rpt-frame" class="rpt-frame" sandbox="allow-same-origin" title="@L["RPT.PREVIEW_TITLE"]"></iframe>
 </div>

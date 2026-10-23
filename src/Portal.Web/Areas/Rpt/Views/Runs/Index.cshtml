@@ -1,0 +1,40 @@
+@* 내 레포트: 백그라운드로 요청한 레포트의 진행과 결과 파일. 진행 중인 요청이 있으면 몇 초마다 다시 읽는다. *@
+@model ReportRunsViewModel
+@inject Portal.Framework.Web.Navigation.MenuCatalog Menus
+@{
+    var title = Menus.ProgramTitle("RPT_RUNS", CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/rpt/runs.js" asp-append-version="true"></script>
+}
+<h1 id="runs-heading">@title</h1>
+<div id="runs-screen"
+     data-url-list="@Url.Action("List")"
+     data-url-download="@Url.Action("Download")"
+     data-url-delete="@Url.Action("Delete")">
+    <div class="toolbar">
+        <span id="runs-total" class="hint" aria-live="polite"></span>
+        <span class="toolbar-spacer"></span>
+        <button type="button" id="runs-refresh">@L["BTN.REFRESH"]</button>
+    </div>
+    <p class="hint">@L["RPT.RUNS_HINT", Model.KeepDays]</p>
+    <div class="grid-wrap">
+        <table class="fw-grid" aria-labelledby="runs-heading">
+            <thead>
+                <tr>
+                    <th scope="col">@L["LBL.REPORT"]</th>
+                    <th scope="col">@L["LBL.FORMAT"]</th>
+                    <th scope="col">@L["LBL.STATUS"]</th>
+                    <th scope="col">@L["LBL.ROW_COUNT"]</th>
+                    <th scope="col">@L["LBL.FILE_SIZE"]</th>
+                    <th scope="col">@L["LBL.REQUESTED_DT"]</th>
+                    <th scope="col">@L["LBL.EXPIRE_DT"]</th>
+                    <th scope="col"><span class="sr-only">@L["LBL.ACTION"]</span></th>
+                </tr>
+            </thead>
+            <tbody id="runs-body"></tbody>
+        </table>
+    </div>
+    <p id="runs-empty" class="hint" hidden>@L["RPT.RUNS_EMPTY"]</p>
+</div>

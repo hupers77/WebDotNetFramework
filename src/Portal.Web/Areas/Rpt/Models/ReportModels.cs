@@ -16,6 +16,36 @@ public static class ReportMessageKeys
 
     /// <summary>필수 조건이 비었음. 인자: 조건 이름.</summary>
     public const string ParamRequired = "VAL.REQUIRED";
+
+    /// <summary>화면에서 바로 만들 수 있는 행 수를 넘었음 — 백그라운드 생성을 쓰라는 안내. 인자: 바로 만들 수 있는 최대 행 수.</summary>
+    public const string UseBackground = "RPT.USE_BACKGROUND";
+
+    /// <summary>진행 중인 생성 요청이 너무 많음 (<c>USP_REPORT_RUN_SAVE</c>).</summary>
+    public const string RunLimit = "RPT.RUN_LIMIT";
+
+    /// <summary>만들던 중 서비스가 멈춰 끝내지 못했음 (<c>USP_REPORT_RUN_CLAIM_EXEC</c>).</summary>
+    public const string RunInterrupted = "RPT.RUN_INTERRUPTED";
+
+    /// <summary>만드는 데 너무 오래 걸려 중단했음 (<see cref="Services.ReportRunProcessor"/>).</summary>
+    public const string RunTimeout = "RPT.RUN_TIMEOUT";
+}
+
+/// <summary>레포트 출력 형식 코드 (<c>TB_REPORT_RUN.FORMAT_CD</c>).</summary>
+public static class ReportFormats
+{
+    /// <summary>PDF (PRINT 권한).</summary>
+    public const string Pdf = "PDF";
+
+    /// <summary>엑셀 (EXPORT 권한).</summary>
+    public const string Excel = "EXCEL";
+
+    /// <summary>형식에 필요한 기능 코드.</summary>
+    public static string? FuncOf(string? formatCd) => formatCd switch
+    {
+        Pdf => FuncCodes.Print,
+        Excel => FuncCodes.Export,
+        _ => null,
+    };
 }
 
 /// <summary>레포트 정의 (<c>FW.USP_REPORT_GET</c>, 표 <c>FW.TB_REPORT</c>).</summary>
@@ -48,7 +78,7 @@ public sealed record ReportDefinition(
 public sealed record ReportParam(string Name, string Type, bool Required, string LabelKey, string? Default, int MaxLength);
 
 /// <summary>PDF·엑셀 요청. 조건 값은 조건 이름(<c>P_MONTH</c>)별 문자열이다.</summary>
-public sealed class ReportRunRequest
+public class ReportRunRequest
 {
     /// <summary>조건 값.</summary>
     public Dictionary<string, string?> Params { get; set; } = [];
@@ -157,3 +187,135 @@ public sealed record ProgramInfo(string ProgramId, string ModuleCd, string PiiYn
 /// <param name="Params">조건.</param>
 /// <param name="Defaults">조건별 기본값.</param>
 public sealed record ReportViewerModel(ReportDefinition Definition, string Title, IReadOnlyList<ReportParam> Params, IReadOnlyDictionary<string, string?> Defaults);
+
+/// <summary>백그라운드 생성 요청: 형식(<c>PDF</c>/<c>EXCEL</c>)과 지금 입력한 조건.</summary>
+public sealed class ReportQueueRequest : ReportRunRequest
+{
+    /// <summary>PDF 또는 EXCEL.</summary>
+    [Required(ErrorMessage = MessageKeys.InvalidInput), StringLength(5, ErrorMessage = MessageKeys.InvalidInput)]
+    public string Format { get; set; } = "";
+}
+
+/// <summary>내 생성 요청 한 건 (<c>FW.USP_REPORT_RUN_GET_LIST</c>).</summary>
+public sealed class ReportRunItem
+{
+    /// <summary>요청 번호.</summary>
+    public long RunId { get; init; }
+
+    /// <summary>레포트 ID.</summary>
+    public string ReportId { get; init; } = "";
+
+    /// <summary>레포트 이름 (메뉴명, 서비스가 채운다).</summary>
+    public string ReportNm { get; set; } = "";
+
+    /// <summary>PDF / EXCEL.</summary>
+    public string FormatCd { get; init; } = "";
+
+    /// <summary>QUEUED / RUNNING / DONE / FAILED.</summary>
+    public string StatusCd { get; init; } = "";
+
+    /// <summary>행 수 (끝난 뒤).</summary>
+    public int? RowCnt { get; init; }
+
+    /// <summary>파일 이름 (끝난 뒤).</summary>
+    public string? FileNm { get; init; }
+
+    /// <summary>파일 크기 (바이트).</summary>
+    public long? FileSize { get; init; }
+
+    /// <summary>실패 사유 문구 키 (서비스가 <see cref="ErrMsg"/>로 바꾼다).</summary>
+    public string? ErrKey { get; init; }
+
+    /// <summary>실패 사유 문구의 {0}.</summary>
+    public string? ErrArg { get; init; }
+
+    /// <summary>실패 사유 (사용자 언어).</summary>
+    public string? ErrMsg { get; set; }
+
+    /// <summary>요청 시각 (UTC).</summary>
+    public DateTime RegDt { get; init; }
+
+    /// <summary>끝난 시각 (UTC).</summary>
+    public DateTime? EndDt { get; init; }
+
+    /// <summary>지워지는 시각 (UTC).</summary>
+    public DateTime? ExpireDt { get; init; }
+}
+
+/// <summary>내려받을 결과 파일 (<c>FW.USP_REPORT_RUN_GET</c>).</summary>
+public sealed class ReportRunFile
+{
+    /// <summary>요청 번호.</summary>
+    public long RunId { get; init; }
+
+    /// <summary>레포트 ID (내려받기 권한 확인용).</summary>
+    public string ReportId { get; init; } = "";
+
+    /// <summary>PDF / EXCEL.</summary>
+    public string FormatCd { get; init; } = "";
+
+    /// <summary>QUEUED / RUNNING / DONE / FAILED.</summary>
+    public string StatusCd { get; init; } = "";
+
+    /// <summary>파일 이름.</summary>
+    public string? FileNm { get; init; }
+
+    /// <summary>파일 크기.</summary>
+    public long? FileSize { get; init; }
+
+    /// <summary>저장소 안 경로.</summary>
+    public string? StoredPath { get; init; }
+}
+
+/// <summary>백그라운드 서비스가 꺼낸 요청 (<c>FW.USP_REPORT_RUN_CLAIM_EXEC</c>).</summary>
+public sealed class ClaimedReportRun
+{
+    /// <summary>요청 번호.</summary>
+    public long RunId { get; init; }
+
+    /// <summary>레포트 ID.</summary>
+    public string ReportId { get; init; } = "";
+
+    /// <summary>PDF / EXCEL.</summary>
+    public string FormatCd { get; init; } = "";
+
+    /// <summary>조건 (JSON, 이름 → 값).</summary>
+    public string ParamsJson { get; init; } = "{}";
+
+    /// <summary>다운로드 사유 (개인정보 레포트).</summary>
+    public string? Reason { get; init; }
+
+    /// <summary>요청자 ID.</summary>
+    public string ReqUserId { get; init; } = "";
+
+    /// <summary>요청자 회사.</summary>
+    public string ReqCompanyCd { get; init; } = "";
+
+    /// <summary>요청자 유형.</summary>
+    public string ReqUserTypeCd { get; init; } = "";
+
+    /// <summary>요청자 언어.</summary>
+    public string ReqLangCd { get; init; } = "ko";
+}
+
+/// <summary>만든 결과: 내용, 행 수, 파일 이름.</summary>
+/// <param name="Content">PDF·엑셀 내용.</param>
+/// <param name="RowCount">행 수.</param>
+/// <param name="FileName">내려받을 파일 이름.</param>
+public sealed record ReportOutput(byte[] Content, int RowCount, string FileName);
+
+/// <summary>백그라운드 생성 요청 응답.</summary>
+/// <param name="RunId">요청 번호.</param>
+public sealed record ReportQueued(long RunId);
+
+/// <summary>내 레포트 화면 모델.</summary>
+/// <param name="KeepDays">완성된 파일 보관 일수.</param>
+public sealed record ReportRunsViewModel(int KeepDays);
+
+/// <summary>내 레포트 화면의 요청 번호 본문 (내려받기·삭제).</summary>
+public sealed class ReportRunIdRequest
+{
+    /// <summary>요청 번호.</summary>
+    [System.ComponentModel.DataAnnotations.Range(1, long.MaxValue, ErrorMessage = MessageKeys.InvalidInput)]
+    public long RunId { get; set; }
+}
