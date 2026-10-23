@@ -1,6 +1,6 @@
 # 01. 프레임워크 사용·확장 안내 (업무 개발자용 요약)
 
-기준 시점: 2026-10-23 (`main` `264f15e`). 자세한 규칙은 [개발 표준 가이드](../dev-guide.md)와 [설계서](../framework-design.md)가 기준입니다. 이 문서는 업무 화면을 만들 때 꼭 알아야 할 것만 모았습니다. 기능별 구현 여부는 [02-framework-status.md](02-framework-status.md)를 봅니다.
+기준 시점: 2026-10-23 (`main` `2e31ad4`). 자세한 규칙은 [개발 표준 가이드](../dev-guide.md)와 [설계서](../framework-design.md)가 기준입니다. 이 문서는 업무 화면을 만들 때 꼭 알아야 할 것만 모았습니다. 기능별 구현 여부는 [02-framework-status.md](02-framework-status.md)를 봅니다.
 
 ## 1. 한눈에 보기
 
@@ -127,17 +127,21 @@ tests/
 | 휴일·영업일 | `FW.TB_HOLIDAY`, `FW.UFN_IS_BUSINESS_DAY` (D+3 같은 기한 계산에 사용 가능) |
 | 로그 | 로그인·화면 접근·데이터 변경(감사)·개인정보 접속기록은 프레임워크가 자동으로 남김(10년, 해시 체인). 업무 화면은 개인정보 다운로드·마스킹 해제 때만 `IPiiAccessLog` |
 
-## 8. 외부 API·EAI(SAP)·전자결재·AD 연동
+## 8. 외부 API·EAI(SAP)·LDAP·전자결재·AD master 연동
 
-이 네 가지는 업무 개발에 직접 영향을 주지만 **아직 구현되지 않았거나 설계만 있습니다**(02 문서). 업무 저장소에서 프레임워크를 우회해 따로 만들지 말고, 프레임워크에 먼저 넣은 뒤 가져다 씁니다.
+외부 API와 LDAP 모듈은 **프레임워크가 제공**합니다(아직 구현 전, 02 문서). 업무 저장소에서 따로 만들지 말고 프레임워크에 들어간 것을 가져다 씁니다.
+
+**전자결재 연동과 AD master 연동(조직 동기화)은 프레임워크 제공 범위 밖입니다**(사용자 결정 2026-10-23). 사이트마다 결재 시스템과 AD 원천이 다르므로 **각 업무 저장소가 업무 개발 때** 만듭니다. 프레임워크에는 전자결재 골격(`IApprovalGateway`, `TB_APPROVAL_LINK`)과 AD 동기화 작업(`JOB_AD_SYNC`)을 넣지 않습니다. 전자결재 구성안(`IApprovalGateway`, `APPROVAL.VIEW_URL`)과 이전 AD 뷰 동기화 설계안은 설계서에 참고용으로 남아 있고, 아래 표의 해당 행은 그 요약입니다.
 
 | 연동 | 설계(현재 기준) | 업무에서 쓰는 방법 |
 | --- | --- | --- |
-| 외부 API 수신 | `/api/v1/<리소스>` REST, OAuth2 Client Credentials, 클라이언트별 허용 API·IP·호출 한도(`TB_API_CLIENT`), 요청/응답 로그(`LOG.TB_API_LOG`), OpenAPI 자동 문서. 응답 `{ success, data | error, traceId }` | 외부 시스템이 포털 데이터를 가져가야 할 때 `api/v1` 컨트롤러 + 클라이언트 등록 시드 |
+| 외부 API 수신 (진행 중) | `/api/v1/<리소스>` REST. API는 `MapApi(메서드, 경로, API 코드, 설명, handler)`로 등록하고, 클라이언트별로 허용한 API 코드만 호출됨(`TB_API_CLIENT`). 토큰 서명 키 `Api__SigningKey`(Base64, 32바이트 이상)는 **운영 환경 변수로 주입**(저장소·설정 파일에 넣지 않음). 요청/응답 로그(`LOG.TB_API_LOG`). 응답 `{ success, data / error, traceId }`. 작성법은 개발 표준 가이드 8장(병합 후 갱신분) | 외부 시스템이 포털 데이터를 가져가야 할 때 `MapApi` 등록 + API 코드·클라이언트 허용 시드. 클라이언트 관리 화면은 진행 중 |
 | 외부 API 송신 | `TB_API_OUTBOUND`에 대상 키별 URL·인증·타임아웃·재시도 등록, `IOutboundApiClient`(IHttpClientFactory + Resilience). 코드에는 대상 키만 | 반입 바코드 SAP 실시간 조회처럼 포털이 EAI를 직접 불러야 하는 경우. 개발/운영 주소는 등록값으로 분리 |
 | EAI(SAP) 전송 | 사용자 결정(2026-10-23): **반출 MM I/F·EL I/F 버튼은 포털이 SAP를 직접 부르지 않고 레코드에 "전송 대기"를 표시하면 EAI가 가져갑니다.** SAP 전송 버튼은 별도 기능 권한(역할별) | 전송 대기 표시 컬럼·값과 EAI의 수집 방식은 기존 SQL 매퍼와 EAI 담당과 확인 후 확정(03 문서 미확인 항목) |
-| 전자결재 | 결재 과정은 사내 전자결재에 위임, 포털은 결재 화면 URI(`APPROVAL.VIEW_URL`, `{DOC_ID}`)를 띄우고 결과(진행·승인·반려)만 확인. `IApprovalGateway` = ① 화면 주소 만들기 ② 결과 조회. 업무 키 ↔ 결재 문서 매핑 `TB_APPROVAL_LINK`. 결과 확인 방식(API / DB 뷰 / 콜백)은 업무 개발 때 결정 | 반출입의 승인·불가 "사유 입력"은 전자결재가 아니라 단순 텍스트입니다 |
-| AD | SSO: 도메인 PC는 AD 계정으로 로그인 → Negotiate(Windows 인증) SSO 유지. 조직 동기화: 본사가 AD master 테이블을 **링크드 서버 뷰**로 제공(`AD.SYNC_VIEW`) → 작업 `JOB_AD_SYNC`가 `TB_DEPT`/`TB_USER`/`TB_USER_LOGIN_MAP`/`TB_USER_AD_GROUP`으로 반영, 뷰에 없거나 비활성이면 잠금. LDAP 직접 연결은 단순하면 검토 | 기존 시스템의 사용자 동기화 배치(`ADM_DOODREAM_INTERFACE_BATCH_STR`)는 이관 후 중지. AD 그룹 → 역할 매핑(`TB_AD_GROUP_ROLE`)으로 경비대 등 업무 역할 자동 부여 가능 |
+| 전자결재 (**업무 저장소에서 구현**) | 참고 설계: 결재 과정은 사내 전자결재에 위임, 포털은 결재 화면 URI를 띄우고 결과(진행·승인·반려)만 확인. 업무 키 ↔ 결재 문서 매핑 테이블, 결과 확인 방식(API / DB 뷰 / 콜백)은 사이트별로 결정. 업무 스키마(예: `GAT`)에 테이블·SP를 두고, 결재 시스템 주소는 설정(`TB_CONFIG`), 외부 호출은 프레임워크 외부 API 송신 사용 | 반출입의 승인·불가 "사유 입력"은 전자결재가 아니라 단순 텍스트입니다. 결재가 필요한 업무가 생길 때 구현 |
+| LDAP 모듈 (**프레임워크 제공**) | AD에 LDAP 방식으로 연결하는 공통 모듈(계정·그룹 조회 등). 연결 정보는 설정(비밀값 암호화), 코드에 주소를 쓰지 않음. 세부 기능은 구현 때 확정 | 업무 저장소의 AD master 연동이 이 모듈을 쓸 수 있음 |
+| AD master 연동·조직 동기화 (**업무 저장소에서 구현**) | 참고 설계: AD master 테이블을 링크드 서버 뷰(또는 LDAP 모듈)로 읽어 배치 작업(`스키마.USP_JOB_…_EXEC` 또는 `IScheduledJob`)으로 `FW.TB_DEPT`/`TB_USER`/`TB_USER_LOGIN_MAP`/`TB_USER_AD_GROUP`에 반영, 원천에 없거나 비활성이면 잠금. FW 테이블은 프레임워크 SP(`USP_USER_SAVE`, `USP_DEPT_SAVE` 등)나 업무 SP로 갱신하고 감사 로그를 남김 | 기존 시스템의 사용자 동기화 배치(`ADM_DOODREAM_INTERFACE_BATCH_STR`)를 참고하고 이관 후 중지. AD 그룹 → 역할 매핑(`TB_AD_GROUP_ROLE`, 프레임워크 테이블)으로 업무 역할 자동 부여 가능. AD 뷰 컬럼·위치는 사이트마다 확인 |
+| AD SSO | 도메인 PC는 AD 계정으로 로그인 → Negotiate(Windows 인증) SSO 유지(이번 결정에서 바뀌지 않음, 02 문서 참고) | 협력사는 협력사 전용 로그인 |
 
 ## 9. 테스트 규칙 (사용자 규칙 2026-10-23)
 
