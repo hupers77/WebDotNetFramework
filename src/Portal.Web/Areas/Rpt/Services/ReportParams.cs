@@ -101,6 +101,33 @@ internal static partial class ReportParams
     }
 
     /// <summary>
+    /// 업무 화면의 [발행] 버튼이 주소로 넘긴 조건 값을 기본값 위에 채운다. 정의에 있는 조건만, 비어 있지 않은 값만 쓴다.
+    /// 월 조건에 날짜(yyyy-MM-dd)가 오면 그 달로 바꾸고, 글자는 앞뒤 공백을 빼고 최대 길이에서 자른다.
+    /// 값의 형식 검사는 미리보기 때 한다(여기서는 화면에 채우기만 한다).
+    /// </summary>
+    public static Dictionary<string, string?> Prefill(IReadOnlyList<ReportParam> parameters, IReadOnlyDictionary<string, string?> defaults, Func<string, string?> query)
+    {
+        var result = new Dictionary<string, string?>(defaults, StringComparer.Ordinal);
+        foreach (var p in parameters)
+        {
+            var value = query(p.Name)?.Trim();
+            if (string.IsNullOrEmpty(value))
+            {
+                continue;
+            }
+
+            result[p.Name] = p.Type switch
+            {
+                Month when value.Length >= 10 && char.IsDigit(value[9]) => value[..7],
+                Text => value.Length > p.MaxLength ? value[..p.MaxLength] : value,
+                _ => value.Length > 10 ? value[..10] : value,
+            };
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// 화면 입력을 검사해 SP 파라미터와 머리글에 찍을 조건으로 바꾼다. 필수 값이 없으면 <c>VAL.REQUIRED</c>,
     /// 형식이 틀리면 <c>RPT.PARAM_INVALID</c> 업무 오류(인자: 조건 이름 문구).
     /// </summary>

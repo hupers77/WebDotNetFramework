@@ -111,6 +111,19 @@ public sealed class ReportRunTests : IClassFixture<PortalWebFactory>
     }
 
     [Fact]
+    public async Task 발행_팝업으로_열린화면은_주소의_조건을_입력란에채운다_정의에없는값은_무시()
+    {
+        var html = await (await _web.NewClient(_web.SignIn("rb.issue", AllFuncs)).GetAsync($"/Rpt/Viewer/Index/{Report}?_layout=tab&P_MONTH=2026-07-15&P_KEYWORD=%20ab%20&P_USER_ID=evil", Ct)).Content.ReadAsStringAsync(Ct);
+        var pii = await (await _web.NewClient(_web.SignIn("rb.issue.pii", AllFuncs)).GetAsync($"/Rpt/Viewer/Index/{PiiReport}?_layout=tab", Ct)).Content.ReadAsStringAsync(Ct);
+
+        Assert.Contains("name=\"P_MONTH\" type=\"month\" value=\"2026-07\"", html, StringComparison.Ordinal);
+        Assert.Contains("name=\"P_KEYWORD\" type=\"text\" value=\"ab\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("evil", html, StringComparison.Ordinal);
+        Assert.Contains("id=\"rpt-print\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"rpt-print\"", pii, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task 요청_정의된조건만_공백제거해_대기열에_번호반환()
     {
         var token = _web.SignIn("rb.queue", AllFuncs);

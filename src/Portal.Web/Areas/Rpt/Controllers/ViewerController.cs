@@ -11,7 +11,7 @@ namespace Portal.Web.Areas.Rpt.Controllers;
 
 /// <summary>
 /// 레포트 화면 (<c>/Rpt/Viewer/Index/{레포트 ID}</c>, 메뉴에 이 주소로 등록). <c>TB_REPORT</c>에 등록한 레포트마다 같은 화면을 쓴다:
-/// 조건 입력, 미리보기, PDF, 엑셀. 권한은 레포트 ID(= 프로그램 ID)로 Action이 확인한다: 화면·미리보기 READ, PDF PRINT, 엑셀 EXPORT.
+/// 조건 입력, 미리보기, PDF, 엑셀, 인쇄. 업무 화면의 [발행] 버튼은 이 화면을 팝업으로 열고 화면의 검색 조건을 주소로 넘긴다. 권한은 레포트 ID(= 프로그램 ID)로 Action이 확인한다: 화면·미리보기 READ, PDF PRINT, 엑셀 EXPORT.
 /// </summary>
 [Area("Rpt")]
 [ProgramFromData]
@@ -27,7 +27,10 @@ public sealed class ViewerController(IReportService reports, IReportRunService r
         }
 
         await DemandAnyFuncAsync(definition.ReportId, FuncCodes.Read);
-        return View(reports.Viewer(definition));
+
+        // 업무 화면의 [발행] 버튼이 주소(?P_MONTH=2026-09)로 넘긴 조건을 입력란에 채운다
+        var model = reports.Viewer(definition);
+        return View(model with { Defaults = ReportParams.Prefill(model.Params, model.Defaults, name => Request.Query[name].ToString()) });
     }
 
     /// <summary>미리보기 HTML. 조건은 쿼리 문자열(<c>P_MONTH=2026-09</c>)로 받는다(접근 기록에는 쿼리를 남기지 않는다).</summary>
