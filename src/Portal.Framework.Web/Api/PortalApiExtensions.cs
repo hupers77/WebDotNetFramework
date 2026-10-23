@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Portal.Security.Passwords;
+using Portal.Framework.Web.Api.Outbound;
 
 namespace Portal.Framework.Web.Api;
 
@@ -30,6 +30,13 @@ public static class PortalApiExtensions
         services.AddSingleton<ApiRateLimiter>();
         services.AddSingleton<ApiLogBuffer>();
         services.AddHostedService<ApiLogWriter>();
+
+        // 송신: 주소는 연결 시점에 검사하고(내부망·루프백 차단), 리디렉트는 따라가지 않는다
+        services.AddScoped<IOutboundTargetStore, OutboundTargetStore>();
+        services.AddSingleton<OutboundCircuitBreaker>();
+        services.AddScoped<IOutboundApiClient, OutboundApiClient>();
+        services.AddHttpClient(OutboundApiClient.PublicClientName).ConfigurePrimaryHttpMessageHandler(() => NewOutboundHandler(allowPrivate: false));
+        services.AddHttpClient(OutboundApiClient.PrivateClientName).ConfigurePrimaryHttpMessageHandler(() => NewOutboundHandler(allowPrivate: true));
         return services;
     }
 
@@ -49,6 +56,14 @@ public static class PortalApiExtensions
             Results.Json(new { clientId = http.GetApiCaller()?.ClientId, serverTime = time.GetUtcNow() }));
         return app;
     }
+
+    private static SocketsHttpHandler NewOutboundHandler(bool allowPrivate) => new()
+    {
+        AllowAutoRedirect = false,
+        UseProxy = false,
+        PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+        ConnectCallback = (context, ct) => OutboundApiClient.ConnectAsync(context, allowPrivate, ct),
+    };
 
     internal static byte[] ResolveSigningKey(ApiOptions options, IHostEnvironment env)
     {

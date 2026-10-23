@@ -397,6 +397,23 @@ public sealed class BoardScreenTests : IClassFixture<PortalWebFactory>
     }
 
     [Fact]
+    public async Task 송신대상관리_버튼은_권한별로_그려지고_저장은_행상태별_권한을_본다()
+    {
+        _web.Sp.Returns(ApiOutboundAdminService.ListSp, new PageResult<ApiOutboundDto> { Items = [], TotalCount = 0, PageNo = 1, PageSize = 20 });
+        _web.Sp.Returns(ApiOutboundAdminService.SaveSp, new SaveResult(1, null));
+        var all = await (await GetAsync(_web.SignIn("ao.a", [Home, "SYS_API_OUTBOUND_MGT:READ", "SYS_API_OUTBOUND_MGT:CREATE", "SYS_API_OUTBOUND_MGT:UPDATE", "SYS_API_OUTBOUND_MGT:DELETE"]), "/Sys/ApiOutbound?_layout=tab")).Content.ReadAsStringAsync(Ct);
+        var reader = await (await GetAsync(_web.SignIn("ao.r", [Home, "SYS_API_OUTBOUND_MGT:READ"]), "/Sys/ApiOutbound?_layout=tab")).Content.ReadAsStringAsync(Ct);
+        var insert = new { rows = new[] { new { rowStat = "I", targetKey = "ERP", targetNm = "ERP", baseUrl = "https://erp.example.com", authTypeCd = "NONE", timeoutSec = 30, retryCount = 2, allowPrivateYn = "N", useYn = "Y" } } };
+
+        Assert.Contains("id=\"apiout-save\"", all, StringComparison.Ordinal);
+        Assert.Contains("id=\"apiout-add\"", all, StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"apiout-save\"", reader, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(_web.SignIn("ao.u", [Home, "SYS_API_OUTBOUND_MGT:READ", "SYS_API_OUTBOUND_MGT:UPDATE"]), "/Sys/ApiOutbound/Save", insert)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await PostAsync(_web.SignIn("ao.c", [Home, "SYS_API_OUTBOUND_MGT:READ", "SYS_API_OUTBOUND_MGT:UPDATE", "SYS_API_OUTBOUND_MGT:CREATE"]), "/Sys/ApiOutbound/Save", insert)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await GetAsync(_web.SignIn("ao.x", [Home]), "/Sys/ApiOutbound")).StatusCode);
+    }
+
+    [Fact]
     public async Task 공지팝업_관리화면은_기능별_권한이_있을때만_버튼이_그려지고_홈_팝업은_홈권한만_있으면_받는다()
     {
         _web.Sp.Returns(PopupAdminService.ListSp, new PageResult<PopupDto> { Items = [], TotalCount = 0, PageNo = 1, PageSize = 20 });
