@@ -273,3 +273,29 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 
 /* 숫자 칸 (내 레포트 등) */
 .fw-grid td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* 게시판 (Areas/Board) */
+.board-grid td.board-title { white-space: normal; }
+.board-grid td.board-title a { color: var(--fw-text); text-decoration: none; }
+.board-grid td.board-title a:hover, .board-grid td.board-title a:focus-visible { text-decoration: underline; }
+.board-grid td.depth-1 { padding-left: 1.5rem; }
+.board-grid td.depth-2 { padding-left: 2.5rem; }
+.board-grid td.depth-3 { padding-left: 3.5rem; }
+.board-grid tr.pinned { background: color-mix(in srgb, var(--fw-current) 45%, transparent); }
+.badge { display: inline-block; padding: 0 .35rem; margin-right: .3rem; border: 1px solid var(--fw-border); border-radius: 3px; font-size: .75rem; color: var(--fw-muted); }
+.board-content { border-top: 1px solid var(--fw-border); border-bottom: 1px solid var(--fw-border); padding: 1rem .25rem; min-height: 6rem; overflow-wrap: anywhere; }
+.board-content table, .editor table { border-collapse: collapse; }
+.board-content th, .board-content td, .editor th, .editor td { border: 1px solid var(--fw-border); padding: .25rem .5rem; }
+.board-content blockquote, .editor blockquote { margin-left: 0; padding-left: .8rem; border-left: 3px solid var(--fw-border); color: var(--fw-muted); }
+.board-form { display: flex; flex-direction: column; gap: .5rem; max-width: 52rem; }
+.board-form fieldset { border: 1px solid var(--fw-border); border-radius: 6px; display: flex; flex-wrap: wrap; gap: .4rem .8rem; align-items: center; }
+.field-label { font-weight: 600; }
+.field-error { color: var(--fw-error); margin: 0; }
+.editor-toolbar { display: flex; flex-wrap: wrap; gap: .25rem; }
+.editor { min-height: 14rem; padding: .6rem; border: 1px solid var(--fw-border); border-radius: 6px; background: var(--fw-surface); overflow-wrap: anywhere; }
+.editor:focus-visible { outline: 2px solid var(--fw-primary); outline-offset: 1px; }
+.comment-list { list-style: none; margin: 0 0 1rem; padding: 0; }
+.comment-list li { border-bottom: 1px solid var(--fw-border); padding: .5rem .25rem; }
+.comment-meta { color: var(--fw-muted); font-size: .8rem; display: flex; gap: .6rem; align-items: baseline; }
+.comment-text { margin: .25rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.comment-form { display: flex; flex-direction: column; gap: .4rem; max-width: 40rem; }

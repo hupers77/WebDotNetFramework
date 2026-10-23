@@ -2,6 +2,7 @@
 -- @P_POST_ID가 NULL이면 등록(@P_PARENT_POST_ID가 있으면 답글), 있으면 수정(작성자 또는 관리자, @P_ROW_VER 필요).
 -- 게시판 설정이 꺼진 항목(비밀글·게시기간·상단 고정·첨부·답글)은 무시하거나 거절한다. 상단 고정·공개 대상 회사는 관리자(@P_MANAGER_YN)만 바꾼다.
 -- @P_TARGETS는 회사 코드 JSON 배열(원글만). 첨부 묶음은 같은 트랜잭션에서 확정한다(다른 회사 사용자도 받을 수 있게 공유).
+-- 답글을 달면 원 글 작성자(본인 제외)에게 포털 알림(TPL_BOARD_REPLY)을 쌓는다.
 -- 결과: AFFECTED_CNT, NEW_KEY(글 ID)
 CREATE PROCEDURE [FW].[USP_POST_SAVE]
   @P_POST_ID         BIGINT        = NULL,
@@ -128,6 +129,19 @@ BEGIN
       END
 
       SET @AFTER = (SELECT @ID AS [POST_ID], @P_BOARD_CD AS [BOARD_CD], @P_TITLE AS [TITLE] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+    END
+
+    -- 답글이 달리면 원 글 작성자에게 포털 알림 (본인 글에 본인이 단 답글은 제외)
+    IF @P_POST_ID IS NULL AND @P_PARENT_POST_ID IS NOT NULL
+    BEGIN
+      DECLARE @PARENT_WRITER VARCHAR(30), @PARENT_TITLE NVARCHAR(200);
+      SELECT @PARENT_WRITER = [WRITER_ID], @PARENT_TITLE = [TITLE] FROM [FW].[TB_POST] WHERE [POST_ID] = @P_PARENT_POST_ID;
+      IF @PARENT_WRITER <> @P_USER_ID
+      BEGIN
+        DECLARE @NOTI_PARAMS NVARCHAR(4000) = (SELECT @PARENT_TITLE AS [POST_TITLE] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+        EXEC [FW].[USP_MSG_QUEUE_SAVE] @P_TEMPLATE_ID = 'TPL_BOARD_REPLY', @P_TO_USER_ID = @PARENT_WRITER, @P_PARAMS_JSON = @NOTI_PARAMS,
+             @P_RESULT_YN = 'N', @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD, @P_CLIENT_IP = @P_CLIENT_IP;
+      END
     END
 
     IF @P_FILE_GROUP_ID IS NOT NULL

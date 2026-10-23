@@ -1,5 +1,6 @@
 -- 댓글 등록·수정. 프로그램: 게시판의 프로그램 (등록 CREATE, 수정 UPDATE는 애플리케이션이 확인; 수정은 본인 댓글만, 관리자도 남의 댓글은 지우기만 한다)
 -- @P_COMMENT_ID가 NULL이면 등록(글을 볼 수 있어야 하고 게시판 댓글 설정이 켜져 있어야 한다), 있으면 수정(@P_ROW_VER 필요).
+-- 댓글을 달면 글 작성자(본인 제외)에게 포털 알림(TPL_BOARD_COMMENT)을 쌓는다.
 -- 결과: AFFECTED_CNT, NEW_KEY(댓글 ID)
 CREATE PROCEDURE [FW].[USP_COMMENT_SAVE]
   @P_COMMENT_ID   BIGINT        = NULL,
@@ -36,6 +37,16 @@ BEGIN
         FROM [FW].[TB_USER] U
        WHERE U.[USER_ID] = @P_USER_ID AND U.[USER_STAT_CD] = 'ACTIVE';
       SET @ID = SCOPE_IDENTITY();
+
+      -- 글 작성자에게 포털 알림 (본인 글에 본인이 단 댓글은 제외)
+      DECLARE @POST_WRITER VARCHAR(30), @POST_TITLE NVARCHAR(200);
+      SELECT @POST_WRITER = [WRITER_ID], @POST_TITLE = [TITLE] FROM [FW].[TB_POST] WHERE [POST_ID] = @P_POST_ID;
+      IF @POST_WRITER <> @P_USER_ID
+      BEGIN
+        DECLARE @NOTI_PARAMS NVARCHAR(4000) = (SELECT @POST_TITLE AS [POST_TITLE] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
+        EXEC [FW].[USP_MSG_QUEUE_SAVE] @P_TEMPLATE_ID = 'TPL_BOARD_COMMENT', @P_TO_USER_ID = @POST_WRITER, @P_PARAMS_JSON = @NOTI_PARAMS,
+             @P_RESULT_YN = 'N', @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD, @P_CLIENT_IP = @P_CLIENT_IP;
+      END
     END
     ELSE
     BEGIN

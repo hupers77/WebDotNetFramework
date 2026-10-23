@@ -325,3 +325,38 @@ public sealed class CommentDeleteRequest
     [Required(ErrorMessage = "MSG.INVALID_INPUT"), Length(8, 8, ErrorMessage = "MSG.INVALID_INPUT")]
     public byte[] RowVer { get; set; } = [];
 }
+
+/// <summary>글 공개 대상으로 고를 협력사 (<c>FW.USP_BOARD_TARGET_GET_LIST</c>).</summary>
+public sealed class TargetCompanyDto
+{
+    /// <summary>회사 코드.</summary>
+    public string CompanyCd { get; set; } = "";
+
+    /// <summary>회사명.</summary>
+    public string CompanyNm { get; set; } = "";
+}
+
+/// <summary>게시판 목록 화면.</summary>
+/// <param name="Board">게시판 설정.</param>
+/// <param name="CanCreate">글쓰기 권한.</param>
+public sealed record BoardIndexModel(BoardDto Board, bool CanCreate);
+
+/// <summary>글 보기 화면.</summary>
+/// <param name="Board">게시판 설정.</param>
+/// <param name="Detail">글과 공개 대상.</param>
+/// <param name="CanReply">답글을 쓸 수 있다 (게시판 설정과 글쓰기 권한).</param>
+/// <param name="CanEdit">고칠 수 있다 (본인 글이거나 관리자).</param>
+/// <param name="CanDelete">지울 수 있다 (본인 글이거나 삭제 권한자).</param>
+/// <param name="CanManage">관리자 (조회자 목록을 본다).</param>
+/// <param name="CanComment">댓글을 쓸 수 있다.</param>
+/// <param name="CanDeleteAny">남의 글·댓글도 지울 수 있다 (삭제 권한).</param>
+public sealed record BoardViewModel(BoardDto Board, PostDetail Detail, bool CanReply, bool CanEdit, bool CanDelete, bool CanManage, bool CanComment, bool CanDeleteAny);
+
+/// <summary>글쓰기·수정 화면.</summary>
+/// <param name="Board">게시판 설정.</param>
+/// <param name="Post">고칠 글. 새 글·답글이면 null.</param>
+/// <param name="Targets">고칠 글의 공개 대상 회사.</param>
+/// <param name="Parent">답글을 달 글. 아니면 null.</param>
+/// <param name="CanManage">관리자 (상단 고정·공개 대상을 정한다).</param>
+/// <param name="Companies">공개 대상으로 고를 협력사 (관리자만).</param>
+public sealed record BoardEditModel(BoardDto Board, PostDto? Post, IReadOnlyList<string> Targets, PostDto? Parent, bool CanManage, IReadOnlyList<TargetCompanyDto> Companies);
