@@ -239,7 +239,7 @@ Portal.sln
 | 공통코드 | `TB_CODE_GROUP`, `TB_CODE_GROUP_LANG`, `TB_CODE`, `TB_CODE_LANG` | 계층형 코드, 추가 속성 5개, 유효기간 |
 | 다국어 | `TB_LANG`, `TB_LANG_RESOURCE` | 언어 목록, 화면/메시지 문구 |
 | 설정 | `TB_CONFIG`, `TB_CONFIG_HIST`, `TB_CACHE_VERSION` | 시스템 설정값, 변경 이력, 캐시 버전 |
-| 기준정보 | `TB_HOLIDAY`, `TB_POSITION`, `TB_DUTY`, `TB_EXCHANGE_RATE` | 휴일/영업일, 직급, 직책, 환율 (업무별 확장) |
+| 기준정보 | `TB_HOLIDAY`, (`TB_POSITION`, `TB_DUTY`, `TB_EXCHANGE_RATE`) | 휴일/영업일 달력(등록이 없는 날은 토·일만 휴일, 주말 근무일도 등록 가능, `UFN_IS_BUSINESS_DAY`로 판단). 직급·직책은 업무 개발 단계에서 공통코드로 추가하고, 환율은 업무 규칙이 정해진 뒤 테이블로 추가 |
 | 파일 | `TB_FILE_GROUP`, `TB_FILE` | 첨부 묶음, 파일 메타(저장명은 GUID) |
 | 알림·작업 | `TB_MSG_TEMPLATE`, `TB_MSG_QUEUE`, `TB_NOTIFICATION`, `TB_JOB`, `TB_JOB_HIST` | 메일/알림 템플릿·큐, 스케줄 작업 |
 | 외부 연계 | `TB_API_CLIENT`, `TB_API_OUTBOUND` | 수신 API 클라이언트(비밀값 해시), 송신 대상 설정 |

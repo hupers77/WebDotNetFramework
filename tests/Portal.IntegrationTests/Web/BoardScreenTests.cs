@@ -7,6 +7,8 @@ using Portal.Data;
 using Portal.Web.Areas.Board.Models;
 using Portal.Web.Areas.Dash.Models;
 using Portal.Web.Areas.Dash.Services;
+using Portal.Web.Areas.Sys.Models;
+using Portal.Web.Areas.Sys.Services;
 using Portal.Web.Areas.Board.Services;
 using static Portal.IntegrationTests.Web.WebTestHttp;
 
@@ -346,5 +348,24 @@ public sealed class BoardScreenTests : IClassFixture<PortalWebFactory>
         Assert.Equal(HttpStatusCode.Forbidden, (await GetAsync(_web.SignIn("wg.x", [Home]), "/Dash/Widget")).StatusCode);
         var save = await PostAsync(_web.SignIn("wg.s", [Home, "DSH_WIDGET_MGT:READ"]), "/Dash/Widget/Save", new { rows = Array.Empty<object>() });
         Assert.Equal(HttpStatusCode.Forbidden, save.StatusCode);
+    }
+
+    [Fact]
+    public async Task 휴일관리_버튼은_기능별_권한이_있을때만_그려지고_저장은_행상태별_권한을_본다()
+    {
+        _web.Sp.Returns(HolidayAdminService.ListSp, new PageResult<HolidayDto> { Items = [], TotalCount = 0, PageNo = 1, PageSize = 20 });
+        _web.Sp.Returns(HolidayAdminService.SaveSp, new SaveResult(1, null));
+        var all = await (await GetAsync(_web.SignIn("hd.a", [Home, "SYS_HOLIDAY_MGT:READ", "SYS_HOLIDAY_MGT:CREATE", "SYS_HOLIDAY_MGT:UPDATE", "SYS_HOLIDAY_MGT:DELETE"]), "/Sys/Holiday?_layout=tab")).Content.ReadAsStringAsync(Ct);
+        var reader = await (await GetAsync(_web.SignIn("hd.r", [Home, "SYS_HOLIDAY_MGT:READ"]), "/Sys/Holiday?_layout=tab")).Content.ReadAsStringAsync(Ct);
+        var updater = _web.SignIn("hd.u", [Home, "SYS_HOLIDAY_MGT:READ", "SYS_HOLIDAY_MGT:UPDATE"]);
+        var insertRow = new { rows = new[] { new { rowStat = "I", holidayDt = "2026-05-05", holidayNm = "어린이날", workYn = "N" } } };
+
+        Assert.Contains("id=\"holiday-add\"", all, StringComparison.Ordinal);
+        Assert.Contains("id=\"holiday-delete\"", all, StringComparison.Ordinal);
+        Assert.Contains("id=\"holiday-save\"", all, StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"holiday-add\"", reader, StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"holiday-save\"", reader, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(updater, "/Sys/Holiday/Save", insertRow)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await GetAsync(_web.SignIn("hd.x", [Home]), "/Sys/Holiday")).StatusCode);
     }
 }

@@ -1,0 +1,26 @@
+@model HolidaySearch
+@{
+    var title = Menus.ProgramTitle(HolidayController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/holiday.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="holiday-screen"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")">
+    <form id="holiday-search" class="search-bar" role="search">
+        <label for="holiday-year">@L["SYS.HOLIDAY.YEAR"]</label>
+        <input id="holiday-year" type="number" min="1990" max="2100" value="@Model.Year" />
+        <button type="submit">@L["BTN.SEARCH"]</button>
+    </form>
+    <div class="toolbar">
+        <p id="holiday-total" class="hint" aria-live="polite"></p>
+        <fw-button func="CREATE" text-key="BTN.ADD_ROW" id="holiday-add" />
+        <fw-button func="DELETE" text-key="BTN.DEL_ROW" id="holiday-delete" />
+        <fw-button func="UPDATE" text-key="BTN.SAVE" id="holiday-save" class="primary" />
+    </div>
+    <p class="hint">@L["SYS.HOLIDAY.HINT"]</p>
+    <div id="holiday-grid" class="grid-wrap"></div>
+</div>
