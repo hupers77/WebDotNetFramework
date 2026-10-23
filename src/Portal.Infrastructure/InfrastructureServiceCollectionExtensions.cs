@@ -4,6 +4,7 @@ using Portal.Core.Config;
 using Portal.Core.Localization;
 using Portal.Infrastructure.Caching;
 using Portal.Infrastructure.Config;
+using Portal.Infrastructure.Ldap;
 using Portal.Infrastructure.Files;
 using Portal.Infrastructure.Localization;
 using Portal.Infrastructure.Messaging;
@@ -28,6 +29,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddOptions<FileStorageOptions>().Bind(configuration.GetSection(FileStorageOptions.SectionName));
         services.AddSingleton<IFileStorage, LocalFileStorage>();
         services.AddScoped<FileService>();
+        services.AddSingleton<ILdapSearcher, LdapSearcher>();
+        services.AddSingleton<ILdapDirectory, LdapDirectory>();
         services.AddSingleton<IMailTransport, SmtpMailTransport>();
         services.AddScoped<MailQueueSender>();
         services.AddScoped<NotificationService>();
