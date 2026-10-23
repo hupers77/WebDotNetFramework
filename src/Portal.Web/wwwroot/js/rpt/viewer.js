@@ -74,10 +74,24 @@ async function queue(format) {
     fw.notify(result.success ? fw.t('RPT.QUEUED') : result.error.message);
 }
 
+// [인쇄]: 미리보기 문서를 브라우저 인쇄로 찍는다(미리보기가 비어 있으면 먼저 만든다). 개인정보 레포트는 PDF만 쓴다(사유·접속기록).
+// iframe은 스크립트를 막았고(allow-scripts 없음) 인쇄 창만 허용한다(allow-modals).
+async function printPreview() {
+    if (!frame.srcdoc) {
+        await preview();
+    }
+
+    if (frame.srcdoc) {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+    }
+}
+
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     preview();
 });
+$('#rpt-print')?.addEventListener('click', printPreview);
 $('#rpt-pdf')?.addEventListener('click', () => download(urls.pdf));
 $('#rpt-excel')?.addEventListener('click', () => download(urls.excel));
 $('#rpt-pdf-bg')?.addEventListener('click', () => queue('PDF'));

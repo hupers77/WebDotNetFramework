@@ -27,10 +27,14 @@
     </form>
     <div class="toolbar">
         <p class="hint toolbar-spacer">@L["RPT.PREVIEW_HINT"]</p>
+        @if (!Model.Definition.HasPii)
+        {
+            <fw-button func="PRINT" program="@id" text-key="BTN.PRINT" id="rpt-print" />
+        }
         <fw-button func="PRINT" program="@id" text-key="BTN.PDF" id="rpt-pdf" />
         <fw-button func="EXPORT" program="@id" text-key="BTN.EXCEL" id="rpt-excel" />
         <fw-button func="PRINT" program="@id" text-key="BTN.PDF_BACKGROUND" id="rpt-pdf-bg" />
         <fw-button func="EXPORT" program="@id" text-key="BTN.EXCEL_BACKGROUND" id="rpt-excel-bg" />
     </div>
-    <iframe id="rpt-frame" class="rpt-frame" sandbox="allow-same-origin" title="@L["RPT.PREVIEW_TITLE"]"></iframe>
+    <iframe id="rpt-frame" class="rpt-frame" sandbox="allow-same-origin allow-modals" title="@L["RPT.PREVIEW_TITLE"]"></iframe>
 </div>

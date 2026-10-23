@@ -294,6 +294,45 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// [발행] 버튼 (<fw-button func="PRINT" program="RPT_XXX" text-key="BTN.ISSUE" data-report="RPT_XXX" data-report-map="P_MONTH=log-from" />):
+// 레포트 화면(/Rpt/Viewer/Index/{ID})을 팝업으로 열고 이 화면의 검색 조건을 주소로 넘긴다(권한이 있으면 버튼이 그려지고, 서버가 다시 확인한다).
+// 조건은 이름이 P_로 시작하는 입력란(name) 또는 data-report-map(레포트조건=입력란 id 또는 name, 쉼표로 여러 개)으로 정한다.
+// 레포트 화면은 필수 조건이 채워졌으면 바로 미리보기를 보여 주고, 거기서 [인쇄]·[PDF]·[엑셀]을 쓴다.
+const ISSUE_FEATURES = 'popup=yes,width=1100,height=800,resizable=yes,scrollbars=yes';
+
+function issueReport(button) {
+    const params = new URLSearchParams({ _layout: 'tab' });
+    const control = (key) => document.getElementById(key) ?? document.querySelector(`[name="${CSS.escape(key)}"]`);
+    for (const el of document.querySelectorAll('form.search-bar [name^="P_"]')) {
+        if (el.value) {
+            params.set(el.name, el.value);
+        }
+    }
+
+    for (const pair of (button.dataset.reportMap ?? '').split(',')) {
+        const [name, key] = pair.split('=').map((x) => x.trim());
+        const el = name && key ? control(key) : null;
+        if (el?.value) {
+            params.set(name, el.value);
+        }
+    }
+
+    const id = encodeURIComponent(button.dataset.report);
+    const popup = window.open(`/Rpt/Viewer/Index/${id}?${params}`, `rpt-${button.dataset.report}`, ISSUE_FEATURES);
+    if (popup) {
+        popup.focus();
+    } else {
+        notify(t('RPT.POPUP_BLOCKED'));
+    }
+}
+
+document.addEventListener('click', (e) => {
+    const button = e.target instanceof Element ? e.target.closest('button[data-report]') : null;
+    if (button) {
+        issueReport(button);
+    }
+});
+
 const format = {
     /** 바이트 → "1.2 MB" 같은 크기 표시. */
     fileSize(bytes) {

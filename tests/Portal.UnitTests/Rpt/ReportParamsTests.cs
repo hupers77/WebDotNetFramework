@@ -91,4 +91,17 @@ public sealed class ReportParamsTests
 
         Assert.Equal("[P_KEYWORD]", ex.Args[0]);
     }
+
+    [Fact]
+    public void Prefill_정의된조건만_월에날짜가오면그달로_글자는자름_빈값은기본값유지()
+    {
+        var parameters = ReportParams.Parse(Json);
+        var defaults = new Dictionary<string, string?> { ["P_MONTH"] = "2026-09", ["P_FROM"] = "2026-10-01", ["P_KEYWORD"] = "" };
+        var query = new Dictionary<string, string> { ["P_MONTH"] = "2026-07-15", ["P_KEYWORD"] = "  abcdef ", ["P_FROM"] = "", ["P_USER_ID"] = "x" };
+
+        var result = ReportParams.Prefill(parameters, defaults, name => query.GetValueOrDefault(name));
+
+        Assert.Equal(("2026-07", "abc", "2026-10-01"), (result["P_MONTH"], result["P_KEYWORD"], result["P_FROM"]));
+        Assert.False(result.ContainsKey("P_USER_ID"));
+    }
 }

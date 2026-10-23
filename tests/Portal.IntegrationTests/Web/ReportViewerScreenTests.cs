@@ -66,7 +66,8 @@ public sealed class ReportViewerScreenTests : IClassFixture<PortalWebFactory>
         Assert.Contains("maxlength=\"5\"", all, StringComparison.Ordinal);
         Assert.Contains("id=\"rpt-pdf\"", all, StringComparison.Ordinal);
         Assert.Contains("id=\"rpt-excel\"", all, StringComparison.Ordinal);
-        Assert.Contains("sandbox=\"allow-same-origin\"", all, StringComparison.Ordinal);
+        Assert.Contains("sandbox=\"allow-same-origin allow-modals\"", all, StringComparison.Ordinal);
+        Assert.Contains("id=\"rpt-print\"", all, StringComparison.Ordinal);
         Assert.Contains("js/rpt/viewer.js", all, StringComparison.Ordinal);
         Assert.DoesNotContain("id=\"rpt-pdf\"", reader, StringComparison.Ordinal);
         Assert.DoesNotContain("id=\"rpt-excel\"", reader, StringComparison.Ordinal);
