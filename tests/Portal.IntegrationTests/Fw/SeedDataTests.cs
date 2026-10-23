@@ -44,6 +44,7 @@ public sealed class SeedDataTests(DbFixture fixture)
     [InlineData(typeof(PasswordMessageKeys))]
     [InlineData(typeof(PartnerJoinMessageKeys))]
     [InlineData(typeof(Portal.Web.Areas.Sys.Models.JobMessageKeys))]
+    [InlineData(typeof(Portal.Web.Areas.Rpt.Models.ReportMessageKeys))]
     public async Task 메시지키_상수가모두3개언어로있음(Type keys)
     {
         await using var db = await fixture.BeginAsync();
@@ -82,7 +83,10 @@ public sealed class SeedDataTests(DbFixture fixture)
 
     [Theory]
     [InlineData("SELECT COUNT(*) FROM FW.TB_ROLE", 7)]
-    [InlineData("SELECT COUNT(*) FROM FW.TB_PROGRAM", 34)]
+    [InlineData("SELECT COUNT(*) FROM FW.TB_PROGRAM", 35)]
+    [InlineData("SELECT COUNT(*) FROM FW.TB_REPORT", 1)]
+    // 레포트는 같은 ID의 프로그램이 레포트 화면 주소로 메뉴에 있어야 한다
+    [InlineData("SELECT COUNT(*) FROM FW.TB_REPORT R WHERE NOT EXISTS (SELECT 1 FROM FW.TB_PROGRAM P JOIN FW.TB_MENU M ON M.PROGRAM_ID = P.PROGRAM_ID WHERE P.PROGRAM_ID = R.REPORT_ID AND P.URL = CONCAT('/Rpt/Viewer/Index/', R.REPORT_ID))", 0)]
     [InlineData("SELECT COUNT(*) FROM FW.TB_LANG", 3)]
     // 문구·명칭이 빠진 행: 0이어야 한다
     [InlineData("SELECT COUNT(*) FROM FW.TB_MENU M CROSS JOIN FW.TB_LANG L WHERE NOT EXISTS (SELECT 1 FROM FW.TB_MENU_LANG ML WHERE ML.MENU_ID = M.MENU_ID AND ML.LANG_CD = L.LANG_CD)", 0)]

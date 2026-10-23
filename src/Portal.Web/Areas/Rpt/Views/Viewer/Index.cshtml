@@ -1,0 +1,33 @@
+@* 레포트 화면: 조건, 미리보기·PDF·엑셀 버튼(권한별), 미리보기(스크립트를 막은 iframe). 모든 레포트가 같은 화면을 쓴다. *@
+@model ReportViewerModel
+@{
+    var id = Model.Definition.ReportId;
+    ViewData["Title"] = Model.Title;
+}
+@section Scripts {
+    <script type="module" src="~/js/rpt/viewer.js" asp-append-version="true"></script>
+}
+<h1 id="rpt-heading">@Model.Title</h1>
+<div id="rpt-screen"
+     data-url-preview="@Url.Action("Preview", new { id })"
+     data-url-pdf="@Url.Action("Pdf", new { id })"
+     data-url-excel="@Url.Action("Excel", new { id })"
+     data-pii="@Model.Definition.PiiYn">
+    <form id="rpt-params" class="search-bar" role="search">
+        @foreach (var p in Model.Params)
+        {
+            var inputId = "rpt-" + p.Name.ToLowerInvariant();
+            var type = p.Type switch { ReportParams.Date => "date", ReportParams.Month => "month", _ => "text" };
+            <label for="@inputId">@L[p.LabelKey]</label>
+            <input id="@inputId" name="@p.Name" type="@type" value="@Model.Defaults[p.Name]" required="@p.Required"
+                   maxlength="@(p.Type == ReportParams.Text ? p.MaxLength : null)" placeholder="@(p.Type == ReportParams.Month ? "yyyy-MM" : null)" autocomplete="off" />
+        }
+        <button type="submit" class="primary">@L["BTN.PREVIEW"]</button>
+    </form>
+    <div class="toolbar">
+        <p class="hint toolbar-spacer">@L["RPT.PREVIEW_HINT"]</p>
+        <fw-button func="PRINT" program="@id" text-key="BTN.PDF" id="rpt-pdf" />
+        <fw-button func="EXPORT" program="@id" text-key="BTN.EXCEL" id="rpt-excel" />
+    </div>
+    <iframe id="rpt-frame" class="rpt-frame" sandbox="allow-same-origin" title="@L["RPT.PREVIEW_TITLE"]"></iframe>
+</div>

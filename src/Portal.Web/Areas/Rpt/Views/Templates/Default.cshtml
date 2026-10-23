@@ -1,0 +1,6 @@
+@* 기본 템플릿 (TEMPLATE_VIEW가 비었을 때): 공통 머리글 + 표. 새 템플릿은 이 폴더에 두고 이 파일처럼 Layout·partial을 파일 이름(.cshtml)으로 쓴다(같은 폴더 기준). *@
+@model ReportDocumentModel
+@{
+    Layout = "_ReportLayout.cshtml";
+}
+<partial name="_ReportTable.cshtml" model="Model.Report" />

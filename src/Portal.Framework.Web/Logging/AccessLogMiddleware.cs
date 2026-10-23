@@ -9,6 +9,7 @@ namespace Portal.Framework.Web.Logging;
 /// <summary>
 /// 화면·API 접근 기록 (설계서 9장 '로그·추적', 10년 보관). 응답이 끝난 뒤 대기열에 넣기만 하므로 응답 시간에 영향이 없다.
 /// 정적 파일·화면 문구 묶음·상태 확인과 <see cref="SkipAccessLogAttribute"/>를 붙인 자동 반복 요청은 기록하지 않는다. 쿼리 문자열은 남기지 않는다.
+/// 프로그램은 Action의 <c>[Program]</c>, 없으면 Action이 권한을 확인하며 정한 값(<see cref="AccessLogProgram"/>)이다.
 /// </summary>
 public sealed class AccessLogMiddleware(RequestDelegate next, AccessLogBuffer queue, TimeProvider time)
 {
@@ -52,12 +53,13 @@ public sealed class AccessLogMiddleware(RequestDelegate next, AccessLogBuffer qu
     private void Enqueue(HttpContext context, ICurrentUser currentUser, EndpointMetadataCollection? metadata, DateTime startedAt, long started, short? failedStatus)
     {
         var path = context.Request.PathBase + context.Request.Path;
+        var fromData = AccessLogProgram.Get(context);
         queue.Enqueue(new AccessLogEntry
         {
             LogDt = startedAt,
             UserId = currentUser.UserId,
-            ProgramId = metadata?.GetMetadata<ProgramAttribute>()?.ProgramId,
-            FuncCd = metadata?.GetMetadata<FuncAttribute>()?.FuncCd,
+            ProgramId = metadata?.GetMetadata<ProgramAttribute>()?.ProgramId ?? fromData?.ProgramId,
+            FuncCd = metadata?.GetMetadata<FuncAttribute>()?.FuncCd ?? fromData?.FuncCd,
             HttpMethod = context.Request.Method,
             RequestPath = path.Value is { Length: > MaxPathLength } p ? p[..MaxPathLength] : path.Value ?? "/",
             StatusCode = failedStatus ?? (short)context.Response.StatusCode,

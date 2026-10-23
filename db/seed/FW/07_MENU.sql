@@ -62,7 +62,8 @@ USING (
   (N'SYS_MONITOR_INQ', N'OPS', N'PAGE', N'SYS_MONITOR_INQ', N'EMP', NULL, 20),
   (N'LOG_ACCESS_INQ', N'LOG', N'PAGE', N'LOG_ACCESS_INQ', N'EMP', NULL, 10),
   (N'LOG_AUDIT_INQ', N'LOG', N'PAGE', N'LOG_AUDIT_INQ', N'EMP', NULL, 20),
-  (N'LOG_PII_INQ', N'LOG', N'PAGE', N'LOG_PII_INQ', N'EMP', NULL, 30)
+  (N'LOG_PII_INQ', N'LOG', N'PAGE', N'LOG_PII_INQ', N'EMP', NULL, 30),
+  (N'RPT_LOG_MONTHLY', N'LOG', N'PAGE', N'RPT_LOG_MONTHLY', N'EMP', NULL, 40)
     ) AS V ([MENU_KEY], [PARENT_KEY], [MENU_TYPE_CD], [PROGRAM_ID], [OPEN_SCOPE_CD], [ICON_CD], [SORT_NO])
     LEFT JOIN [FW].[TB_MENU] P ON P.[MENU_KEY] = V.[PARENT_KEY]
 ) AS S
@@ -199,7 +200,10 @@ USING (
   (N'LOG_AUDIT_INQ', N'zh-CN', N'数据变更记录'),
   (N'LOG_PII_INQ', N'ko', N'개인정보 접속기록'),
   (N'LOG_PII_INQ', N'en', N'Personal data access log'),
-  (N'LOG_PII_INQ', N'zh-CN', N'个人信息访问记录')
+  (N'LOG_PII_INQ', N'zh-CN', N'个人信息访问记录'),
+  (N'RPT_LOG_MONTHLY', N'ko', N'월별 접속기록 점검'),
+  (N'RPT_LOG_MONTHLY', N'en', N'Monthly access log review'),
+  (N'RPT_LOG_MONTHLY', N'zh-CN', N'月度访问记录检查')
     ) AS V ([MENU_KEY], [LANG_CD], [MENU_NM])
     JOIN [FW].[TB_MENU] M ON M.[MENU_KEY] = V.[MENU_KEY]
 ) AS S
