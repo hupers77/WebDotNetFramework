@@ -5,6 +5,7 @@
 --       다른 협력사와 같으면 안 된다(하이픈·공백 무시, 가입 신청이 사업자등록번호로 회사를 찾으므로).
 -- 계약 종료일을 바꾸면 그 회사 협력사 계정 중 사용 기한이 이전 계약 종료일과 같던 계정(이전 값이 없었으면 기한이 없던 계정)의
 -- 기한도 새 계약 종료일로 바꾼다(승인할 때 계약 종료일을 기한으로 넣으므로). 따로 기한을 정한 계정은 그대로 둔다.
+-- 그중 기한이 지나 만료(EXPIRED, JOB_PARTNER_EXPIRE)된 계정은 새 계약 종료일이 오늘 이후(또는 없음)면 다시 사용(ACTIVE)으로 돌린다(계약 연장).
 -- 사업자등록번호 정리와 허용 IP 형식 검사는 애플리케이션이 한다. 감사 로그를 남긴다.
 -- 결과: AFFECTED_CNT(바뀐 회사 1 + 기한을 바꾼 계정 수), NEW_KEY(회사 코드)
 CREATE PROCEDURE [FW].[USP_COMPANY_SAVE]
@@ -42,7 +43,7 @@ BEGIN
   DECLARE @CNT INT = 0;
   DECLARE @OLD_TYPE VARCHAR(10), @OLD_VER BINARY(8), @OLD_END DATE;
   DECLARE @BEFORE NVARCHAR(MAX), @AFTER NVARCHAR(MAX), @USERS_BEFORE NVARCHAR(MAX);
-  DECLARE @MOVED TABLE ([USER_ID] VARCHAR(30), [OLD_END] DATE);
+  DECLARE @MOVED TABLE ([USER_ID] VARCHAR(30), [OLD_END] DATE, [OLD_STAT] VARCHAR(10));
 
   BEGIN TRY
     BEGIN TRAN;
@@ -107,11 +108,19 @@ BEGIN
       BEGIN
         UPDATE [FW].[TB_USER]
            SET [ACCOUNT_END_DT] = @P_CONTRACT_END_DT, [UPD_ID] = @P_USER_ID, [UPD_DT] = SYSUTCDATETIME()
-        OUTPUT INSERTED.[USER_ID], DELETED.[ACCOUNT_END_DT] INTO @MOVED
+        OUTPUT INSERTED.[USER_ID], DELETED.[ACCOUNT_END_DT], DELETED.[USER_STAT_CD] INTO @MOVED
          WHERE [COMPANY_CD] = @P_COMPANY_CD
            AND [USER_TYPE_CD] = 'PARTNER'
            AND ISNULL([ACCOUNT_END_DT], '9999-12-31') = ISNULL(@OLD_END, '9999-12-31');
         SET @CNT += @@ROWCOUNT;
+
+        -- 계약을 연장했으면 기한이 지나 만료된 계정을 다시 쓸 수 있게 한다
+        IF ISNULL(@P_CONTRACT_END_DT, '9999-12-31') >= CAST(GETDATE() AS DATE) AND @P_USE_YN = 'Y'
+          UPDATE U
+             SET [USER_STAT_CD] = 'ACTIVE', [STAT_CHG_DT] = SYSUTCDATETIME()
+            FROM [FW].[TB_USER] U
+            JOIN @MOVED M ON M.[USER_ID] = U.[USER_ID]
+           WHERE U.[USER_STAT_CD] = 'EXPIRED';
       END
     END
 
@@ -126,8 +135,10 @@ BEGIN
 
     IF EXISTS (SELECT 1 FROM @MOVED)
     BEGIN
-      SET @USERS_BEFORE = (SELECT [USER_ID], [OLD_END] AS [ACCOUNT_END_DT] FROM @MOVED ORDER BY [USER_ID] FOR JSON PATH, INCLUDE_NULL_VALUES);
-      DECLARE @USERS_AFTER NVARCHAR(MAX) = (SELECT [USER_ID], @P_CONTRACT_END_DT AS [ACCOUNT_END_DT] FROM @MOVED ORDER BY [USER_ID] FOR JSON PATH, INCLUDE_NULL_VALUES);
+      SET @USERS_BEFORE = (SELECT [USER_ID], [OLD_END] AS [ACCOUNT_END_DT], [OLD_STAT] AS [USER_STAT_CD] FROM @MOVED ORDER BY [USER_ID] FOR JSON PATH, INCLUDE_NULL_VALUES);
+      DECLARE @USERS_AFTER NVARCHAR(MAX) = (SELECT U.[USER_ID], U.[ACCOUNT_END_DT], U.[USER_STAT_CD]
+                                              FROM [FW].[TB_USER] U JOIN @MOVED M ON M.[USER_ID] = U.[USER_ID]
+                                             ORDER BY U.[USER_ID] FOR JSON PATH, INCLUDE_NULL_VALUES);
       EXEC [LOG].[USP_AUDIT_WRITE]
         @P_TABLE_NM = 'FW.TB_USER', @P_ACTION_CD = 'U', @P_ROW_KEY = @P_COMPANY_CD,
         @P_BEFORE_JSON = @USERS_BEFORE, @P_AFTER_JSON = @USERS_AFTER,

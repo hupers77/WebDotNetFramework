@@ -23,6 +23,7 @@ CREATE TABLE [FW].[TB_USER] (
   [LAST_LOGIN_DT]  DATETIME2(0)   NULL,
   [STAT_CHG_DT]    DATETIME2(0)   NULL,                 -- 상태를 마지막으로 바꾼 시각 (휴면 해제 후 다시 바로 휴면되지 않게 미접속 기간 기준에 쓴다)
   [DORMANT_NOTICE_DT] DATETIME2(0) NULL,                -- 휴면 전환 사전 안내를 보낸 시각 (JOB_USER_DORMANT)
+  [EXPIRE_NOTICE_DT] DATE        NULL,                 -- 계정 만료 사전 안내를 보낸 날 (JOB_PARTNER_EXPIRE, 사용 기한을 늘리면 새 기한 기준으로 다시 안내)
   [REG_ID]         VARCHAR(30)    NOT NULL CONSTRAINT [DF_TB_USER_REG_ID] DEFAULT ('SYSTEM'),
   [REG_DT]         DATETIME2(0)   NOT NULL CONSTRAINT [DF_TB_USER_REG_DT] DEFAULT (SYSUTCDATETIME()),
   [UPD_ID]         VARCHAR(30)    NOT NULL CONSTRAINT [DF_TB_USER_UPD_ID] DEFAULT ('SYSTEM'),
