@@ -16,6 +16,7 @@ PDFsharp-MigraDoc                   # MIT, PDF 문서 (3단계)
 # 빌드 도구 - Microsoft (배포물 미포함)
 Microsoft.Build.Sql                 # MIT, SQL 프로젝트 SDK (db/Portal.Database.sqlproj의 Sdk 버전)
 Microsoft.SqlPackage                # Microsoft 무료 라이선스, DACPAC 배포 (dotnet-tools.json)
+Microsoft.SqlServer.Dacpacs.Master  # MIT, SQL 프로젝트의 master DB 참조 (시스템 카탈로그 뷰, 로그 파티션 작업 SP)
 
 # 테스트 전용 - 배포물 미포함
 Microsoft.NET.Test.Sdk              # MIT

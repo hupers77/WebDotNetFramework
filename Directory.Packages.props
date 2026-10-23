@@ -29,4 +29,8 @@
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- DB 프로젝트 빌드 전용: master DB 참조(시스템 카탈로그 뷰). 배포물에 포함되지 않음 -->
+    <PackageVersion Include="Microsoft.SqlServer.Dacpacs.Master" Version="160.2.2" />
+  </ItemGroup>
 </Project>

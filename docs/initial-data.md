@@ -213,7 +213,7 @@ Oct 21, 2026 · @사랑나무아빠
 | `JOB_USER_DORMANT` | 미접속 계정 휴면 전환 (30일 전 사전 안내, 안내 없이 바로 전환하지 않음, 시스템 계정 제외) | 매일 04:30 (`30 4 * * *`) | 등록됨 (SP `FW.USP_JOB_USER_DORMANT_EXEC`) |
 | `JOB_PARTNER_EXPIRE` | 사용 기한(계정 기한과 회사 계약 종료일 중 이른 날)이 지난 협력사 계정 만료(`EXPIRED`), 7일 전 사전 안내 (기한을 늘리면 다시 안내) | 매일 04:40 (`40 4 * * *`) | 등록됨 (SP `FW.USP_JOB_PARTNER_EXPIRE_EXEC`) |
 | `JOB_PWD_EXPIRE_NOTICE` | 비밀번호 만료 7일 전 안내 (메일과 포털 알림, 변경 주기마다 한 번, 이미 만료·변경 강제·AD 전용·시스템 계정 제외) | 매일 08:00 (`0 8 * * *`) | 등록됨 (SP `FW.USP_JOB_PWD_EXPIRE_NOTICE_EXEC`) |
-| `JOB_LOG_PARTITION` | 다음 달 로그 파티션 생성, 1년 지난 파티션 읽기 전용 전환, 보관 기간 지난 파티션 삭제 | 매월 1일 05:00 | 예정 |
+| `JOB_LOG_PARTITION` | 2개월 뒤까지 로그 월 파티션 생성, 보관 기간 지난 파티션 비우기 (접속기록·감사 10년 `LOG.RETENTION_YEARS`, 오류 로그 365일 `LOG.ERROR_RETENTION_DAYS`, 0이면 지우지 않음) | 매월 1일 05:00 (`0 5 1 * *`) | 등록됨 (SP `LOG.USP_JOB_LOG_PARTITION_EXEC`) |
 | `JOB_LOG_INTEGRITY` | 지난달 로그인·접근·데이터 변경·개인정보 접속기록의 해시 체인 점검 (위·변조나 삭제가 있으면 실패로 알림) | 매월 1일 06:00 (`0 6 1 * *`) | 등록됨 (클래스 `LogIntegrity`) |
 
 **메시지 템플릿 (`TB_MSG_TEMPLATE`, 3개 언어)**
