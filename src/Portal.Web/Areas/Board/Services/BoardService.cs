@@ -32,6 +32,9 @@ public interface IBoardService
     /// <summary>조회자 목록 (조회자 목록을 켠 게시판).</summary>
     Task<IReadOnlyList<PostReaderDto>> GetReadersAsync(string boardCd, long postId, CancellationToken cancellationToken = default);
 
+    /// <summary>글 공개 대상으로 고를 수 있는 협력사 (사용 중인 협력사 전부).</summary>
+    Task<IReadOnlyList<TargetCompanyDto>> GetTargetCompaniesAsync(CancellationToken cancellationToken = default);
+
     /// <summary>댓글 목록.</summary>
     Task<IReadOnlyList<CommentDto>> GetCommentsAsync(long postId, bool manager, CancellationToken cancellationToken = default);
 
@@ -51,6 +54,7 @@ public sealed class BoardService(ISpExecutor sp) : IBoardService
     internal const string SaveSp = "FW.USP_POST_SAVE";
     internal const string DeleteSp = "FW.USP_POST_DEL";
     internal const string ReaderSp = "FW.USP_POST_READER_GET_LIST";
+    internal const string TargetSp = "FW.USP_BOARD_TARGET_GET_LIST";
     internal const string CommentListSp = "FW.USP_COMMENT_GET_LIST";
     internal const string CommentSaveSp = "FW.USP_COMMENT_SAVE";
     internal const string CommentDeleteSp = "FW.USP_COMMENT_DEL";
@@ -148,6 +152,10 @@ public sealed class BoardService(ISpExecutor sp) : IBoardService
     /// <inheritdoc />
     public Task<IReadOnlyList<PostReaderDto>> GetReadersAsync(string boardCd, long postId, CancellationToken cancellationToken = default) =>
         sp.QueryAsync<PostReaderDto>(ReaderSp, new { P_POST_ID = postId, P_BOARD_CD = boardCd }, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<TargetCompanyDto>> GetTargetCompaniesAsync(CancellationToken cancellationToken = default) =>
+        sp.QueryAsync<TargetCompanyDto>(TargetSp, null, cancellationToken);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<CommentDto>> GetCommentsAsync(long postId, bool manager, CancellationToken cancellationToken = default) =>

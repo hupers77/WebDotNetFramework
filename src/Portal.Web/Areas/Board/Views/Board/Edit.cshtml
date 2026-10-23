@@ -1,0 +1,85 @@
+@* 게시글 쓰기·수정·답글: 제목, 옵션(비밀글·상단 고정·게시기간·공개 대상), 간단한 편집기, 첨부. 내용은 서버가 다시 거른다. *@
+@model BoardEditModel
+@{
+    var board = Model.Board;
+    var post = Model.Post;
+    var isEdit = post is not null;
+    var baseUrl = Url.Content("~/Board/" + board.BoardCd);
+    var heading = isEdit ? L["BRD.EDIT"] : Model.Parent is not null ? L["BRD.REPLY"] : L["BRD.WRITE"];
+    var canPin = Model.CanManage && board.PinYn == "Y" && Model.Parent is null && (post is null || post.ParentPostId is null);
+    var canTarget = Model.CanManage && Model.Parent is null && (post is null || post.ParentPostId is null) && Model.Companies.Count > 0;
+    ViewData["Title"] = board.BoardNm;
+}
+@section Scripts {
+    <script type="module" src="~/js/board/edit.js" asp-append-version="true"></script>
+}
+<h1>@board.BoardNm</h1>
+<div id="brd-edit"
+     data-post-id="@post?.PostId"
+     data-row-ver="@(post is null ? "" : Convert.ToBase64String(post.RowVer))"
+     data-parent-id="@Model.Parent?.PostId"
+     data-url-save="@baseUrl/Save"
+     data-url-list="@baseUrl"
+     data-url-view="@baseUrl/View/"
+     data-file-group-id="@post?.FileGroupId"
+     data-program="@board.ProgramId"
+     data-attach="@board.AttachYn">
+    <h2>@heading</h2>
+    @if (Model.Parent is not null)
+    {
+        <p class="hint">@L["BRD.REPLY_TO", Model.Parent.Title]</p>
+    }
+    <form id="brd-form" class="board-form" novalidate>
+        <label for="brd-title">@L["LBL.TITLE"]</label>
+        <input id="brd-title" maxlength="200" autocomplete="off" required value="@(post?.Title ?? (Model.Parent is null ? "" : "RE: " + Model.Parent.Title))" />
+        @if (board.SecretYn == "Y")
+        {
+            <label><input id="brd-secret" type="checkbox" checked="@(post?.SecretYn == "Y")" /> @L["BRD.SECRET"]</label>
+        }
+        @if (canPin)
+        {
+            <label><input id="brd-pin" type="checkbox" checked="@(post?.PinYn == "Y")" /> @L["BRD.PIN"]</label>
+        }
+        @if (board.PeriodYn == "Y")
+        {
+            <fieldset class="board-period">
+                <legend>@L["BRD.PERIOD"]</legend>
+                <label for="brd-start">@L["LBL.START_DT"]</label>
+                <input id="brd-start" type="date" value="@post?.StartDt?.ToString("yyyy-MM-dd")" />
+                <label for="brd-end">@L["LBL.END_DT"]</label>
+                <input id="brd-end" type="date" value="@post?.EndDt?.ToString("yyyy-MM-dd")" />
+            </fieldset>
+        }
+        @if (canTarget)
+        {
+            <fieldset id="brd-targets" class="board-targets">
+                <legend>@L["BRD.TARGETS"]</legend>
+                <p class="hint">@L["BRD.TARGETS_HINT"]</p>
+                @foreach (var company in Model.Companies)
+                {
+                    <label><input type="checkbox" name="target" value="@company.CompanyCd" checked="@Model.Targets.Contains(company.CompanyCd)" /> @company.CompanyNm</label>
+                }
+            </fieldset>
+        }
+        <span id="brd-content-label" class="field-label">@L["LBL.CONTENT"]</span>
+        <div class="editor-toolbar" role="toolbar" aria-label="@L["BRD.EDITOR"]" aria-controls="brd-content">
+            <button type="button" data-cmd="bold"><b>B</b><span class="sr-only"> @L["BRD.ED_BOLD"]</span></button>
+            <button type="button" data-cmd="italic"><i>I</i><span class="sr-only"> @L["BRD.ED_ITALIC"]</span></button>
+            <button type="button" data-cmd="underline"><u>U</u><span class="sr-only"> @L["BRD.ED_UNDERLINE"]</span></button>
+            <button type="button" data-cmd="insertUnorderedList">@L["BRD.ED_UL"]</button>
+            <button type="button" data-cmd="insertOrderedList">@L["BRD.ED_OL"]</button>
+            <button type="button" data-cmd="link">@L["BRD.ED_LINK"]</button>
+            <button type="button" data-cmd="removeFormat">@L["BRD.ED_CLEAR"]</button>
+        </div>
+        <fw-safe-html id="brd-content" class="editor" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="brd-content-label" value="@post?.Content" />
+        @if (board.AttachYn == "Y")
+        {
+            <div id="brd-files"></div>
+        }
+        <p id="brd-error" class="field-error" role="alert" hidden></p>
+        <div class="toolbar">
+            <a id="brd-cancel" class="button" href="@(post is null ? baseUrl : baseUrl + "/View/" + post.PostId)">@L["BTN.CANCEL"]</a>
+            <button type="submit" id="brd-save" class="primary">@L["BTN.SAVE"]</button>
+        </div>
+    </form>
+</div>

@@ -507,4 +507,29 @@ public sealed class BoardSpTests(DbFixture fixture)
         Assert.Equal(5, page.TotalCount);
         Assert.Equal(["글 3", "글 2"], page.Items.Select(r => r.Title));
     }
+
+    [Fact]
+    public async Task 답글과_댓글은_글_작성자에게_포털알림을_쌓고_본인에게는_쌓지_않는다()
+    {
+        var (db, service) = await BeginAsync(fixture);
+        await using var _ = db;
+        var root = await WriteAsync(db, service, Post("내 질문"));
+        var selfReply = Post("스스로 답");
+        selfReply.ParentPostId = root;
+        await WriteAsync(db, service, selfReply);
+        var reply = Post("답변");
+        reply.ParentPostId = root;
+        await WriteAsync(db, service, Other, "HQ", "EMP", reply);
+        db.AsUser(Other, "HQ", "EMP");
+        await service.SaveCommentAsync(new CommentSaveRequest { PostId = root, Content = "댓글" }, manager: false, Ct);
+        db.AsUser(Writer, "HQ", "EMP");
+        await service.SaveCommentAsync(new CommentSaveRequest { PostId = root, Content = "내 댓글" }, manager: false, Ct);
+
+        var templates = await db.ColumnAsync<string>("SELECT TEMPLATE_ID FROM FW.TB_NOTIFICATION WHERE USER_ID = @U ORDER BY NOTI_ID", ("@U", Writer));
+        var title = await db.ScalarAsync<string>("SELECT JSON_VALUE(PARAMS_JSON, '$.POST_TITLE') FROM FW.TB_NOTIFICATION WHERE USER_ID = @U AND TEMPLATE_ID = 'TPL_BOARD_REPLY'", ("@U", Writer));
+
+        Assert.Equal(["TPL_BOARD_REPLY", "TPL_BOARD_COMMENT"], templates);
+        Assert.Equal("내 질문", title);
+        Assert.Equal(0, await db.ScalarAsync<int>("SELECT COUNT(*) FROM FW.TB_NOTIFICATION WHERE USER_ID = @U", ("@U", Other)));
+    }
 }

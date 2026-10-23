@@ -1,0 +1,96 @@
+@* 게시글 보기: 제목·작성 정보·내용(서버가 거른 HTML)·첨부, 답글·수정·삭제·조회자 버튼(권한별), 댓글. *@
+@model BoardViewModel
+@{
+    var board = Model.Board;
+    var post = Model.Detail.Post;
+    var baseUrl = Url.Content("~/Board/" + board.BoardCd);
+    ViewData["Title"] = board.BoardNm;
+}
+@section Scripts {
+    <script type="module" src="~/js/board/view.js" asp-append-version="true"></script>
+}
+<h1>@board.BoardNm</h1>
+<article id="brd-view"
+         data-post-id="@post.PostId"
+         data-row-ver="@Convert.ToBase64String(post.RowVer)"
+         data-url-list="@baseUrl"
+         data-url-delete="@baseUrl/Delete"
+         data-url-readers="@baseUrl/Readers"
+         data-url-comments="@baseUrl/Comments"
+         data-url-comment-save="@baseUrl/CommentSave"
+         data-url-comment-delete="@baseUrl/CommentDelete"
+         data-file-group-id="@post.FileGroupId"
+         data-program="@board.ProgramId"
+         data-can-comment="@(Model.CanComment ? "Y" : "N")"
+         data-can-delete-any="@(Model.CanDeleteAny ? "Y" : "N")">
+    <h2 id="brd-title">@post.Title</h2>
+    <dl class="detail-list">
+        <dt>@L["BRD.WRITER"]</dt><dd>@(post.WriterNm ?? L["BRD.ANONYMOUS"])</dd>
+        <dt>@L["BRD.REG_DT"]</dt><dd><time datetime="@post.RegDt.ToString("s")Z" data-fw-datetime>@post.RegDt.ToString("yyyy-MM-dd HH:mm") UTC</time></dd>
+        <dt>@L["BRD.VIEW_CNT"]</dt><dd>@post.ViewCnt</dd>
+        @if (post.StartDt is not null || post.EndDt is not null)
+        {
+            <dt>@L["BRD.PERIOD"]</dt><dd>@post.StartDt?.ToString("yyyy-MM-dd") ~ @post.EndDt?.ToString("yyyy-MM-dd")</dd>
+        }
+        @if (Model.Detail.Targets.Count > 0)
+        {
+            <dt>@L["BRD.TARGETS"]</dt><dd>@string.Join(", ", Model.Detail.Targets)</dd>
+        }
+    </dl>
+    <fw-safe-html class="board-content" value="@post.Content" />
+    @if (post.FileGroupId is not null)
+    {
+        <div id="brd-files"></div>
+    }
+    <div class="toolbar">
+        <a id="brd-list" class="button" href="@baseUrl">@L["BRD.LIST"]</a>
+        <span class="toolbar-spacer"></span>
+        @if (Model.CanManage && board.ReaderYn == "Y")
+        {
+            <button type="button" id="brd-readers">@L["BRD.READERS"]</button>
+        }
+        @if (Model.CanReply)
+        {
+            <a id="brd-reply" class="button" href="@baseUrl/Edit?parent=@post.PostId">@L["BRD.REPLY"]</a>
+        }
+        @if (Model.CanEdit)
+        {
+            <a id="brd-edit" class="button" href="@baseUrl/Edit?id=@post.PostId">@L["BRD.EDIT"]</a>
+        }
+        @if (Model.CanDelete)
+        {
+            <button type="button" id="brd-delete">@L["BTN.DELETE"]</button>
+        }
+    </div>
+    <section id="brd-readers-panel" aria-labelledby="brd-readers-heading" hidden>
+        <h3 id="brd-readers-heading" tabindex="-1">@L["BRD.READERS"]</h3>
+        <div class="grid-wrap">
+            <table class="fw-grid">
+                <thead>
+                    <tr>
+                        <th scope="col">@L["BRD.READER"]</th>
+                        <th scope="col">@L["LBL.COMPANY"]</th>
+                        <th scope="col">@L["BRD.FIRST_READ"]</th>
+                        <th scope="col">@L["BRD.READ_CNT"]</th>
+                    </tr>
+                </thead>
+                <tbody id="brd-readers-body"></tbody>
+            </table>
+        </div>
+    </section>
+    @if (board.CommentYn == "Y")
+    {
+        <section id="brd-comments" aria-labelledby="brd-comments-heading">
+            <h3 id="brd-comments-heading">@L["BRD.COMMENTS"]</h3>
+            <ul id="brd-comment-list" class="comment-list"></ul>
+            @if (Model.CanComment)
+            {
+                <form id="brd-comment-form" class="comment-form" novalidate>
+                    <label for="brd-comment-text">@L["BRD.COMMENT_WRITE"]</label>
+                    <textarea id="brd-comment-text" rows="3" maxlength="1000" required></textarea>
+                    <button type="submit" class="primary">@L["BRD.COMMENT_ADD"]</button>
+                </form>
+            }
+        </section>
+    }
+</article>

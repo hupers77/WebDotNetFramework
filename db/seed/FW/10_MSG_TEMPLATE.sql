@@ -15,7 +15,9 @@ USING (VALUES
   (N'TPL_ACCOUNT_EXPIRE', N'협력사 계정 만료 사전 안내', N'Y', N'N', NULL),
   (N'TPL_JOB_FAILED', N'배치 작업 실패 알림', N'Y', N'Y', N'SYS_JOB_MGT'),
   (N'TPL_REPORT_DONE', N'레포트 백그라운드 생성 완료', N'N', N'Y', N'RPT_RUNS'),
-  (N'TPL_REPORT_FAILED', N'레포트 백그라운드 생성 실패', N'N', N'Y', N'RPT_RUNS')
+  (N'TPL_REPORT_FAILED', N'레포트 백그라운드 생성 실패', N'N', N'Y', N'RPT_RUNS'),
+  (N'TPL_BOARD_REPLY', N'내 글에 답글', N'N', N'Y', NULL),
+  (N'TPL_BOARD_COMMENT', N'내 글에 댓글', N'N', N'Y', NULL)
 ) AS S ([TEMPLATE_ID], [TEMPLATE_NM], [MAIL_YN], [PORTAL_YN], [LINK_PROGRAM_ID])
    ON T.[TEMPLATE_ID] = S.[TEMPLATE_ID]
 WHEN MATCHED AND T.[LINK_PROGRAM_ID] IS NULL AND S.[LINK_PROGRAM_ID] IS NOT NULL THEN UPDATE SET T.[LINK_PROGRAM_ID] = S.[LINK_PROGRAM_ID]
@@ -51,7 +53,13 @@ USING (VALUES
   (N'TPL_REPORT_DONE', N'zh-CN', N'[{{SITE_NM}}] 报表已生成', N'<p>您请求的报表 <strong>{{REPORT_ID}}</strong>（{{FILE_NM}}）已生成。请在“我的信息 > 我的报表”中下载。</p>'),
   (N'TPL_REPORT_FAILED', N'ko', N'[{{SITE_NM}}] 레포트를 만들지 못했습니다', N'<p>요청하신 레포트 <strong>{{REPORT_ID}}</strong>를 만들지 못했습니다. 내 정보 > 내 레포트에서 사유를 확인하고 조건을 바꿔 다시 요청하세요.</p>'),
   (N'TPL_REPORT_FAILED', N'en', N'[{{SITE_NM}}] Your report could not be built', N'<p>The report <strong>{{REPORT_ID}}</strong> you requested could not be built. Check the reason in My page > My reports, change the conditions and request again.</p>'),
-  (N'TPL_REPORT_FAILED', N'zh-CN', N'[{{SITE_NM}}] 报表生成失败', N'<p>您请求的报表 <strong>{{REPORT_ID}}</strong> 生成失败。请在“我的信息 > 我的报表”中查看原因，调整条件后重新提交。</p>')
+  (N'TPL_REPORT_FAILED', N'zh-CN', N'[{{SITE_NM}}] 报表生成失败', N'<p>您请求的报表 <strong>{{REPORT_ID}}</strong> 生成失败。请在“我的信息 > 我的报表”中查看原因，调整条件后重新提交。</p>'),
+  (N'TPL_BOARD_REPLY', N'ko', N'[{{SITE_NM}}] 내 글에 답글이 달렸습니다', N'<p>작성하신 글 <strong>{{POST_TITLE}}</strong>에 새 답글이 달렸습니다. 게시판에서 확인하세요.</p>'),
+  (N'TPL_BOARD_REPLY', N'en', N'[{{SITE_NM}}] Someone replied to your post', N'<p>Your post <strong>{{POST_TITLE}}</strong> has a new reply. Check it on the board.</p>'),
+  (N'TPL_BOARD_REPLY', N'zh-CN', N'[{{SITE_NM}}] 您的帖子有了新回复', N'<p>您发布的帖子 <strong>{{POST_TITLE}}</strong> 有了新回复。请在公告板中查看。</p>'),
+  (N'TPL_BOARD_COMMENT', N'ko', N'[{{SITE_NM}}] 내 글에 댓글이 달렸습니다', N'<p>작성하신 글 <strong>{{POST_TITLE}}</strong>에 새 댓글이 달렸습니다. 게시판에서 확인하세요.</p>'),
+  (N'TPL_BOARD_COMMENT', N'en', N'[{{SITE_NM}}] Someone commented on your post', N'<p>Your post <strong>{{POST_TITLE}}</strong> has a new comment. Check it on the board.</p>'),
+  (N'TPL_BOARD_COMMENT', N'zh-CN', N'[{{SITE_NM}}] 您的帖子有了新评论', N'<p>您发布的帖子 <strong>{{POST_TITLE}}</strong> 有了新评论。请在公告板中查看。</p>')
 ) AS S ([TEMPLATE_ID], [LANG_CD], [SUBJECT], [BODY])
    ON T.[TEMPLATE_ID] = S.[TEMPLATE_ID] AND T.[LANG_CD] = S.[LANG_CD]
 WHEN NOT MATCHED THEN INSERT ([TEMPLATE_ID], [LANG_CD], [SUBJECT], [BODY]) VALUES (S.[TEMPLATE_ID], S.[LANG_CD], S.[SUBJECT], S.[BODY]);
