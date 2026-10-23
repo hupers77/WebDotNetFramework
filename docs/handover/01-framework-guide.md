@@ -1,6 +1,6 @@
 # 01. 프레임워크 사용·확장 안내 (업무 개발자용 요약)
 
-기준 시점: 2026-10-23 (`main` `2e31ad4`). 자세한 규칙은 [개발 표준 가이드](../dev-guide.md)와 [설계서](../framework-design.md)가 기준입니다. 이 문서는 업무 화면을 만들 때 꼭 알아야 할 것만 모았습니다. 기능별 구현 여부는 [02-framework-status.md](02-framework-status.md)를 봅니다.
+기준 시점: 2026-10-23 (`main` `4395f87`). 자세한 규칙은 [개발 표준 가이드](../dev-guide.md)와 [설계서](../framework-design.md)가 기준입니다. 이 문서는 업무 화면을 만들 때 꼭 알아야 할 것만 모았습니다. 기능별 구현 여부는 [02-framework-status.md](02-framework-status.md)를 봅니다.
 
 ## 1. 한눈에 보기
 
@@ -10,7 +10,7 @@
 | 기술 | .NET 10 (LTS), ASP.NET Core MVC/Razor 모듈형 모놀리스, 배치는 Windows 서비스 `Portal.Worker` |
 | DB 접근 | **SP만** 사용. EF Core·인라인 SQL 금지. `ISpExecutor`(Microsoft.Data.SqlClient 위 자체 구현) 하나로 호출. 앱 DB 계정은 SP `EXECUTE` 권한만 가짐(DB 역할 `portal_app`) |
 | 사용자 | 본사 임직원 + 다수 협력사. 협력사는 자기 회사 데이터만 봄(데이터 범위 함수) |
-| 로그인 | 지금은 ID/PW(`AUTH.MODE = FORM`) + 관리자·협력사 2단계 인증(TOTP 또는 이메일 인증번호). 협력사 전용 로그인 `/Account/PartnerLogin`. AD SSO는 3단계 예정 |
+| 로그인 | 지금은 ID/PW(`AUTH.MODE = FORM`) + 관리자·협력사 2단계 인증(TOTP 또는 이메일 인증번호). 협력사 전용 로그인 `/Account/PartnerLogin`. AD SSO(도메인 PC 자동 로그인)는 **처리 방식 미정** |
 | 언어 | 한국어 `ko`, 영어 `en`, 중국어 `zh-CN`. 화면 문구는 모두 다국어 키 |
 | UI | 헤더 + 좌측 메뉴 트리 + 멀티 탭. 자체 JS 컴포넌트(`fw.*`), Bootstrap 5. 외부 CDN 없음 |
 | OSS | 허용 목록(`eng/allowed-packages.txt`)에 있는 것만. GPL/AGPL·매출 기준 유료 라이선스 금지 |
@@ -129,19 +129,19 @@ tests/
 
 ## 8. 외부 API·EAI(SAP)·LDAP·전자결재·AD master 연동
 
-외부 API와 LDAP 모듈은 **프레임워크가 제공**합니다(아직 구현 전, 02 문서). 업무 저장소에서 따로 만들지 말고 프레임워크에 들어간 것을 가져다 씁니다.
+외부 API 수신·송신(관리 화면 포함)과 LDAP 조회 모듈은 **프레임워크가 제공**하며 구현이 끝났습니다(02 문서). 업무 저장소에서 따로 만들지 말고 가져다 씁니다. 자세한 작성법은 개발 표준 가이드 8장과 3장 "LDAP 조회 쓰는 법".
 
 **전자결재 연동과 AD master 연동(조직 동기화)은 프레임워크 제공 범위 밖입니다**(사용자 결정 2026-10-23). 사이트마다 결재 시스템과 AD 원천이 다르므로 **각 업무 저장소가 업무 개발 때** 만듭니다. 프레임워크에는 전자결재 골격(`IApprovalGateway`, `TB_APPROVAL_LINK`)과 AD 동기화 작업(`JOB_AD_SYNC`)을 넣지 않습니다. 전자결재 구성안(`IApprovalGateway`, `APPROVAL.VIEW_URL`)과 이전 AD 뷰 동기화 설계안은 설계서에 참고용으로 남아 있고, 아래 표의 해당 행은 그 요약입니다.
 
 | 연동 | 설계(현재 기준) | 업무에서 쓰는 방법 |
 | --- | --- | --- |
-| 외부 API 수신 (진행 중) | `/api/v1/<리소스>` REST. API는 `MapApi(메서드, 경로, API 코드, 설명, handler)`로 등록하고, 클라이언트별로 허용한 API 코드만 호출됨(`TB_API_CLIENT`). 토큰 서명 키 `Api__SigningKey`(Base64, 32바이트 이상)는 **운영 환경 변수로 주입**(저장소·설정 파일에 넣지 않음). 요청/응답 로그(`LOG.TB_API_LOG`). 응답 `{ success, data / error, traceId }`. 작성법은 개발 표준 가이드 8장(병합 후 갱신분) | 외부 시스템이 포털 데이터를 가져가야 할 때 `MapApi` 등록 + API 코드·클라이언트 허용 시드. 클라이언트 관리 화면은 진행 중 |
-| 외부 API 송신 | `TB_API_OUTBOUND`에 대상 키별 URL·인증·타임아웃·재시도 등록, `IOutboundApiClient`(IHttpClientFactory + Resilience). 코드에는 대상 키만 | 반입 바코드 SAP 실시간 조회처럼 포털이 EAI를 직접 불러야 하는 경우. 개발/운영 주소는 등록값으로 분리 |
+| 외부 API 수신 | `/api/v1/<리소스>` REST. `app.MapApi("GET", "/vendors/{vendorCd}", "VENDOR_GET", "설명", handler)`로 등록(세 번째 값이 API 코드). 관문(`ApiGatewayMiddleware`)이 토큰·사용 여부·허용 IP·허용 코드·분당 한도를 확인하고 모든 호출을 `LOG.TB_API_LOG`에 남김(비밀번호·토큰 등은 `***`). 토큰 `POST /api/v1/token`(OAuth2 Client Credentials, 유효 시간 `API.TOKEN_MINUTES`). 서명 키 `Api:SigningKey`(Base64, 32바이트 이상)는 **운영 환경 변수 `Api__SigningKey` 또는 비밀 저장소로만 주입**. 문서 `/api/v1/openapi.json` 자동. CSRF·화면 권한 필터는 적용되지 않으므로 Handler에서 입력을 직접 검증하고 DB는 SP로만. 호출자는 `http.GetApiCaller()` | 외부 시스템이 포털 데이터를 가져가야 할 때 `MapApi` 등록. 클라이언트 등록·허용 코드·허용 IP는 **외부 연계 > API 클라이언트**(`SYS_API_CLIENT_MGT`, 비밀값은 발급 때 1회만 표시, 변경은 최대 30초 뒤 반영). 주의: `MapApi`는 `Program.cs`(프레임워크 파일)에 쓰므로 04 문서 5장 공유 접점 |
+| 외부 API 송신 | **외부 연계 > 송신 대상**(`SYS_API_OUTBOUND_MGT`, `TB_API_OUTBOUND`)에 대상 키별 기본 주소·인증(BASIC/BEARER/API_KEY 헤더, 비밀값 암호화)·제한 시간·재시도 등록. 코드는 `IOutboundApiClient.SendAsync(new OutboundRequest("대상키", HttpMethod.Get, "/경로"))`. 재시도는 다시 보내도 되는 메서드만(POST는 상대가 중복을 걸러 줄 때 `Idempotent: true`), 연속 5번 실패하면 30초 차단(`CircuitOpen`). 4xx·5xx는 예외가 아니라 `StatusCode`/`IsSuccess`로 확인, 연결 실패 등만 `OutboundApiException`. 사내망(사설 IP)은 대상에 `사내망 허용`을 켜야 하고 루프백·링크로컬은 항상 차단, 리디렉트 안 따라감, 응답 1MB까지. 모든 호출은 방향 OUT으로 `LOG.TB_API_LOG` | 반입 바코드 SAP 실시간 조회처럼 포털이 EAI를 직접 불러야 하는 경우. 개발/운영 주소는 각 환경의 등록값으로 분리 |
 | EAI(SAP) 전송 | 사용자 결정(2026-10-23): **반출 MM I/F·EL I/F 버튼은 포털이 SAP를 직접 부르지 않고 레코드에 "전송 대기"를 표시하면 EAI가 가져갑니다.** SAP 전송 버튼은 별도 기능 권한(역할별) | 전송 대기 표시 컬럼·값과 EAI의 수집 방식은 기존 SQL 매퍼와 EAI 담당과 확인 후 확정(03 문서 미확인 항목) |
 | 전자결재 (**업무 저장소에서 구현**) | 참고 설계: 결재 과정은 사내 전자결재에 위임, 포털은 결재 화면 URI를 띄우고 결과(진행·승인·반려)만 확인. 업무 키 ↔ 결재 문서 매핑 테이블, 결과 확인 방식(API / DB 뷰 / 콜백)은 사이트별로 결정. 업무 스키마(예: `GAT`)에 테이블·SP를 두고, 결재 시스템 주소는 설정(`TB_CONFIG`), 외부 호출은 프레임워크 외부 API 송신 사용 | 반출입의 승인·불가 "사유 입력"은 전자결재가 아니라 단순 텍스트입니다. 결재가 필요한 업무가 생길 때 구현 |
-| LDAP 모듈 (**프레임워크 제공**) | AD에 LDAP 방식으로 연결하는 공통 모듈(계정·그룹 조회 등). 연결 정보는 설정(비밀값 암호화), 코드에 주소를 쓰지 않음. 세부 기능은 구현 때 확정 | 업무 저장소의 AD master 연동이 이 모듈을 쓸 수 있음 |
+| LDAP 조회 모듈 (**프레임워크 제공**, 선택) | **읽기 전용 조회**만: `ILdapDirectory.FindUserAsync("계정")`, `SearchUsersAsync("검색어", 최대건수)`. 아무것도 저장하지 않고, 비밀번호를 받아 AD 인증을 하지 않으며, 조회 값은 필터 인젝션 방지 이스케이프. **기본 꺼짐 `LDAP.ENABLED = N`**. 사이트에서 설정 관리로 `LDAP.HOST`, `LDAP.PORT`(636), `LDAP.USE_SSL`(Y), `LDAP.BASE_DN`, `LDAP.BIND_DN`, `LDAP.BIND_PASSWORD`(암호화), `LDAP.USER_FILTER`, `LDAP.USER_SEARCH_FILTER`, `LDAP.TIMEOUT_SEC`를 채우고 켬. 꺼져 있거나 설정이 비면 `LdapNotConfiguredException`, 연결·조회 실패는 `LdapQueryException`(메시지에 서버 주소·계정 없음) | 업무 저장소의 AD master 연동(사용자·조직 동기화, 퇴사자 잠금)이 원천 조회에 쓸 수 있음. 동기화 자체는 업무 저장소가 개발 |
 | AD master 연동·조직 동기화 (**업무 저장소에서 구현**) | 참고 설계: AD master 테이블을 링크드 서버 뷰(또는 LDAP 모듈)로 읽어 배치 작업(`스키마.USP_JOB_…_EXEC` 또는 `IScheduledJob`)으로 `FW.TB_DEPT`/`TB_USER`/`TB_USER_LOGIN_MAP`/`TB_USER_AD_GROUP`에 반영, 원천에 없거나 비활성이면 잠금. FW 테이블은 프레임워크 SP(`USP_USER_SAVE`, `USP_DEPT_SAVE` 등)나 업무 SP로 갱신하고 감사 로그를 남김 | 기존 시스템의 사용자 동기화 배치(`ADM_DOODREAM_INTERFACE_BATCH_STR`)를 참고하고 이관 후 중지. AD 그룹 → 역할 매핑(`TB_AD_GROUP_ROLE`, 프레임워크 테이블)으로 업무 역할 자동 부여 가능. AD 뷰 컬럼·위치는 사이트마다 확인 |
-| AD SSO | 도메인 PC는 AD 계정으로 로그인 → Negotiate(Windows 인증) SSO 유지(이번 결정에서 바뀌지 않음, 02 문서 참고) | 협력사는 협력사 전용 로그인 |
+| AD SSO (**미정**) | 도메인 PC 자동 로그인(Negotiate/Windows 인증). 프레임워크에 넣을지 업무 저장소로 넘길지 사용자 답을 기다리는 중이며, 지금은 코드 없음. 그 전까지 본사 직원도 ID/PW(`AUTH.MODE = FORM`) | 협력사는 협력사 전용 로그인 |
 
 ## 9. 테스트 규칙 (사용자 규칙 2026-10-23)
 
