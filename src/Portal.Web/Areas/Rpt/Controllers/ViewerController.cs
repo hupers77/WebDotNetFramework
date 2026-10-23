@@ -15,7 +15,7 @@ namespace Portal.Web.Areas.Rpt.Controllers;
 /// </summary>
 [Area("Rpt")]
 [ProgramFromData]
-public sealed class ViewerController(IReportService reports) : PortalController
+public sealed class ViewerController(IReportService reports, IReportRunService runs) : PortalController
 {
     /// <summary>조건 입력 화면. 없거나 사용 안 함인 레포트는 404.</summary>
     [HttpGet]
@@ -58,6 +58,18 @@ public sealed class ViewerController(IReportService reports) : PortalController
     {
         var definition = await RequireAsync(id, FuncCodes.Export);
         return Excel(await reports.ExcelAsync(definition, request, HttpContext.RequestAborted), reports.FileName(definition, "xlsx"));
+    }
+
+    /// <summary>
+    /// 백그라운드 생성 요청 (PDF는 PRINT, 엑셀은 EXPORT). 행이 많아 화면에서 바로 만들 수 없는 레포트용이다.
+    /// 조건이 틀리면 바로 오류를 돌려주고, 맞으면 대기열에 넣는다. 완성되면 포털 알림이 가고 내 레포트 화면에서 내려받는다.
+    /// </summary>
+    [HttpPost]
+    public async Task<ApiResult<ReportQueued>> Queue(string id, [FromBody] ReportQueueRequest request)
+    {
+        var func = ReportFormats.FuncOf(request.Format?.Trim().ToUpperInvariant()) ?? throw new BizException(MessageKeys.InvalidInput);
+        var definition = await RequireAsync(id, func);
+        return Ok(new ReportQueued(await runs.QueueAsync(definition, request, HttpContext.RequestAborted)));
     }
 
     private async Task<ReportDefinition> RequireAsync(string id, string func)

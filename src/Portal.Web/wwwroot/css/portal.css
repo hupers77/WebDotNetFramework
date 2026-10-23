@@ -270,3 +270,6 @@ button:disabled { opacity: .55; cursor: not-allowed; }
     .fw-grid thead { display: table-header-group; }
     .fw-grid tr { break-inside: avoid; }
 }
+
+/* 숫자 칸 (내 레포트 등) */
+.fw-grid td.num { text-align: right; font-variant-numeric: tabular-nums; }

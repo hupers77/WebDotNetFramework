@@ -1,0 +1,16 @@
+-- 정리 대상 요청 하나의 행을 지운다(목록을 받은 뒤 상태가 바뀌었으면 지우지 않는다). 지운 경우에만 서비스가 저장소의 파일을 지운다.
+-- 결과: AFFECTED_CNT
+CREATE PROCEDURE [FW].[USP_REPORT_RUN_CLEANUP_DEL]
+  @P_RUN_ID       BIGINT,
+  @P_USER_ID      VARCHAR(30) = NULL,
+  @P_LANG_CD      VARCHAR(5),
+  @P_CLIENT_IP    VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  DELETE FROM [FW].[TB_REPORT_RUN]
+   WHERE [RUN_ID] = @P_RUN_ID AND [EXPIRE_DT] <= SYSUTCDATETIME() AND [STATUS_CD] <> 'RUNNING';
+
+  SELECT @@ROWCOUNT AS [AFFECTED_CNT];
+END

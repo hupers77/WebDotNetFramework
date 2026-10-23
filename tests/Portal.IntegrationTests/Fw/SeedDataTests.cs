@@ -83,7 +83,7 @@ public sealed class SeedDataTests(DbFixture fixture)
 
     [Theory]
     [InlineData("SELECT COUNT(*) FROM FW.TB_ROLE", 7)]
-    [InlineData("SELECT COUNT(*) FROM FW.TB_PROGRAM", 35)]
+    [InlineData("SELECT COUNT(*) FROM FW.TB_PROGRAM", 36)]
     [InlineData("SELECT COUNT(*) FROM FW.TB_REPORT", 1)]
     // 레포트는 같은 ID의 프로그램이 레포트 화면 주소로 메뉴에 있어야 한다
     [InlineData("SELECT COUNT(*) FROM FW.TB_REPORT R WHERE NOT EXISTS (SELECT 1 FROM FW.TB_PROGRAM P JOIN FW.TB_MENU M ON M.PROGRAM_ID = P.PROGRAM_ID WHERE P.PROGRAM_ID = R.REPORT_ID AND P.URL = CONCAT('/Rpt/Viewer/Index/', R.REPORT_ID))", 0)]

@@ -78,6 +78,7 @@ Oct 21, 2026 · @사랑나무아빠
 | 내 정보 > 내 정보 | `MY_PROFILE` | ALL | 모든 역할: R, U |
 | 내 정보 > 비밀번호 변경 | `MY_PWD_CHG` | ALL | 모든 역할: R, U |
 | 내 정보 > 알림함 | `MY_NOTIFICATION` | ALL | 모든 역할: R, D |
+| 내 정보 > 내 레포트 | `RPT_RUNS` | ALL | 모든 역할: R, D |
 | 게시판 > 공지사항 | `BRD_NOTICE` | ALL | 모든 역할: R / PORTAL\_ADMIN: C, U, D |
 | 게시판 > 자료실 | `BRD_ARCHIVE` | ALL | 모든 역할: R / PORTAL\_ADMIN: C, U, D |
 | 게시판 > FAQ·문의 | `BRD_QNA` | ALL | 모든 역할: R, C / PORTAL\_ADMIN: U, D |
@@ -231,11 +232,13 @@ Oct 21, 2026 · @사랑나무아빠
 | `TPL_ACCOUNT_EXPIRE` | 협력사 계정 만료 예정 | 메일 |
 | `TPL_ACCOUNT_LOCKED` | 로그인 실패로 계정 잠김 | 메일 |
 | `TPL_JOB_FAILED` | 배치 작업 실패 (관리자에게, 알림을 누르면 스케줄 관리 화면) | 메일, 포털 |
+| `TPL_REPORT_DONE` | 레포트 백그라운드 생성 완료 (요청자에게, 알림을 누르면 내 레포트 화면) | 포털 |
+| `TPL_REPORT_FAILED` | 레포트 백그라운드 생성 실패 (요청자에게) | 포털 |
 | `TPL_BOARD_REPLY` | 내 글에 답글·댓글 | 포털 |
 
 템플릿 본문의 치환 변수는 `{{USER_NM}}`, `{{SITE_NM}}`, `{{LINK}}`, `{{EXPIRE_DT}}`처럼 쓰고, 치환값은 HTML 인코딩되어 들어갑니다. 메일 본문에 비밀번호 자체는 넣지 않습니다.
 
-템플릿은 그 기능을 만드는 변경에서 `db/seed/FW/10_MSG_TEMPLATE.sql`에 추가합니다(현재: `TPL_PARTNER_SIGNUP_REQ`, `TPL_PARTNER_APPROVED`, `TPL_PARTNER_REJECTED`, `TPL_PWD_EXPIRE`, `TPL_DORMANT_NOTICE`, `TPL_ACCOUNT_EXPIRE`, `TPL_JOB_FAILED`). 템플릿마다 메일(`MAIL_YN`)·포털(`PORTAL_YN`) 채널을 켜고 끌 수 있고, `USE_YN = 'N'`이면 쌓지 않습니다. 포털 알림은 받는 사람이 포털 사용자일 때만 쌓이고, 제목은 템플릿 제목(앞의 [사이트명] 제외), 내용은 본문에서 글자만 남긴 것이며, 볼 때 보는 사람의 화면 언어로 만듭니다. `LINK_PROGRAM_ID`를 정하면 알림을 눌렀을 때 그 화면을 탭으로 엽니다. `{{SITE_NM}}`(받는 사람 언어의 사이트명)과 `{{LINK}}`(포털 주소)는 발송 작업이 채우고, 나머지 치환값은 업무 SP가 JSON으로 넘깁니다. 받는 사람 언어의 문구가 없으면 기본 언어 문구로 보냅니다.
+템플릿은 그 기능을 만드는 변경에서 `db/seed/FW/10_MSG_TEMPLATE.sql`에 추가합니다(현재: `TPL_PARTNER_SIGNUP_REQ`, `TPL_PARTNER_APPROVED`, `TPL_PARTNER_REJECTED`, `TPL_PWD_EXPIRE`, `TPL_DORMANT_NOTICE`, `TPL_ACCOUNT_EXPIRE`, `TPL_JOB_FAILED`, `TPL_REPORT_DONE`, `TPL_REPORT_FAILED`). 템플릿마다 메일(`MAIL_YN`)·포털(`PORTAL_YN`) 채널을 켜고 끌 수 있고, `USE_YN = 'N'`이면 쌓지 않습니다. 포털 알림은 받는 사람이 포털 사용자일 때만 쌓이고, 제목은 템플릿 제목(앞의 [사이트명] 제외), 내용은 본문에서 글자만 남긴 것이며, 볼 때 보는 사람의 화면 언어로 만듭니다. `LINK_PROGRAM_ID`를 정하면 알림을 눌렀을 때 그 화면을 탭으로 엽니다. `{{SITE_NM}}`(받는 사람 언어의 사이트명)과 `{{LINK}}`(포털 주소)는 발송 작업이 채우고, 나머지 치환값은 업무 SP가 JSON으로 넘깁니다. 받는 사람 언어의 문구가 없으면 기본 언어 문구로 보냅니다.
 
 ## 8. 기본 레포트
 
