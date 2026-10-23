@@ -13,7 +13,9 @@
 
 ## 2. 프레임워크 버전
 
-- 프레임워크 저장소는 업무 저장소가 가져갈 때마다 **릴리스 태그**를 붙입니다. 제안: `fw-v1.0.0`(유의적 버전). 지금은 태그가 없습니다. 프레임워크 완성 시점(업무 화면 개발 전)에 `fw-v1.0.0`을 붙입니다.
+- 프레임워크 저장소는 업무 저장소가 가져갈 때마다 **릴리스 태그**를 붙입니다. 형식 `fw-v주.부.수`(유의적 버전). 지금은 태그가 없습니다.
+- **제안: 첫 태그 `fw-v1.0.0`** 은 LDAP 모듈(PR #61), 이관 문서 최종본, AD SSO 처리 결정, 5장 확장 지점이 `main`에 들어간 직후 그 커밋에 붙입니다(AD SSO를 나중에 넣기로 하면 `fw-v1.1.0`으로). 사용자 확인 후 프레임워크 저장소에서 `git tag -a fw-v1.0.0 -m "…" && git push origin fw-v1.0.0`, GitLab 이전 후에는 GitLab에도 같은 태그를 둡니다.
+- 버전 올리는 기준: 버그 수정·문서는 `수`, 기능 추가(기존 업무 코드 수정 불필요)는 `부`, 깨지는 변경은 `주`.
 - 태그마다 변경 내역(추가 기능, 깨지는 변경, DB 변경, 업무 저장소가 할 일)을 GitLab/GitHub 릴리스 노트와 이 폴더 02 문서에 남깁니다.
 - 깨지는 변경(SP 파라미터·결과 변경, 공통 JS API 변경, 설정 키 이름 변경)은 주 버전을 올리고 옮기는 방법을 함께 씁니다.
 
@@ -56,7 +58,7 @@ CLAUDE.md                                  new-repo-CLAUDE.md를 복사해 채�
 | 접점 | 지금 | 제안 확장 지점 |
 | --- | --- | --- |
 | 배포 후 시드 등록 `db/Portal.Database/Scripts/PostDeployment.sql` | 업무 시드마다 `:r` 줄 추가 필요 | 맨 끝에 `:r ./PostDeployment.Business.sql` 한 줄을 프레임워크가 두고, 업무 저장소는 그 파일만 고침(프레임워크에는 빈 파일) |
-| 서비스 등록 `src/Portal.Web/Program.cs` | 업무 Service 등록 줄 추가 필요 | 프레임워크가 `BusinessModules.cs`(partial 또는 확장 메서드, 빈 구현)를 두고 업무 저장소는 그 파일만 고침. 설계서 4장의 `IPortalModule` 방식으로 바꿔도 됨 |
+| 서비스·수신 API 등록 `src/Portal.Web/Program.cs` | 업무 Service 등록 줄, 업무 수신 API의 `app.MapApi(...)` 줄 추가 필요 | 프레임워크가 `BusinessModules.cs`(partial 또는 확장 메서드, 빈 구현)를 두고 업무 저장소는 그 파일만 고침. 설계서 4장의 `IPortalModule` 방식으로 바꿔도 됨 |
 | 권한 매트릭스 테스트 `PermissionMatrixTests` | `Portal.Web` 어셈블리 컨트롤러만 검사 | `Portal.Modules.*` 어셈블리도 검사하도록 확장 |
 | 업무 모듈 프로젝트 | Razor 클래스 라이브러리 설정·ApplicationPart 등록 없음 | `Portal.Modules.*` 템플릿(RCL, 정적 파일 경로 `_content/…`) 추가 |
 | Worker 작업 등록 `src/Portal.Worker/WorkerServices.cs` | `IScheduledJob` 클래스 작업이면 등록 줄 추가 | 위 `BusinessModules`와 같은 방식 |
