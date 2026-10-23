@@ -327,6 +327,12 @@ SP 오류 번호 대역: `FW` 50001\~50999, `BRD` 51000\~51999, `RPT` 52000\~529
 { "success": false, "error": { "code": "MSG.DUP_CODE", "message": "이미 사용 중인 코드입니다." }, "traceId": "00-4bf9...-01" }
 ```
 
+**수신 API 만드는 법**: `Program.cs`에서 `app.MapApi("GET", "/vendors/{vendorCd}", "VENDOR_GET", "협력사 조회", handler)`처럼 등록합니다. 세 번째 값이 API 코드이고, 외부 연계 > API 클라이언트 화면(`TB_API_CLIENT.API_CODES`)에서 클라이언트별로 허용한 코드만 호출됩니다. 관문(`ApiGatewayMiddleware`)이 토큰·사용 여부·허용 IP·허용 코드·분당 한도를 먼저 확인하고 모든 호출을 `LOG.TB_API_LOG`에 남기므로(비밀번호·토큰·카드 등 이름의 필드는 `***`), Handler는 업무만 합니다. 호출자는 `http.GetApiCaller()`로 얻습니다. Controller 필터(CSRF, 화면 권한)는 적용되지 않으므로 Handler에서 입력을 직접 검증하고, DB 접근은 SP로만 합니다. 코드를 등록하면 `/api/v1/openapi.json`에 자동으로 나옵니다.
+
+- 토큰: `POST /api/v1/token` (OAuth2 Client Credentials, `application/x-www-form-urlencoded` 또는 Basic 인증), 유효 시간 `API.TOKEN_MINUTES`. 서명 키는 설정 `Api:SigningKey`(Base64, 32바이트 이상)로 환경 변수 `Api__SigningKey` 또는 비밀 저장소에만 넣습니다. 운영에서 비어 있으면 API 호출 때 오류가 납니다(개발·테스트는 임의 키).
+- 오류 형식: 관문이 막은 요청은 위 형식의 JSON(`invalid_token` 401, `access_denied`/`insufficient_scope` 403, `too_many_requests` 429 + `Retry-After`)입니다. 토큰 발급 실패만 OAuth2 형식(`error`, `error_description`)입니다.
+- 클라이언트 설정(사용 중지, 허용 코드·IP)은 최대 30초 뒤 반영됩니다.
+
 외부 시스템을 호출할 때는 주소를 코드에 쓰지 않고 `TB_API_OUTBOUND`에 등록한 대상 키로 `IOutboundApiClient`를 씁니다. 타임아웃·재시도는 등록값을 따릅니다.
 
 ## 9. 테스트 작성 규칙
