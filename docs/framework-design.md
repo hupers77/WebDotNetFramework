@@ -37,7 +37,7 @@ Oct 21, 2026 · @사랑나무아빠
 | --- | --- | --- | --- |
 | 웹 프레임워크 | ASP.NET Core MVC + Razor Pages, Web API | MIT (Microsoft) | 서버 렌더링 중심, SPA 프레임워크 미사용 |
 | DB 접근 | Microsoft.Data.SqlClient + 자체 SP 실행기 | MIT (Microsoft) | Dapper 수준의 경량 매퍼를 직접 구현 |
-| AD SSO | Microsoft.AspNetCore.Authentication.Negotiate | MIT (Microsoft) | Kerberos SSO (AD에 직접 질의하지 않고, 사용자·조직은 AD 마스터 뷰로 동기화) |
+| AD SSO | Microsoft.AspNetCore.Authentication.Negotiate | MIT (Microsoft) | Kerberos SSO (PC 로그인이 AD 계정이므로 유지. 사용자·조직은 AD 마스터 뷰(링크드 서버)로 동기화. LDAP 직접 연결은 구현이 단순하면 추가 검토 — AD 마스터 뷰 작업 때 재확인) |
 | 암호화 | System.Security.Cryptography, ASP.NET Core Data Protection | MIT (Microsoft) | PBKDF2, AES-256-GCM |
 | 캐시 | IMemoryCache, HybridCache, SQL Server 분산 캐시 | MIT (Microsoft) | 웹팜 확장 시 Redis 없이 동작 |
 | 로깅 | Microsoft.Extensions.Logging + 자체 DB/파일 Provider | MIT (Microsoft) | Serilog/NLog 미사용 |
