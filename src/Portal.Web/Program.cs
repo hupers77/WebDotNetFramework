@@ -22,6 +22,8 @@ builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IUserAuthService, Porta
 builder.Services.AddScoped<Portal.Web.Areas.Log.Services.IAccessLogService, Portal.Web.Areas.Log.Services.AccessLogService>();
 builder.Services.AddScoped<Portal.Web.Areas.Log.Services.IAuditLogService, Portal.Web.Areas.Log.Services.AuditLogService>();
 builder.Services.AddScoped<Portal.Web.Areas.Log.Services.IPiiLogService, Portal.Web.Areas.Log.Services.PiiLogService>();
+builder.Services.AddScoped<Portal.Web.Areas.Rpt.Services.IReportService, Portal.Web.Areas.Rpt.Services.ReportService>();
+builder.Services.AddSingleton<Portal.Web.Areas.Rpt.Services.ReportRenderer>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IDeptAdminService, Portal.Web.Areas.Sys.Services.DeptAdminService>();
 
 var app = builder.Build();

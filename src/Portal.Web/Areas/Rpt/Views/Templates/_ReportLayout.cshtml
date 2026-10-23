@@ -1,0 +1,52 @@
+@* 레포트 공통 문서: 제목, 조건, 출력자·일시, 결재란(APPROVAL_YN), 본문(템플릿). 미리보기는 /css/report.css를 연결하고 PDF는 같은 CSS를 문서에 넣는다. *@
+@model ReportDocumentModel
+@{
+    var report = Model.Report;
+}
+<!DOCTYPE html>
+<html lang="@CurrentUser.LangCd">
+<head>
+    <meta charset="utf-8" />
+    <title>@report.Title</title>
+    @if (Model.InlineStyle is { } style)
+    {
+        @style
+    }
+    else
+    {
+        <link rel="stylesheet" href="~/css/report.css" asp-append-version="true" />
+    }
+</head>
+<body class="@(report.Definition.Landscape ? "rpt-landscape" : "rpt-portrait")">
+    <header class="rpt-header">
+        <div class="rpt-heading">
+            <h1>@report.Title</h1>
+            @if (report.Conditions.Count > 0)
+            {
+                <dl class="rpt-conditions">
+                    @foreach (var (label, value) in report.Conditions)
+                    {
+                        <dt>@label</dt>
+                        <dd>@value</dd>
+                    }
+                </dl>
+            }
+            <p class="rpt-printed">@L["RPT.PRINTED", report.PrintedBy, report.PrintedAt.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture)]</p>
+        </div>
+        @if (report.Definition.ApprovalYn == "Y")
+        {
+            <table class="rpt-approval">
+                <tr>
+                    <th scope="col">@L["RPT.APPROVAL_1"]</th>
+                    <th scope="col">@L["RPT.APPROVAL_2"]</th>
+                    <th scope="col">@L["RPT.APPROVAL_3"]</th>
+                </tr>
+                <tr><td></td><td></td><td></td></tr>
+            </table>
+        }
+    </header>
+    <main>
+        @RenderBody()
+    </main>
+</body>
+</html>

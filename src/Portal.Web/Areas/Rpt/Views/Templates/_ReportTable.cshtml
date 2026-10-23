@@ -1,0 +1,41 @@
+@* 레포트 표: SP 결과 컬럼 그대로, 숫자는 오른쪽 정렬, 합계 행(TOTAL_YN). 머리글은 쪽마다 다시 찍힌다. *@
+@model ReportResult
+@if (Model.Rows.Count == 0)
+{
+    <p class="rpt-empty">@L["RPT.NO_DATA"]</p>
+}
+else
+{
+    <table class="rpt-table">
+        <thead>
+            <tr>
+                @foreach (var c in Model.Columns)
+                {
+                    <th scope="col">@c.Label</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.Rows)
+            {
+                <tr>
+                    @for (var i = 0; i < Model.Columns.Count; i++)
+                    {
+                        <td class="@(Model.Columns[i].Numeric ? "num" : null)">@ReportFormat.Text(row[i])</td>
+                    }
+                </tr>
+            }
+        </tbody>
+        @if (Model.Totals is { } totals)
+        {
+            <tfoot>
+                <tr>
+                    @for (var i = 0; i < Model.Columns.Count; i++)
+                    {
+                        <td class="@(Model.Columns[i].Numeric ? "num" : null)">@ReportFormat.Text(totals[i])</td>
+                    }
+                </tr>
+            </tfoot>
+        }
+    </table>
+}

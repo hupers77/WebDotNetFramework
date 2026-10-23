@@ -9,7 +9,7 @@ namespace Portal.Data.Internal;
 /// 결과 행을 DTO로 매핑한다. 형식별 속성·생성자 정보는 한 번만 리플렉션으로 구해 캐시한다.
 /// </summary>
 /// <remarks>
-/// 지원 형식: 스칼라(첫 컬럼), 매개변수 없는 생성자 + 설정 가능한 속성, 위치 기반 record(생성자 매개변수 이름으로 매핑).
+/// 지원 형식: 스칼라(첫 컬럼), <see cref="SpRow"/>(모든 컬럼), 매개변수 없는 생성자 + 설정 가능한 속성, 위치 기반 record(생성자 매개변수 이름으로 매핑).
 /// 결과에 없는 속성은 기본값으로 두고, DTO에 없는 컬럼은 무시한다.
 /// </remarks>
 internal static class RowMapper
@@ -25,6 +25,11 @@ internal static class RowMapper
             return r => (T)ValueConverter.FromDb(r.GetValue(0), type)!;
         }
 
+        if (type == typeof(SpRow))
+        {
+            return (Func<DbDataReader, T>)(object)CreateSpRow(reader);
+        }
+
         var shape = Shapes.GetOrAdd(type, TypeShape.Create);
         var columns = new Dictionary<string, int>(StringComparer.Ordinal);
         for (var i = 0; i < reader.FieldCount; i++)
@@ -35,6 +40,36 @@ internal static class RowMapper
         return shape.Constructor is { } ctor
             ? CreateByConstructor<T>(ctor, shape.CtorParameters, columns)
             : CreateBySetters<T>(shape, columns);
+    }
+
+    /// <summary>모든 컬럼을 순서대로 담는다. <c>date</c> 컬럼은 <see cref="DateOnly"/>로 바꿔 날짜와 일시를 구분한다.</summary>
+    private static Func<DbDataReader, SpRow> CreateSpRow(DbDataReader reader)
+    {
+        var names = new string[reader.FieldCount];
+        var dates = new bool[reader.FieldCount];
+        for (var i = 0; i < names.Length; i++)
+        {
+            names[i] = reader.GetName(i);
+            dates[i] = string.Equals(reader.GetDataTypeName(i), "date", StringComparison.OrdinalIgnoreCase);
+        }
+
+        var shape = new SpRowShape(names);
+        return r =>
+        {
+            var values = new object?[names.Length];
+            for (var i = 0; i < values.Length; i++)
+            {
+                var value = r.GetValue(i);
+                values[i] = value switch
+                {
+                    DBNull => null,
+                    DateTime d when dates[i] => DateOnly.FromDateTime(d),
+                    _ => value,
+                };
+            }
+
+            return new SpRow(shape, values);
+        };
     }
 
     private static Func<DbDataReader, T> CreateBySetters<T>(TypeShape shape, Dictionary<string, int> columns)

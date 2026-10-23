@@ -1,4 +1,5 @@
 using System.Data;
+using Portal.Data;
 using Portal.Data.Internal;
 
 namespace Portal.UnitTests.Data;
@@ -86,6 +87,28 @@ public sealed class RowMapperTests
         reader.Read();
 
         Assert.Null(RowMapper.For<int?>(reader)(reader));
+    }
+
+    [Fact]
+    public void For_SpRow_모든컬럼을순서대로_NULL은null_이름은대소문자무시()
+    {
+        using var reader = Reader(["LOG_DATE", "OK_CNT", "NOTE"], [new DateTime(2026, 9, 1), 3, DBNull.Value]);
+
+        reader.Read();
+        var row = RowMapper.For<SpRow>(reader)(reader);
+
+        Assert.Equal(["LOG_DATE", "OK_CNT", "NOTE"], row.Columns);
+        Assert.Equal(3, row["ok_cnt"]);
+        Assert.Null(row["NOTE"]);
+        Assert.Equal(new DateTime(2026, 9, 1), row[0]);
+        Assert.False(row.TryGetValue("NONE", out _));
+        Assert.Throws<KeyNotFoundException>(() => row["NONE"]);
+    }
+
+    [Fact]
+    public void SpRow_값수가컬럼수와다르면_거부()
+    {
+        Assert.Throws<ArgumentException>(() => new SpRow(["A", "B"], [1]));
     }
 
     private static DataTableReader Reader(string[] columns, object[] values)

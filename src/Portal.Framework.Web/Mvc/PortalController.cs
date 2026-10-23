@@ -4,6 +4,7 @@ using Portal.Core.Errors;
 using Portal.Core.Keys;
 using Portal.Core.Results;
 using Portal.Framework.Web.Authorization;
+using Portal.Framework.Web.Logging;
 
 namespace Portal.Framework.Web.Mvc;
 
@@ -42,11 +43,14 @@ public abstract class PortalController : Controller
 
     /// <summary>
     /// 프로그램의 기능 중 하나라도 있는지 확인한다(<c>[ProgramFromData]</c> Action용). 없으면 <see cref="PermissionDeniedException"/>(403).
+    /// 확인한 프로그램·기능은 접근 기록에 남는다(거부된 요청도).
     /// </summary>
     protected async Task DemandAnyFuncAsync(string programId, params string[] funcs)
     {
         var granted = await HttpContext.RequestServices.GetRequiredService<CurrentPermissions>().GetAsync(HttpContext.RequestAborted);
-        if (!funcs.Any(f => granted.Can(programId, f)))
+        var func = funcs.FirstOrDefault(f => granted.Can(programId, f));
+        AccessLogProgram.Set(HttpContext, programId, func ?? funcs[0]);
+        if (func is null)
         {
             throw new PermissionDeniedException(programId, funcs[0]);
         }

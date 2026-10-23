@@ -1,0 +1,68 @@
+-- 레포트 RPT_LOG_MONTHLY 데이터: 월별 접속기록 점검 (개인정보 안전성 확보조치 기준의 접속기록 월 1회 이상 점검용).
+-- 그 달(서버 현지 날짜 기준)의 날마다 한 행: 로그인 성공·실패·잠긴 계정 시도, 화면·API 요청·권한 거부(401·403)·서버 오류(500 이상),
+-- 개인정보 조회·다운로드·마스킹 해제, 데이터 변경 건수. 기록이 없는 날도 0으로 나온다. 계정 정보는 돌려주지 않는다(건수만).
+-- 회사에 속하지 않는 기록(없는 ID로 시도한 로그인 등)까지 세므로 데이터 범위가 '전체'인 사용자만 볼 수 있다.
+-- 결과: LOG_DATE, LOGIN_OK_CNT, LOGIN_FAIL_CNT, LOGIN_LOCK_CNT, ACCESS_CNT, ACCESS_DENIED_CNT, SERVER_ERROR_CNT,
+--       PII_VIEW_CNT, PII_DOWNLOAD_CNT, PII_UNMASK_CNT, AUDIT_CNT (날짜 순)
+CREATE PROCEDURE [LOG].[USP_RPT_ACCESS_MONTHLY_GET_LIST]
+  @P_MONTH       CHAR(7),                 -- yyyy-MM
+  @P_MAX_ROWS    INT = 1000,
+  @P_USER_ID     VARCHAR(30),
+  @P_LANG_CD     VARCHAR(5),
+  @P_CLIENT_IP   VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  DECLARE @FIRST DATE = TRY_CONVERT(DATE, @P_MONTH + '-01', 23);
+  IF @FIRST IS NULL OR @P_MONTH NOT LIKE '[12][0-9][0-9][0-9]-[01][0-9]'
+    THROW 52005, 'MSG.INVALID_INPUT', 1;
+  IF ISNULL((SELECT [ALL_YN] FROM [FW].[UFN_DATA_SCOPE_ALL](@P_USER_ID, 'RPT_LOG_MONTHLY')), 'N') <> 'Y'
+    THROW 52003, 'RPT.SCOPE_ALL_REQUIRED', 1;
+
+  -- 서버 현지 날짜의 그 달을 UTC 범위로 (로그 일시는 UTC)
+  DECLARE @OFFSET_MIN INT = DATEDIFF(MINUTE, SYSUTCDATETIME(), SYSDATETIME());
+  DECLARE @FROM DATETIME2(3) = DATEADD(MINUTE, -@OFFSET_MIN, CAST(@FIRST AS DATETIME2(3)));
+  DECLARE @TO DATETIME2(3) = DATEADD(MONTH, 1, @FROM);
+
+  DECLARE @DAYS TABLE ([LOG_DATE] DATE PRIMARY KEY);
+  INSERT INTO @DAYS ([LOG_DATE])
+  SELECT DATEADD(DAY, T.[N] * 10 + O.[N], @FIRST)
+    FROM (VALUES (0), (1), (2), (3)) T ([N])
+   CROSS JOIN (VALUES (0), (1), (2), (3), (4), (5), (6), (7), (8), (9)) O ([N])
+   WHERE T.[N] * 10 + O.[N] < DAY(EOMONTH(@FIRST));
+
+  SELECT TOP (@P_MAX_ROWS + 1)
+         D.[LOG_DATE],
+         ISNULL(L.[OK_CNT], 0) AS [LOGIN_OK_CNT], ISNULL(L.[FAIL_CNT], 0) AS [LOGIN_FAIL_CNT], ISNULL(L.[LOCK_CNT], 0) AS [LOGIN_LOCK_CNT],
+         ISNULL(A.[ALL_CNT], 0) AS [ACCESS_CNT], ISNULL(A.[DENIED_CNT], 0) AS [ACCESS_DENIED_CNT], ISNULL(A.[ERROR_CNT], 0) AS [SERVER_ERROR_CNT],
+         ISNULL(P.[VIEW_CNT], 0) AS [PII_VIEW_CNT], ISNULL(P.[DOWNLOAD_CNT], 0) AS [PII_DOWNLOAD_CNT], ISNULL(P.[UNMASK_CNT], 0) AS [PII_UNMASK_CNT],
+         ISNULL(U.[ALL_CNT], 0) AS [AUDIT_CNT]
+    FROM @DAYS D
+    LEFT JOIN (SELECT CAST(DATEADD(MINUTE, @OFFSET_MIN, [LOG_DT]) AS DATE) AS [LOG_DATE],
+                      SUM(IIF([LOGIN_RESULT_CD] = 'SUCCESS', 1, 0)) AS [OK_CNT],
+                      SUM(IIF([LOGIN_RESULT_CD] LIKE 'FAIL[_]%', 1, 0)) AS [FAIL_CNT],
+                      SUM(IIF([LOGIN_RESULT_CD] = 'FAIL_LOCKED', 1, 0)) AS [LOCK_CNT]
+                 FROM [LOG].[TB_LOGIN_LOG]
+                WHERE [LOG_DT] >= @FROM AND [LOG_DT] < @TO
+                GROUP BY CAST(DATEADD(MINUTE, @OFFSET_MIN, [LOG_DT]) AS DATE)) L ON L.[LOG_DATE] = D.[LOG_DATE]
+    LEFT JOIN (SELECT CAST(DATEADD(MINUTE, @OFFSET_MIN, [LOG_DT]) AS DATE) AS [LOG_DATE],
+                      COUNT(*) AS [ALL_CNT],
+                      SUM(IIF([STATUS_CODE] IN (401, 403), 1, 0)) AS [DENIED_CNT],
+                      SUM(IIF([STATUS_CODE] >= 500, 1, 0)) AS [ERROR_CNT]
+                 FROM [LOG].[TB_ACCESS_LOG]
+                WHERE [LOG_DT] >= @FROM AND [LOG_DT] < @TO
+                GROUP BY CAST(DATEADD(MINUTE, @OFFSET_MIN, [LOG_DT]) AS DATE)) A ON A.[LOG_DATE] = D.[LOG_DATE]
+    LEFT JOIN (SELECT CAST(DATEADD(MINUTE, @OFFSET_MIN, [LOG_DT]) AS DATE) AS [LOG_DATE],
+                      SUM(IIF([ACTION_CD] = 'VIEW', 1, 0)) AS [VIEW_CNT],
+                      SUM(IIF([ACTION_CD] = 'DOWNLOAD', 1, 0)) AS [DOWNLOAD_CNT],
+                      SUM(IIF([ACTION_CD] = 'UNMASK', 1, 0)) AS [UNMASK_CNT]
+                 FROM [LOG].[TB_PII_ACCESS_LOG]
+                WHERE [LOG_DT] >= @FROM AND [LOG_DT] < @TO
+                GROUP BY CAST(DATEADD(MINUTE, @OFFSET_MIN, [LOG_DT]) AS DATE)) P ON P.[LOG_DATE] = D.[LOG_DATE]
+    LEFT JOIN (SELECT CAST(DATEADD(MINUTE, @OFFSET_MIN, [LOG_DT]) AS DATE) AS [LOG_DATE], COUNT(*) AS [ALL_CNT]
+                 FROM [LOG].[TB_AUDIT_LOG]
+                WHERE [LOG_DT] >= @FROM AND [LOG_DT] < @TO
+                GROUP BY CAST(DATEADD(MINUTE, @OFFSET_MIN, [LOG_DT]) AS DATE)) U ON U.[LOG_DATE] = D.[LOG_DATE]
+   ORDER BY D.[LOG_DATE];
+END

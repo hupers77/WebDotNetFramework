@@ -138,6 +138,17 @@ Controller에는 업무 로직을 두지 않습니다. 사용자 ID·언어·IP�
 
 **PDF 만들기**: HTML을 PDF로 바꿀 때는 `IPdfConverter.ConvertAsync(html, new PdfPageOptions(바닥글 문구, 가로 여부))`를 씁니다. 서버의 Microsoft Edge를 헤드리스로 띄워 A4로 인쇄하고, 모든 쪽 아래에 바닥글 문구(출력자·출력 일시 등)와 쪽 번호(쪽 / 전체 쪽)를 넣습니다. HTML은 인쇄용 CSS까지 들어 있는 완성된 문서여야 합니다. 변환할 때는 외부 자원을 막으므로 CSS는 `<style>`로 문서 안에 넣고, 그림과 글꼴은 `data:` URL로 넣습니다. 스크립트도 실행되지 않습니다. 동시에 4건까지 변환하고, 그 이상은 앞 변환이 끝날 때까지 기다립니다. 한 건이 60초를 넘으면 실패합니다(`Portal:Pdf:MaxConcurrency`, `TimeoutSeconds`). 브라우저 경로는 `Portal:Pdf:BrowserPath`로 정하고, 비우면 Edge 기본 설치 경로를 씁니다. 실제 변환 테스트(`BrowserPdfConverterTests`)는 환경 변수 `PORTAL_PDF_BROWSER`에 Edge나 Chromium 경로를 넣을 때만 돕니다.
 
+**레포트 만들기**: 출력물(점검표, 집계표 등)은 화면을 따로 만들지 않고 레포트로 등록합니다. 공통 레포트 화면(`/Rpt/Viewer/Index/{레포트 ID}`, `src/Portal.Web/Areas/Rpt`)이 조건 입력·미리보기·PDF·엑셀을 제공합니다.
+
+1. 프로그램을 만듭니다. 프로그램 ID가 레포트 ID입니다(`RPT_<대상>`). 주소는 `/Rpt/Viewer/Index/<ID>`이고, 메뉴에 이 주소로 넣습니다. 기능은 READ(미리보기), PRINT(PDF), EXPORT(엑셀)입니다. 화면 코드가 없으므로 `TB_PROGRAM_API`는 등록하지 않습니다(권한은 레포트 화면이 레포트 ID로 확인합니다).
+2. 데이터 SP `<스키마>.USP_RPT_<대상>_GET_LIST`를 만듭니다. 결과셋은 하나이고, 컬럼은 그대로 표의 열이 됩니다(순서 유지). 조건 파라미터와 `@P_MAX_ROWS`를 받아 `SELECT TOP (@P_MAX_ROWS + 1)`로 돌려줍니다(넘치면 화면이 조건을 좁혀 달라고 합니다). 날짜만 있는 값은 `DATE`로, 일시는 UTC `DATETIME2`로 돌려주면 일시는 서버 현지 시간으로 표시합니다. 집계 레포트는 건수만 돌려주고 개인정보는 넣지 않습니다.
+3. `TB_REPORT`에 행을 넣습니다(시드 `12_REPORT.sql`). `PARAMS_JSON`은 조건 목록입니다: `[{"name":"P_MONTH","type":"MONTH","required":true,"labelKey":"LBL.MONTH","default":"PREV_MONTH"}]`. 형식은 `DATE`(yyyy-MM-dd), `MONTH`(yyyy-MM), `TEXT`(`maxLength`, 기본 100), 기본값은 `TODAY`, `THIS_MONTH`, `PREV_MONTH`입니다. 정의에 없는 값은 SP로 넘어가지 않습니다. 용지 방향(`ORIENT_CD`), 결재란(`APPROVAL_YN`), 합계 행(`TOTAL_YN`), 최대 행 수(`MAX_ROWS`)도 여기서 정합니다.
+4. 열 머리글은 문구 `RPT.<레포트 ID>.<컬럼>`으로 3개 언어를 넣습니다(없으면 컬럼 이름이 보입니다).
+5. 기본 표로 충분하면 `TEMPLATE_VIEW`를 비웁니다. 점검 의견란처럼 표 밖의 내용이 필요하면 `Areas/Rpt/Views/Templates/<이름>.cshtml`을 만들어 이름을 넣습니다. 템플릿은 `Layout = "_ReportLayout.cshtml"`(제목·조건·출력자·일시·결재란)과 `<partial name="_ReportTable.cshtml" model="Model.Report" />`(표)를 쓰고, 스타일은 `wwwroot/css/report.css`에 둡니다. 미리보기는 이 파일을 연결하고 PDF는 같은 내용을 문서 안에 넣습니다. 스크립트·외부 그림은 쓰지 않습니다(미리보기 iframe과 PDF 모두 막습니다).
+6. 개인정보가 든 레포트는 프로그램의 `PII_YN = 'Y'`로 표시합니다. 미리보기는 개인정보 조회로, PDF·엑셀은 사유를 받아 다운로드로 접속기록에 남습니다.
+
+예: 월별 접속기록 점검(`RPT_LOG_MONTHLY`, `LOG.USP_RPT_ACCESS_MONTHLY_GET_LIST`, 템플릿 `AccessMonthly`).
+
 **프레임워크 시스템 화면**(공통코드, 설정 관리 등)은 업무 모듈과 같은 구조로 `src/Portal.Web/Areas/Sys/`(Controllers, Services, Models, Views)와 `wwwroot/js/sys/`에 둡니다.
 
 **첨부 파일**: 화면은 첨부를 직접 받지 않고 공통 API(`/File/Upload`, `/File/List`, `/File/Download/{id}`, `/File/Delete`)를 씁니다. 업무 테이블에는 `FILE_GROUP_ID BIGINT NULL` 컬럼 하나만 두고, 순서는 다음과 같습니다.

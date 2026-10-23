@@ -1,0 +1,11 @@
+@* RPT_LOG_MONTHLY 월별 접속기록 점검: 날마다 건수 표 + 점검 의견란(점검자가 출력물에 적고 결재란에 서명한다). *@
+@model ReportDocumentModel
+@{
+    Layout = "_ReportLayout.cshtml";
+}
+<partial name="_ReportTable.cshtml" model="Model.Report" />
+<section class="rpt-review">
+    <h2>@L["RPT.RPT_LOG_MONTHLY.REVIEW"]</h2>
+    <p class="rpt-note">@L["RPT.RPT_LOG_MONTHLY.REVIEW_HINT"]</p>
+    <div class="rpt-review-box"></div>
+</section>

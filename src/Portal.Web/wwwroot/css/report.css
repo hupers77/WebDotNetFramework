@@ -1,0 +1,29 @@
+/* 레포트 문서 (미리보기 iframe과 PDF가 같이 쓴다). 용지 크기·방향은 PDF 변환기가 정하므로 @page size를 두지 않는다.
+   PDF에는 외부 글꼴을 넣지 않는다: 서버(Windows)의 맑은 고딕·Microsoft YaHei로 한·중 글자를 그린다. */
+:root { --rpt-line: #999; --rpt-head: #eef1f5; --rpt-muted: #555; }
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body { margin: 0; padding: 12px; background: #fff; color: #111; font: 10pt/1.4 'Malgun Gothic', 'Microsoft YaHei', 'Noto Sans CJK KR', sans-serif; }
+@media print { body { padding: 0; } }
+.rpt-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 10px; }
+.rpt-heading h1 { margin: 0 0 6px; font-size: 16pt; }
+.rpt-conditions { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 0 0 4px; }
+.rpt-conditions dt { font-weight: 600; }
+.rpt-conditions dt::after { content: ':'; }
+.rpt-conditions dd { margin: 0; }
+.rpt-printed, .rpt-note { margin: 0; color: var(--rpt-muted); font-size: 8.5pt; }
+.rpt-approval { border-collapse: collapse; flex: none; }
+.rpt-approval th, .rpt-approval td { width: 22mm; border: 1px solid var(--rpt-line); text-align: center; }
+.rpt-approval th { background: var(--rpt-head); font-weight: 600; padding: 2px; }
+.rpt-approval td { height: 16mm; }
+.rpt-table { width: 100%; border-collapse: collapse; }
+.rpt-table th, .rpt-table td { border: 1px solid var(--rpt-line); padding: 3px 5px; }
+.rpt-table th { background: var(--rpt-head); font-weight: 600; text-align: center; overflow-wrap: anywhere; }
+.rpt-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.rpt-table thead { display: table-header-group; }
+.rpt-table tr { break-inside: avoid; }
+.rpt-table tfoot td { font-weight: 700; background: #f7f7f7; }
+.rpt-empty { padding: 24px; text-align: center; color: var(--rpt-muted); }
+.rpt-review { margin-top: 12px; break-inside: avoid; }
+.rpt-review h2 { margin: 0 0 4px; font-size: 11pt; }
+.rpt-review-box { height: 30mm; margin-top: 4px; border: 1px solid var(--rpt-line); }

@@ -1,5 +1,5 @@
 -- 프로그램 삭제 (삭제 SP 표준 템플릿). 프로그램: SYS_PROGRAM_MGT
--- 잘못 등록한 프로그램만 지운다. 서버 경로(TB_PROGRAM_API)·메뉴·첨부 파일·메시지 템플릿이 하나라도 연결된 프로그램은 지우지 않는다
+-- 잘못 등록한 프로그램만 지운다. 서버 경로(TB_PROGRAM_API)·메뉴·첨부 파일·메시지 템플릿·레포트가 하나라도 연결된 프로그램은 지우지 않는다
 -- (코드가 쓰는 프로그램은 사용 안 함으로 바꾼다). 기능과 그 역할·사용자 예외 권한도 함께 지운다. 감사 로그를 남기고 권한 캐시(AUTH)를 올린다.
 -- 결과: AFFECTED_CNT(프로그램 1 + 지운 기능 수)
 CREATE PROCEDURE [FW].[USP_PROGRAM_DEL]
@@ -28,6 +28,7 @@ BEGIN
        OR EXISTS (SELECT 1 FROM [FW].[TB_MENU] WHERE [PROGRAM_ID] = @P_PROGRAM_ID)
        OR EXISTS (SELECT 1 FROM [FW].[TB_FILE_GROUP] WHERE [PROGRAM_ID] = @P_PROGRAM_ID)
        OR EXISTS (SELECT 1 FROM [FW].[TB_MSG_TEMPLATE] WHERE [LINK_PROGRAM_ID] = @P_PROGRAM_ID)
+       OR EXISTS (SELECT 1 FROM [FW].[TB_REPORT] WHERE [REPORT_ID] = @P_PROGRAM_ID)
       THROW 50003, 'MSG.PROGRAM_IN_USE', 1;
 
     DECLARE @BEFORE NVARCHAR(MAX) = (SELECT P.[PROGRAM_ID], P.[MODULE_CD], P.[PROGRAM_NM], P.[URL], P.[PII_YN], P.[USE_YN],
