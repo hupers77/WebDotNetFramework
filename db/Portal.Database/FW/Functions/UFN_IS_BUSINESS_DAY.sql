@@ -1,0 +1,13 @@
+-- 영업일인지 (1/0). 달력(TB_HOLIDAY)에 있으면 그 값(WORK_YN)을 따르고, 없으면 토·일만 쉰다.
+-- 서버의 DATEFIRST 설정과 무관하게 동작한다 (1900-01-07이 일요일).
+CREATE FUNCTION [FW].[UFN_IS_BUSINESS_DAY] (@P_DT DATE)
+RETURNS BIT
+AS
+BEGIN
+  DECLARE @WORK CHAR(1) = (SELECT [WORK_YN] FROM [FW].[TB_HOLIDAY] WHERE [HOLIDAY_DT] = @P_DT);
+  RETURN CASE
+           WHEN @WORK IS NOT NULL THEN IIF(@WORK = 'Y', 1, 0)
+           WHEN DATEDIFF(DAY, '19000107', @P_DT) % 7 IN (0, 6) THEN 0
+           ELSE 1
+         END;
+END
