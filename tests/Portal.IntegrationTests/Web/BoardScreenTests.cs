@@ -288,4 +288,20 @@ public sealed class BoardScreenTests : IClassFixture<PortalWebFactory>
         Assert.Equal("Y", (string?)_web.Sp.LastCall(BoardService.CommentDeleteSp).Parameters["P_MANAGER_YN"]);
         Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(_web.SignIn("bd.c.x", Reader), "/Board/Test/CommentSave", comment)).StatusCode);
     }
+
+    [Fact]
+    public async Task 게시판관리_화면은_BOARD_MGT권한으로_열리고_저장버튼은_UPDATE권한이_있을때만()
+    {
+        _web.Sp.Returns(BoardAdminService.ListSp, new PageResult<BoardAdminDto> { Items = [], TotalCount = 0, PageNo = 1, PageSize = 500 });
+        _web.Sp.Returns(BoardAdminService.SaveSp, new SaveResult(1, null));
+        var admin = await (await GetAsync(_web.SignIn("bd.a.m", [Home, "BRD_BOARD_MGT:READ", "BRD_BOARD_MGT:UPDATE"]), "/Board/Admin?_layout=tab")).Content.ReadAsStringAsync(Ct);
+        var reader = await (await GetAsync(_web.SignIn("bd.a.r", [Home, "BRD_BOARD_MGT:READ"]), "/Board/Admin?_layout=tab")).Content.ReadAsStringAsync(Ct);
+
+        Assert.Contains("js/board/admin.js", admin, StringComparison.Ordinal);
+        Assert.Contains("id=\"board-admin-save\"", admin, StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"board-admin-save\"", reader, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Forbidden, (await GetAsync(_web.SignIn("bd.a.x", [Home, Reader[1]]), "/Board/Admin")).StatusCode);
+        var save = await PostAsync(_web.SignIn("bd.a.s", [Home, "BRD_BOARD_MGT:READ"]), "/Board/Admin/Save", new { rows = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.Forbidden, save.StatusCode);
+    }
 }

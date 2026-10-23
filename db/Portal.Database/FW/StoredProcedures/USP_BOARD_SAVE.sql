@@ -1,0 +1,81 @@
+-- 게시판 설정 일괄 저장 (수정만). 프로그램: BRD_BOARD_MGT
+-- @P_ROWS_JSON: [{boardCd, nameKo, nameEn, nameZh, replyYn, commentYn, attachYn, anonYn, secretYn, periodYn, pinYn, readerYn, sortNo, useYn, rowVer(0x...)}]
+-- 게시판 추가·삭제는 하지 않는다(게시판은 프로그램과 짝이라 초기 데이터가 만든다). 동시성은 ROW_VER로 확인한다.
+-- 결과: AFFECTED_CNT (바뀐 게시판 수)
+CREATE PROCEDURE [FW].[USP_BOARD_SAVE]
+  @P_ROWS_JSON  NVARCHAR(MAX),
+  @P_USER_ID    VARCHAR(30),
+  @P_LANG_CD    VARCHAR(5),
+  @P_CLIENT_IP  VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+  SET XACT_ABORT ON;
+
+  IF ISJSON(@P_ROWS_JSON) <> 1
+    THROW 50003, 'MSG.INVALID_INPUT', 1;
+
+  DECLARE @R TABLE (
+    [BOARD_CD] VARCHAR(30) PRIMARY KEY, [NAME_KO] NVARCHAR(100), [NAME_EN] NVARCHAR(100), [NAME_ZH] NVARCHAR(100),
+    [REPLY_YN] CHAR(1), [COMMENT_YN] CHAR(1), [ATTACH_YN] CHAR(1), [ANON_YN] CHAR(1), [SECRET_YN] CHAR(1),
+    [PERIOD_YN] CHAR(1), [PIN_YN] CHAR(1), [READER_YN] CHAR(1), [SORT_NO] INT, [USE_YN] CHAR(1), [ROW_VER] BINARY(8));
+  INSERT INTO @R
+  SELECT [boardCd], [nameKo], [nameEn], [nameZh], [replyYn], [commentYn], [attachYn], [anonYn], [secretYn],
+         [periodYn], [pinYn], [readerYn], [sortNo], [useYn], CONVERT(BINARY(8), [rowVer], 2)
+    FROM OPENJSON(@P_ROWS_JSON) WITH (
+      [boardCd] VARCHAR(30), [nameKo] NVARCHAR(100), [nameEn] NVARCHAR(100), [nameZh] NVARCHAR(100),
+      [replyYn] CHAR(1), [commentYn] CHAR(1), [attachYn] CHAR(1), [anonYn] CHAR(1), [secretYn] CHAR(1),
+      [periodYn] CHAR(1), [pinYn] CHAR(1), [readerYn] CHAR(1), [sortNo] INT, [useYn] CHAR(1), [rowVer] VARCHAR(16));
+
+  IF NOT EXISTS (SELECT 1 FROM @R)
+    THROW 50005, 'MSG.NO_CHANGES', 1;
+  IF EXISTS (SELECT 1 FROM @R R LEFT JOIN [FW].[TB_BOARD] B ON B.[BOARD_CD] = R.[BOARD_CD] WHERE B.[BOARD_CD] IS NULL)
+    THROW 50004, 'MSG.NOT_FOUND', 1;
+  IF EXISTS (SELECT 1 FROM @R WHERE [NAME_KO] IS NULL OR [NAME_EN] IS NULL OR [NAME_ZH] IS NULL
+                                   OR [NAME_KO] = N'' OR [NAME_EN] = N'' OR [NAME_ZH] = N'' OR [SORT_NO] IS NULL)
+    THROW 50003, 'MSG.INVALID_INPUT', 1;
+
+  DECLARE @CNT INT = 0;
+  DECLARE @BEFORE NVARCHAR(MAX), @AFTER NVARCHAR(MAX);
+
+  BEGIN TRY
+    BEGIN TRAN;
+
+    IF EXISTS (SELECT 1 FROM @R R JOIN [FW].[TB_BOARD] B WITH (UPDLOCK) ON B.[BOARD_CD] = R.[BOARD_CD] WHERE B.[ROW_VER] <> R.[ROW_VER])
+      THROW 50002, 'MSG.CONCURRENCY', 1;
+
+    SET @BEFORE = (SELECT B.[BOARD_CD], B.[REPLY_YN], B.[COMMENT_YN], B.[ATTACH_YN], B.[ANON_YN], B.[SECRET_YN], B.[PERIOD_YN],
+                          B.[PIN_YN], B.[READER_YN], B.[SORT_NO], B.[USE_YN]
+                     FROM [FW].[TB_BOARD] B JOIN @R R ON R.[BOARD_CD] = B.[BOARD_CD] FOR JSON PATH);
+
+    UPDATE B
+       SET B.[REPLY_YN] = R.[REPLY_YN], B.[COMMENT_YN] = R.[COMMENT_YN], B.[ATTACH_YN] = R.[ATTACH_YN], B.[ANON_YN] = R.[ANON_YN],
+           B.[SECRET_YN] = R.[SECRET_YN], B.[PERIOD_YN] = R.[PERIOD_YN], B.[PIN_YN] = R.[PIN_YN], B.[READER_YN] = R.[READER_YN],
+           B.[SORT_NO] = R.[SORT_NO], B.[USE_YN] = R.[USE_YN], B.[UPD_ID] = @P_USER_ID, B.[UPD_DT] = SYSUTCDATETIME()
+      FROM [FW].[TB_BOARD] B JOIN @R R ON R.[BOARD_CD] = B.[BOARD_CD];
+    SET @CNT = @@ROWCOUNT;
+
+    MERGE [FW].[TB_BOARD_LANG] AS T
+    USING (SELECT R.[BOARD_CD], V.[LANG_CD], V.[BOARD_NM]
+             FROM @R R CROSS APPLY (VALUES ('ko', R.[NAME_KO]), ('en', R.[NAME_EN]), ('zh-CN', R.[NAME_ZH])) V ([LANG_CD], [BOARD_NM])) AS S
+       ON T.[BOARD_CD] = S.[BOARD_CD] AND T.[LANG_CD] = S.[LANG_CD]
+    WHEN MATCHED AND T.[BOARD_NM] <> S.[BOARD_NM] THEN UPDATE SET T.[BOARD_NM] = S.[BOARD_NM], T.[UPD_ID] = @P_USER_ID, T.[UPD_DT] = SYSUTCDATETIME()
+    WHEN NOT MATCHED THEN INSERT ([BOARD_CD], [LANG_CD], [BOARD_NM], [REG_ID], [UPD_ID]) VALUES (S.[BOARD_CD], S.[LANG_CD], S.[BOARD_NM], @P_USER_ID, @P_USER_ID);
+
+    SET @AFTER = (SELECT R.[BOARD_CD], R.[REPLY_YN], R.[COMMENT_YN], R.[ATTACH_YN], R.[ANON_YN], R.[SECRET_YN], R.[PERIOD_YN],
+                         R.[PIN_YN], R.[READER_YN], R.[SORT_NO], R.[USE_YN], R.[NAME_KO], R.[NAME_EN], R.[NAME_ZH] FROM @R R FOR JSON PATH);
+    EXEC [LOG].[USP_AUDIT_WRITE]
+      @P_TABLE_NM = 'FW.TB_BOARD', @P_ACTION_CD = 'U', @P_ROW_KEY = N'BOARD',
+      @P_BEFORE_JSON = @BEFORE, @P_AFTER_JSON = @AFTER,
+      @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD, @P_CLIENT_IP = @P_CLIENT_IP;
+
+    COMMIT;
+
+    SELECT @CNT AS [AFFECTED_CNT];
+  END TRY
+  BEGIN CATCH
+    IF @@TRANCOUNT > 0
+      ROLLBACK;
+    THROW;
+  END CATCH
+END
