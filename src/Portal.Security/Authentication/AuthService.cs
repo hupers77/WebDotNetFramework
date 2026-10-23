@@ -18,6 +18,8 @@ namespace Portal.Security.Authentication;
 /// 2단계 인증 대상(협력사 <c>AUTH.PARTNER_MFA</c>, 관리자 역할 <c>AUTH.ADMIN_MFA</c>)은 비밀번호가 맞아도 세션을 만들지 않고
 /// <see cref="LoginResult.MfaRequired"/>를 돌려준다. 코드를 확인하면(<see cref="VerifyMfaAsync"/>) 세션을 만든다.
 /// 틀린 코드도 로그인 실패로 세어 같은 횟수에서 잠근다.
+/// 이메일 인증번호를 허용하는 대상(<c>AUTH.PARTNER_EMAIL_OTP</c>, <c>AUTH.ADMIN_EMAIL_OTP</c>, 이메일 등록)은 인증 앱 대신
+/// 메일로 받은 6자리 번호로도 확인할 수 있다(<see cref="SendMfaEmailAsync"/>, <see cref="MfaVerifyRequest.Email"/>).
 /// </summary>
 public sealed partial class AuthService(
     ISpExecutor sp,
@@ -26,6 +28,7 @@ public sealed partial class AuthService(
     ICurrentUser currentUser,
     TimeProvider time,
     IMfaSecretProtector mfaSecrets,
+    IMfaCodeMailer otpMailer,
     ILogger<AuthService> logger)
 {
     private const int MaxUserIdLength = 30;
@@ -100,6 +103,11 @@ public sealed partial class AuthService(
             return LoginResult.Fail(denied.MessageKey);
         }
 
+        if (request.Email)
+        {
+            return await VerifyEmailOtpAsync(user, request.Code, userAgent, cancellationToken);
+        }
+
         var enrolling = user.MfaSecretEnc is null;
         byte[]? secret;
         try
@@ -143,6 +151,90 @@ public sealed partial class AuthService(
 
         return await CreateSessionAsync(user, AuthMethods.FormMfa, enrolling ? null : step, userAgent, cancellationToken);
     }
+
+    /// <summary>이메일 인증번호를 쓸 수 있는 사용자인지 (화면에 [이메일로 받기]를 보일지).</summary>
+    public async Task<bool> CanUseEmailOtpAsync(string userId, CancellationToken cancellationToken = default) =>
+        await sp.QuerySingleAsync<AuthUser>(AuthSp.GetUser, new { P_LOGIN_USER_ID = userId }, cancellationToken) is { } user
+        && AllowsEmailOtp(user);
+
+    /// <summary>
+    /// 이메일 인증번호를 만들어 메일로 보낸다. 제한(60초 간격, 1시간 5통)을 넘으면 보내지 않고 사유를 돌려준다.
+    /// 번호는 해시만 DB에 두고 원문은 메일로만 나간다. 메일을 못 보내면 번호를 쓸 수 없지만 1분 뒤 다시 보낼 수 있다.
+    /// </summary>
+    public async Task<MfaEmailSendResult> SendMfaEmailAsync(Mfa.MfaTicket ticket, CancellationToken cancellationToken = default)
+    {
+        var user = await sp.QuerySingleAsync<AuthUser>(AuthSp.GetUser, new { P_LOGIN_USER_ID = ticket.UserId }, cancellationToken);
+        if (user is null || Deny(user) is not null)
+        {
+            return new MfaEmailSendResult(false, AuthMessageKeys.MfaExpired);
+        }
+
+        if (!AllowsEmailOtp(user))
+        {
+            return new MfaEmailSendResult(false, AuthMessageKeys.OtpMailFailed);
+        }
+
+        var code = EmailOtp.NewCode();
+        OtpIssued? issued;
+        try
+        {
+            issued = await sp.QuerySingleAsync<OtpIssued>(
+                AuthSp.OtpIssue,
+                new { P_LOGIN_USER_ID = user.UserId, P_CODE_HASH = EmailOtp.Hash(user.UserId, code) },
+                cancellationToken);
+        }
+        catch (BizException ex) when (ex.SqlErrorNumber == AuthSp.OtpTooSoonError)
+        {
+            return new MfaEmailSendResult(false, AuthMessageKeys.OtpTooSoon);
+        }
+        catch (BizException ex) when (ex.SqlErrorNumber == AuthSp.OtpLimitError)
+        {
+            return new MfaEmailSendResult(false, AuthMessageKeys.OtpLimit);
+        }
+
+        try
+        {
+            await otpMailer.SendAsync(issued!.EmailEnc!, issued.LangCd, code, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LogOtpMailFailed(logger, user.UserId, ex.GetType().Name);
+            return new MfaEmailSendResult(false, AuthMessageKeys.OtpMailFailed);
+        }
+
+        return new MfaEmailSendResult(true, AuthMessageKeys.OtpSent);
+    }
+
+    private async Task<LoginResult> VerifyEmailOtpAsync(AuthUser user, string? code, string? userAgent, CancellationToken cancellationToken)
+    {
+        if (!AllowsEmailOtp(user))
+        {
+            return LoginResult.Fail(AuthMessageKeys.MfaExpired);
+        }
+
+        var matched = EmailOtp.IsWellFormed(code)
+            && (await sp.QuerySingleAsync<OtpVerified>(
+                AuthSp.OtpVerify,
+                new { P_LOGIN_USER_ID = user.UserId, P_CODE_HASH = EmailOtp.Hash(user.UserId, code!) },
+                cancellationToken))?.MatchYn == "Y";
+        if (!matched)
+        {
+            var failed = await FailAsync(user.UserId, LoginResultCodes.FailMfa, userAgent, cancellationToken, AuthMethods.FormMfa);
+            return LoginResult.Fail(failed?.LockYn == "Y" ? AuthMessageKeys.Locked : AuthMessageKeys.OtpInvalid);
+        }
+
+        // 인증 앱을 등록하지 않아도 되고, 등록된 TOTP 단계(MFA_LAST_STEP)는 건드리지 않는다
+        return await CreateSessionAsync(user, AuthMethods.FormMfa, null, userAgent, cancellationToken);
+    }
+
+    /// <summary>
+    /// 이메일 인증번호 허용 여부: 2단계 인증 대상이면서 이메일이 있고, 해당 구분의 설정을 켠 경우
+    /// (협력사 <c>AUTH.PARTNER_EMAIL_OTP</c>, 관리자 역할 <c>AUTH.ADMIN_EMAIL_OTP</c>).
+    /// </summary>
+    private bool AllowsEmailOtp(AuthUser user) =>
+        user.HasEmail == "Y"
+        && ((user.UserTypeCd == "PARTNER" && config.GetBool(ConfigKeys.AuthPartnerMfa) && config.GetBool(ConfigKeys.AuthPartnerEmailOtp))
+            || (user.AdminYn == "Y" && config.GetBool(ConfigKeys.AuthAdminMfa) && config.GetBool(ConfigKeys.AuthAdminEmailOtp)));
 
     /// <summary>2단계 인증 대상인지: 협력사(<c>AUTH.PARTNER_MFA</c>) 또는 관리자 역할(<c>AUTH.ADMIN_MFA</c>).</summary>
     private bool RequiresMfa(AuthUser user) =>
@@ -271,6 +363,9 @@ public sealed partial class AuthService(
 
     [LoggerMessage(Level = LogLevel.Error, Message = "회사 {CompanyCd}의 허용 IP 목록 형식이 잘못되어 로그인을 막았습니다")]
     private static partial void LogBadAllowList(ILogger logger, string companyCd, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "사용자 {UserId}에게 이메일 인증번호를 보내지 못했습니다: {Error}")]
+    private static partial void LogOtpMailFailed(ILogger logger, string userId, string error);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "사용자 {UserId}의 2단계 인증 비밀키를 풀 수 없습니다 (Data Protection 키 확인, 관리자가 초기화하면 다시 등록)")]
     private static partial void LogBadMfaSecret(ILogger logger, string userId, Exception ex);

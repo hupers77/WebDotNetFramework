@@ -10,6 +10,8 @@ USING (VALUES
   (N'AUTH.AD_AUTO_PROVISION', N'Y', N'BOOL', N'N', N'AUTH', N'AD 로그인 시 포털 계정 자동 생성', N'N'),
   (N'AUTH.PARTNER_MFA', N'Y', N'BOOL', N'N', N'AUTH', N'협력사 2단계 인증', N'N'),
   (N'AUTH.ADMIN_MFA', N'Y', N'BOOL', N'N', N'AUTH', N'관리자 역할 2단계 인증', N'N'),
+  (N'AUTH.PARTNER_EMAIL_OTP', N'Y', N'BOOL', N'N', N'AUTH', N'협력사 2단계 인증에 이메일 인증번호 허용', N'N'),
+  (N'AUTH.ADMIN_EMAIL_OTP', N'N', N'BOOL', N'N', N'AUTH', N'관리자 역할 2단계 인증에 이메일 인증번호 허용', N'N'),
   (N'AUTH.LOGIN_RATE_PER_MIN', N'10', N'INT', N'N', N'AUTH', N'IP당 분당 로그인 시도 한도', N'N'),
   (N'PWD.MIN_LEN_3TYPES', N'8', N'INT', N'N', N'PWD', N'3종류 조합 최소 길이', N'N'),
   (N'PWD.MIN_LEN_2TYPES', N'10', N'INT', N'N', N'PWD', N'2종류 조합 최소 길이', N'N'),

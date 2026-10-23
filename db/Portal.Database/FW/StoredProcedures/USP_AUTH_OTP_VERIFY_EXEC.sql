@@ -1,0 +1,47 @@
+-- 2단계 인증 이메일 인증번호 확인. 입력할 때마다 횟수를 늘리고(번호당 5회까지), 맞으면 번호를 비워 다시 쓰지 못하게 한다.
+-- 번호가 없거나 유효 시간이 지났거나 횟수를 넘겼으면 맞는 번호여도 'N'. 틀린 입력을 로그인 실패로 세는 일은 애플리케이션이 한다.
+-- 결과: MATCH_YN (Y/N)
+CREATE PROCEDURE [FW].[USP_AUTH_OTP_VERIFY_EXEC]
+  @P_LOGIN_USER_ID VARCHAR(30),
+  @P_CODE_HASH     BINARY(32),
+  @P_USER_ID       VARCHAR(30) = NULL,
+  @P_LANG_CD       VARCHAR(5),
+  @P_CLIENT_IP     VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+  SET XACT_ABORT ON;
+
+  DECLARE @MATCH CHAR(1) = 'N';
+
+  BEGIN TRY
+    BEGIN TRAN;
+
+    DECLARE @HASH BINARY(32), @TRY TINYINT;
+    SELECT @HASH = [CODE_HASH], @TRY = [TRY_CNT]
+      FROM [FW].[TB_AUTH_OTP] WITH (UPDLOCK, HOLDLOCK)
+     WHERE [USER_ID] = @P_LOGIN_USER_ID
+       AND [CODE_HASH] IS NOT NULL
+       AND [EXPIRE_DT] > SYSUTCDATETIME();
+
+    IF @HASH IS NOT NULL AND @TRY < 5
+    BEGIN
+      IF @HASH = @P_CODE_HASH
+      BEGIN
+        SET @MATCH = 'Y';
+        UPDATE [FW].[TB_AUTH_OTP] SET [CODE_HASH] = NULL, [EXPIRE_DT] = NULL WHERE [USER_ID] = @P_LOGIN_USER_ID;
+      END
+      ELSE
+        UPDATE [FW].[TB_AUTH_OTP] SET [TRY_CNT] = [TRY_CNT] + 1 WHERE [USER_ID] = @P_LOGIN_USER_ID;
+    END
+
+    COMMIT;
+
+    SELECT @MATCH AS [MATCH_YN];
+  END TRY
+  BEGIN CATCH
+    IF @@TRANCOUNT > 0
+      ROLLBACK;
+    THROW;
+  END CATCH
+END

@@ -73,12 +73,36 @@ public sealed class AccountController(
 
     /// <summary>2단계 인증 화면. 처음이면 인증 앱 등록 안내(QR·등록 키)를 함께 보여 준다.</summary>
     [HttpGet]
-    public IActionResult Mfa(string? returnUrl)
+    public async Task<IActionResult> Mfa(string? returnUrl)
     {
         var ticket = tickets.Unprotect(Request.Cookies[MfaCookie]);
         return ticket is null
             ? LocalRedirect(PortalSessionHandler.LoginPath + QueryString.Create("reason", AuthMessageKeys.MfaExpired))
-            : View(MfaModel(ticket, returnUrl, null));
+            : View(await MfaModelAsync(ticket, returnUrl, null));
+    }
+
+    /// <summary>
+    /// 이메일로 인증번호를 보내고 번호 입력 화면으로 돌아간다. 다시 보내기도 같다(60초 간격·1시간 5통 제한은 서비스가 본다).
+    /// 대기표가 만료되었으면 로그인 화면으로 돌아간다.
+    /// </summary>
+    [HttpPost, EnableRateLimiting(PortalWebExtensions.LoginRateLimitPolicy)]
+    public async Task<IActionResult> MfaEmail([FromForm] MfaForm form)
+    {
+        var ticket = tickets.Unprotect(Request.Cookies[MfaCookie]);
+        if (ticket is null)
+        {
+            return View(nameof(Login), new LoginViewModel(null, form.ReturnUrl, AuthMessageKeys.MfaExpired));
+        }
+
+        var sent = await auth.SendMfaEmailAsync(ticket, HttpContext.RequestAborted);
+        if (!sent.Sent && sent.MessageKey == AuthMessageKeys.MfaExpired)
+        {
+            Response.Cookies.Delete(MfaCookie, TicketCookieOptions());
+            return View(nameof(Login), new LoginViewModel(null, form.ReturnUrl, AuthMessageKeys.MfaExpired));
+        }
+
+        // 한도에 걸렸어도 이미 받은 번호가 있을 수 있으므로 번호 입력 화면은 그대로 보인다
+        return View(nameof(Mfa), await MfaModelAsync(ticket, form.ReturnUrl, sent.Sent ? null : sent.MessageKey, emailMode: true, notice: sent.Sent ? sent.MessageKey : null));
     }
 
     /// <summary>
@@ -95,11 +119,11 @@ public sealed class AccountController(
         }
 
         var result = await auth.VerifyMfaAsync(
-            new MfaVerifyRequest(ticket, form.Code, Request.Headers[HeaderNames.UserAgent].ToString()),
+            new MfaVerifyRequest(ticket, form.Code, Request.Headers[HeaderNames.UserAgent].ToString(), form.Email),
             HttpContext.RequestAborted);
-        if (!result.Succeeded && result.MessageKey == AuthMessageKeys.MfaInvalid)
+        if (!result.Succeeded && result.MessageKey is AuthMessageKeys.MfaInvalid or AuthMessageKeys.OtpInvalid)
         {
-            return View(nameof(Mfa), MfaModel(ticket, form.ReturnUrl, result.MessageKey));
+            return View(nameof(Mfa), await MfaModelAsync(ticket, form.ReturnUrl, result.MessageKey, emailMode: form.Email));
         }
 
         Response.Cookies.Delete(MfaCookie, TicketCookieOptions());
@@ -172,10 +196,12 @@ public sealed class AccountController(
             : LocalRedirect(SafeReturnUrl(returnUrl));
     }
 
-    private MfaViewModel MfaModel(MfaTicket ticket, string? returnUrl, string? messageKey)
+    private async Task<MfaViewModel> MfaModelAsync(MfaTicket ticket, string? returnUrl, string? messageKey, bool emailMode = false, string? notice = null)
     {
+        var emailAllowed = await auth.CanUseEmailOtpAsync(ticket.UserId, HttpContext.RequestAborted);
+        emailMode &= emailAllowed;
         MfaEnrollInfo? enroll = null;
-        if (ticket.PendingSecret is { } secret)
+        if (ticket.PendingSecret is { } secret && !emailMode)
         {
             var issuer = config.GetString(ConfigKeys.SiteName) is { Length: > 0 } name ? name : "Portal";
             var uri = Totp.KeyUri(issuer, ticket.UserId, secret);
@@ -183,7 +209,7 @@ public sealed class AccountController(
             enroll = new MfaEnrollInfo(key, uri, QrSvg.Render(uri, localizer["MFA.QR_LABEL"]));
         }
 
-        return new MfaViewModel(SafeReturnUrl(returnUrl), messageKey, enroll);
+        return new MfaViewModel(SafeReturnUrl(returnUrl), messageKey, enroll, emailAllowed, emailMode, notice);
     }
 
     private void WriteTicket(MfaTicket ticket)

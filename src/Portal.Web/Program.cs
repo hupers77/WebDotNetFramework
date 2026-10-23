@@ -7,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 // 서버 정보 노출 방지 (설계서 9장 '정보 노출')
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 builder.Services.AddPortalWeb(builder.Configuration);
+builder.Services.AddSingleton<Portal.Security.Mfa.IMfaCodeMailer, Portal.Web.Infrastructure.MfaCodeMailer>();
 
 // 화면 Service (Area별)
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.ICodeAdminService, Portal.Web.Areas.Sys.Services.CodeAdminService>();

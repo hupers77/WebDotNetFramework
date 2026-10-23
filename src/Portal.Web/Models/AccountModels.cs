@@ -84,8 +84,11 @@ public sealed record JoinViewModel(JoinForm Form, int MinLength3Types, int MinLe
 /// <summary>2단계 인증 코드 입력.</summary>
 public sealed class MfaForm
 {
-    /// <summary>인증 앱에 보이는 6자리 코드.</summary>
+    /// <summary>인증 앱 또는 이메일로 받은 6자리 코드.</summary>
     public string? Code { get; set; }
+
+    /// <summary>true면 이메일 인증번호로 확인한다.</summary>
+    public bool Email { get; set; }
 
     /// <summary>로그인 후 돌아갈 같은 사이트 경로.</summary>
     public string? ReturnUrl { get; set; }
@@ -95,7 +98,10 @@ public sealed class MfaForm
 /// <param name="ReturnUrl">로그인 후 돌아갈 경로.</param>
 /// <param name="MessageKey">오류 메시지 키.</param>
 /// <param name="Enroll">처음 등록이면 등록 키와 QR. 이미 등록했으면 null.</param>
-public sealed record MfaViewModel(string? ReturnUrl, string? MessageKey, MfaEnrollInfo? Enroll);
+/// <param name="EmailAllowed">이메일 인증번호를 쓸 수 있는지 (받기 버튼을 보인다).</param>
+/// <param name="EmailMode">이메일 인증번호를 입력하는 중인지 (인증 앱 등록 안내는 숨기고 번호 입력만 보인다).</param>
+/// <param name="Notice">오류가 아닌 안내 메시지 키 (인증번호를 보냈다 등).</param>
+public sealed record MfaViewModel(string? ReturnUrl, string? MessageKey, MfaEnrollInfo? Enroll, bool EmailAllowed = false, bool EmailMode = false, string? Notice = null);
 
 /// <summary>인증 앱 등록 정보.</summary>
 /// <param name="SecretKey">직접 입력할 등록 키 (Base32, 4자씩 띄움).</param>

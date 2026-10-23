@@ -3,7 +3,11 @@
     ViewData["Title"] = L["LBL.MFA_TITLE"];
 }
 <h1>@L["LBL.MFA_TITLE"]</h1>
-@if (Model.Enroll is { } enroll)
+@if (Model.EmailMode)
+{
+    <p class="hint">@L["MFA.EMAIL_GUIDE"]</p>
+}
+else if (Model.Enroll is { } enroll)
 {
     <section class="mfa-enroll" aria-labelledby="mfa-enroll-heading">
         <h2 id="mfa-enroll-heading">@L["LBL.MFA_ENROLL"]</h2>
@@ -18,14 +22,35 @@ else
 {
     <p class="hint">@L["MFA.CODE_GUIDE"]</p>
 }
+@if (Model.Notice is not null)
+{
+    <p class="hint" role="status">@L[Model.Notice]</p>
+}
 @if (Model.MessageKey is not null)
 {
     <p class="error" role="alert">@L[Model.MessageKey]</p>
 }
 <form method="post" asp-action="Mfa" class="form">
     <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
-    <label for="Code">@L["LBL.MFA_CODE"]</label>
+    <input type="hidden" name="Email" value="@(Model.EmailMode ? "true" : "false")" />
+    <label for="Code">@(Model.EmailMode ? L["LBL.MFA_EMAIL_CODE"] : L["LBL.MFA_CODE"])</label>
     <input id="Code" name="Code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required autofocus />
     <button type="submit" class="primary">@L["BTN.CONFIRM"]</button>
 </form>
+@if (Model.EmailAllowed)
+{
+    <form method="post" asp-action="MfaEmail" class="form">
+        <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+        @if (Model.EmailMode)
+        {
+            <button type="submit">@L["BTN.MFA_EMAIL_RESEND"]</button>
+            <a asp-action="Mfa" asp-route-returnUrl="@Model.ReturnUrl">@L["MFA.USE_APP"]</a>
+        }
+        else
+        {
+            <p class="hint">@L["MFA.EMAIL_OR"]</p>
+            <button type="submit">@L["BTN.MFA_EMAIL_SEND"]</button>
+        }
+    </form>
+}
 <p><a asp-action="Login">@L["BTN.BACK_TO_LOGIN"]</a></p>

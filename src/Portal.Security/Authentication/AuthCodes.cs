@@ -32,6 +32,21 @@ public static class AuthMessageKeys
 
     /// <summary>2단계 인증 대기 시간이 지나 비밀번호부터 다시 입력해야 함.</summary>
     public const string MfaExpired = "AUTH.MFA_EXPIRED";
+
+    /// <summary>이메일 인증번호가 틀렸거나 유효 시간·입력 횟수를 넘김.</summary>
+    public const string OtpInvalid = "AUTH.OTP_INVALID";
+
+    /// <summary>직전 발송 후 1분이 지나지 않아 다시 보낼 수 없음.</summary>
+    public const string OtpTooSoon = "AUTH.OTP_TOO_SOON";
+
+    /// <summary>1시간 발송 한도를 넘김.</summary>
+    public const string OtpLimit = "AUTH.OTP_LIMIT";
+
+    /// <summary>메일을 보내지 못함 (메일 설정·서버 확인).</summary>
+    public const string OtpMailFailed = "AUTH.OTP_MAIL_FAILED";
+
+    /// <summary>인증번호를 메일로 보냈다는 안내.</summary>
+    public const string OtpSent = "AUTH.OTP_SENT";
 }
 
 /// <summary>로그인 결과 코드 (공통코드 <c>LOGIN_RESULT</c>). 로그인 로그와 세션 종료 사유에 쓴다.</summary>
@@ -77,7 +92,7 @@ public static class AuthMethods
     /// <summary>포털 ID/PW.</summary>
     public const string Form = "FORM";
 
-    /// <summary>포털 ID/PW + 2단계 인증(TOTP).</summary>
+    /// <summary>포털 ID/PW + 2단계 인증(TOTP 또는 이메일 인증번호).</summary>
     public const string FormMfa = "FORM_MFA";
 }
 
@@ -94,10 +109,18 @@ internal static class AuthSp
     public const string AdminInit = "FW.USP_AUTH_ADMIN_INIT_EXEC";
     public const string GetPermission = "FW.USP_AUTH_GET_PERMISSION";
     public const string MfaSave = "FW.USP_AUTH_MFA_SAVE_EXEC";
+    public const string OtpIssue = "FW.USP_AUTH_OTP_ISSUE_EXEC";
+    public const string OtpVerify = "FW.USP_AUTH_OTP_VERIFY_EXEC";
 
     /// <summary>중복 로그인 거부 오류 번호 (USP_AUTH_LOGIN_SUCCESS_EXEC).</summary>
     public const int ConcurrentDeniedError = 50010;
 
     /// <summary>이미 쓴 TOTP 단계 (USP_AUTH_LOGIN_SUCCESS_EXEC).</summary>
     public const int MfaReplayError = 50011;
+
+    /// <summary>인증번호를 보낸 지 1분이 안 됨 (USP_AUTH_OTP_ISSUE_EXEC).</summary>
+    public const int OtpTooSoonError = 52006;
+
+    /// <summary>1시간 발송 한도 초과 (USP_AUTH_OTP_ISSUE_EXEC).</summary>
+    public const int OtpLimitError = 52007;
 }

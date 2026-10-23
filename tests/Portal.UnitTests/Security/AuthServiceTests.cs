@@ -17,9 +17,10 @@ public sealed class AuthServiceTests
     private readonly FakeCurrentUser _user = FakeCurrentUser.Anonymous();
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 21, 0, 0, 0, TimeSpan.Zero));
 
+    private readonly FakeMfaCodeMailer _mailer = new();
     private readonly DataProtectionMfaSecretProtector _mfa = new(new EphemeralDataProtectionProvider());
 
-    private AuthService Service => new(_sp, _hasher, _config, _user, _time, _mfa, Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance);
+    private AuthService Service => new(_sp, _hasher, _config, _user, _time, _mfa, _mailer, Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance);
 
     public AuthServiceTests()
     {
@@ -406,5 +407,175 @@ public sealed class AuthServiceTests
 
         Assert.Equal(AuthMessageKeys.MfaExpired, result.MessageKey);
         Assert.DoesNotContain(_sp.Calls, c => c.SpName == AuthSp.LoginSuccess);
+    }
+
+    private static readonly byte[] EmailEnc = [1, 2, 3];
+
+    private AuthUser OtpUser(string hasEmail = "Y", string type = "PARTNER", string adminYn = "N")
+    {
+        var user = MfaUser(type: type, adminYn: adminYn);
+        user.HasEmail = hasEmail;
+        _config.Set(ConfigKeys.AuthPartnerMfa, "Y").Set(ConfigKeys.AuthPartnerEmailOtp, "Y");
+        return user;
+    }
+
+    private static MfaTicket Ticket => new("hong", null);
+
+    [Theory]
+    [InlineData("PARTNER", "N", "Y", "Y", "N", "Y", true)]
+    [InlineData("PARTNER", "N", "Y", "N", "N", "Y", false)] // 협력사 이메일 인증번호를 끔
+    [InlineData("PARTNER", "N", "N", "Y", "N", "Y", false)] // 협력사 2단계 인증 자체를 끔
+    [InlineData("PARTNER", "N", "Y", "Y", "N", "N", false)] // 이메일 없음
+    [InlineData("EMP", "Y", "N", "N", "Y", "Y", false)] // 관리자 2단계 인증을 끔
+    public async Task 이메일인증번호허용_대상과설정과이메일이모두맞을때만(string type, string adminYn, string partnerMfa, string partnerOtp, string adminOtp, string hasEmail, bool expected)
+    {
+        _config.Set(ConfigKeys.AuthPartnerMfa, partnerMfa).Set(ConfigKeys.AuthPartnerEmailOtp, partnerOtp)
+               .Set(ConfigKeys.AuthAdminMfa, "N").Set(ConfigKeys.AuthAdminEmailOtp, adminOtp);
+        var user = MfaUser(type: type, adminYn: adminYn);
+        user.HasEmail = hasEmail;
+        Given(user);
+
+        Assert.Equal(expected, await Service.CanUseEmailOtpAsync("hong"));
+    }
+
+    [Fact]
+    public async Task 관리자는_관리자설정이_켜졌을때만_이메일인증번호()
+    {
+        var user = MfaUser(type: "EMP", adminYn: "Y");
+        user.HasEmail = "Y";
+        Given(user);
+        _config.Set(ConfigKeys.AuthAdminMfa, "Y").Set(ConfigKeys.AuthAdminEmailOtp, "N");
+        Assert.False(await Service.CanUseEmailOtpAsync("hong"));
+
+        _config.Set(ConfigKeys.AuthAdminEmailOtp, "Y");
+        Assert.True(await Service.CanUseEmailOtpAsync("hong"));
+    }
+
+    [Fact]
+    public async Task 이메일발송_6자리번호를메일로_DB에는해시만()
+    {
+        Given(OtpUser());
+        _sp.Returns(AuthSp.OtpIssue, new OtpIssued { EmailEnc = EmailEnc, LangCd = "en" });
+
+        var result = await Service.SendMfaEmailAsync(Ticket);
+
+        Assert.True(result.Sent);
+        Assert.Equal(AuthMessageKeys.OtpSent, result.MessageKey);
+        var (to, lang, code) = Assert.Single(_mailer.Sent);
+        Assert.Equal(EmailEnc, to);
+        Assert.Equal("en", lang);
+        Assert.True(EmailOtp.IsWellFormed(code));
+        var hash = (byte[])_sp.LastCall(AuthSp.OtpIssue).Parameters["P_CODE_HASH"]!;
+        Assert.Equal(EmailOtp.Hash("hong", code), hash);
+        Assert.DoesNotContain(code, string.Join(',', _sp.LastCall(AuthSp.OtpIssue).Parameters.Values.Select(v => v?.ToString())), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(AuthSp.OtpTooSoonError, AuthMessageKeys.OtpTooSoon)]
+    [InlineData(AuthSp.OtpLimitError, AuthMessageKeys.OtpLimit)]
+    public async Task 이메일발송_간격과시간당한도는_메일없이_사유(int sqlError, string expectedKey)
+    {
+        Given(OtpUser());
+        _sp.Throws(AuthSp.OtpIssue, new BizException(expectedKey, sqlError, new InvalidOperationException()));
+
+        var result = await Service.SendMfaEmailAsync(Ticket);
+
+        Assert.False(result.Sent);
+        Assert.Equal(expectedKey, result.MessageKey);
+        Assert.Empty(_mailer.Sent);
+    }
+
+    [Fact]
+    public async Task 이메일발송_메일서버오류는_실패사유로()
+    {
+        Given(OtpUser());
+        _sp.Returns(AuthSp.OtpIssue, new OtpIssued { EmailEnc = EmailEnc });
+        _mailer.Fail = true;
+
+        var result = await Service.SendMfaEmailAsync(Ticket);
+
+        Assert.False(result.Sent);
+        Assert.Equal(AuthMessageKeys.OtpMailFailed, result.MessageKey);
+    }
+
+    [Fact]
+    public async Task 이메일발송_허용되지않은계정은_DB도메일도건드리지않는다()
+    {
+        Given(OtpUser(hasEmail: "N"));
+
+        var result = await Service.SendMfaEmailAsync(Ticket);
+
+        Assert.False(result.Sent);
+        Assert.DoesNotContain(_sp.Calls, c => c.SpName == AuthSp.OtpIssue);
+        Assert.Empty(_mailer.Sent);
+    }
+
+    [Fact]
+    public async Task 이메일번호가맞으면_인증앱등록없이_세션()
+    {
+        Given(OtpUser());
+        _sp.Returns(AuthSp.OtpVerify, new OtpVerified { MatchYn = "Y" });
+
+        var result = await Service.VerifyMfaAsync(new MfaVerifyRequest(Ticket, "123456", "Edge", Email: true));
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(EmailOtp.Hash("hong", "123456"), (byte[])_sp.LastCall(AuthSp.OtpVerify).Parameters["P_CODE_HASH"]!);
+        Assert.DoesNotContain(_sp.Calls, c => c.SpName == AuthSp.MfaSave);
+        var login = _sp.LastCall(AuthSp.LoginSuccess);
+        Assert.Equal(AuthMethods.FormMfa, login.Parameters["P_AUTH_METHOD_CD"]);
+        Assert.Null(login.Parameters["P_MFA_STEP"]);
+    }
+
+    [Theory]
+    [InlineData("N", "123456")]
+    [InlineData("Y", "12345")] // 자릿수 오류는 DB를 거치지 않고 틀린 것으로
+    [InlineData("Y", "12345a")]
+    public async Task 이메일번호가틀리면_로그인실패로세고_세션없음(string match, string code)
+    {
+        Given(OtpUser());
+        _sp.Returns(AuthSp.OtpVerify, new OtpVerified { MatchYn = match });
+
+        var result = await Service.VerifyMfaAsync(new MfaVerifyRequest(Ticket, code, null, Email: true));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(AuthMessageKeys.OtpInvalid, result.MessageKey);
+        Assert.Equal(LoginResultCodes.FailMfa, LoggedResult());
+        Assert.DoesNotContain(_sp.Calls, c => c.SpName == AuthSp.LoginSuccess);
+    }
+
+    [Fact]
+    public async Task 이메일번호가틀려서_잠기면_잠김메시지()
+    {
+        Given(OtpUser());
+        _sp.Returns(AuthSp.OtpVerify, new OtpVerified { MatchYn = "N" }).Returns(AuthSp.LoginFail, new LoginFailResult { LockYn = "Y" });
+
+        var result = await Service.VerifyMfaAsync(new MfaVerifyRequest(Ticket, "000000", null, Email: true));
+
+        Assert.Equal(AuthMessageKeys.Locked, result.MessageKey);
+    }
+
+    [Fact]
+    public async Task 이메일번호가허용되지않으면_번호가맞아도_받지않는다()
+    {
+        Given(OtpUser());
+        _config.Set(ConfigKeys.AuthPartnerEmailOtp, "N");
+        _sp.Returns(AuthSp.OtpVerify, new OtpVerified { MatchYn = "Y" });
+
+        var result = await Service.VerifyMfaAsync(new MfaVerifyRequest(Ticket, "123456", null, Email: true));
+
+        Assert.False(result.Succeeded);
+        Assert.DoesNotContain(_sp.Calls, c => c.SpName == AuthSp.OtpVerify);
+    }
+
+    [Fact]
+    public void 번호는_6자리숫자_해시는사용자마다다르다()
+    {
+        for (var i = 0; i < 50; i++)
+        {
+            Assert.True(EmailOtp.IsWellFormed(EmailOtp.NewCode()));
+        }
+
+        Assert.NotEqual(EmailOtp.Hash("a", "123456"), EmailOtp.Hash("b", "123456"));
+        Assert.Equal(32, EmailOtp.Hash("a", "123456").Length);
     }
 }
