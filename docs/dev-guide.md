@@ -210,7 +210,7 @@ Microsoft .NET 기본 명명 규칙을 따르고, 여기서 정한 규칙은 `.e
 - 메뉴에 보이는지는 프로그램의 READ 권한과 메뉴의 공개 범위(전체·임직원·협력사)로 정해집니다. 화면을 메뉴에 올리려면 `TB_PROGRAM`과 `TB_MENU`·`TB_MENU_LANG` 초기 데이터를 함께 추가합니다.
 - 문구는 `@L["키"]`, 버튼은 `<fw-button func="UPDATE" text-key="BTN.SAVE" id="save" />`를 씁니다. `fw-button`은 현재 Controller의 `[Program]`에 그 기능 권한이 있을 때만 그려지므로, JS는 버튼이 없으면 그 기능도 쓰지 않으면 됩니다(서버는 Action의 `[Func]`로 다시 막습니다). 코드 선택 `<fw-select code-group="..." />`는 코드 캐시와 함께 추가할 예정입니다.
 - 화면 제목은 메뉴명을 씁니다: `ViewData["Title"] = Menus.ProgramTitle(프로그램 ID, CurrentUser.LangCd)`, 본문 `<h1>`도 같은 값입니다. 화면 JS는 `@section Scripts { <script type="module" src="~/js/..."></script> }`로 넣습니다.
-- `Html.Raw`는 금지입니다. 게시판 본문처럼 HTML이 필요하면 서버에서 필터를 거친 `SafeHtml` 형식만 출력합니다.
+- `Html.Raw`는 금지입니다. 게시판 본문처럼 HTML이 필요하면 서버에서 필터를 거친 `SafeHtml` 형식만 출력합니다. 사용자가 입력한 HTML은 저장하기 전에 반드시 `Portal.Infrastructure.Html.HtmlSanitizer.Sanitize`를 거칩니다(게시판 `BoardService`가 예시). 허용 태그는 문단·목록·표·링크 정도이고, 스크립트·스타일·이미지·`on…` 속성은 지워집니다.
 
 **JavaScript**
 
