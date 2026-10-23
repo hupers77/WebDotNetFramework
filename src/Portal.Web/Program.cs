@@ -37,6 +37,7 @@ builder.Services.AddScoped<Portal.Web.Areas.Dash.Services.IDashService, Portal.W
 builder.Services.AddScoped<Portal.Web.Areas.Dash.Services.IWidgetAdminService, Portal.Web.Areas.Dash.Services.WidgetAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IHolidayAdminService, Portal.Web.Areas.Sys.Services.HolidayAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IPopupAdminService, Portal.Web.Areas.Sys.Services.PopupAdminService>();
+builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IApiClientAdminService, Portal.Web.Areas.Sys.Services.ApiClientAdminService>();
 
 var app = builder.Build();
 

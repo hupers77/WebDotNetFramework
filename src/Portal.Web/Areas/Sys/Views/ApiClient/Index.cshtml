@@ -1,0 +1,41 @@
+@model ApiClientIndexModel
+@{
+    var title = Menus.ProgramTitle(ApiClientController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/api-client.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="apiclient-screen"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")"
+     data-url-secret="@Url.Action("Secret")">
+    <div class="toolbar">
+        <p id="apiclient-total" class="hint toolbar-spacer" aria-live="polite"></p>
+        <fw-button func="CREATE" text-key="BTN.ADD_ROW" id="apiclient-add" />
+        <fw-button func="DELETE" text-key="BTN.DEL_ROW" id="apiclient-delete" />
+        <fw-button func="UPDATE" text-key="BTN.SAVE" id="apiclient-save" class="primary" />
+    </div>
+    <p class="hint">@L["SYS.APICLIENT.HINT"]</p>
+    <div id="apiclient-grid" class="grid-wrap"></div>
+    <section aria-labelledby="apiclient-codes-heading">
+        <h2 id="apiclient-codes-heading">@L["SYS.APICLIENT.CODES"]</h2>
+        @if (Model.Codes.Count == 0)
+        {
+            <p class="hint">@L["SYS.APICLIENT.NO_CODES"]</p>
+        }
+        else
+        {
+            <table class="data-table">
+                <thead><tr><th scope="col">@L["SYS.APICLIENT.API_CODE"]</th><th scope="col">@L["SYS.APICLIENT.METHOD"]</th><th scope="col">@L["SYS.APICLIENT.PATH"]</th><th scope="col">@L["SYS.APICLIENT.SUMMARY"]</th></tr></thead>
+                <tbody>
+                @foreach (var code in Model.Codes)
+                {
+                    <tr><td>@code.Code</td><td>@code.Method</td><td>@code.Path</td><td>@code.Summary</td></tr>
+                }
+                </tbody>
+            </table>
+        }
+    </section>
+</div>

@@ -370,6 +370,33 @@ public sealed class BoardScreenTests : IClassFixture<PortalWebFactory>
     }
 
     [Fact]
+    public async Task API클라이언트관리_버튼은_권한별로_그려지고_등록된_API코드를_보여주며_비밀값은_UPDATE권한만_발급()
+    {
+        _web.Sp.Returns(ApiClientAdminService.ListSp, new PageResult<ApiClientDto> { Items = [], TotalCount = 0, PageNo = 1, PageSize = 20 });
+        _web.Sp.Returns(ApiClientAdminService.SecretSp, new SaveResult(1, null));
+        var all = await (await GetAsync(_web.SignIn("ac.a", [Home, "SYS_API_CLIENT_MGT:READ", "SYS_API_CLIENT_MGT:CREATE", "SYS_API_CLIENT_MGT:UPDATE", "SYS_API_CLIENT_MGT:DELETE"]), "/Sys/ApiClient?_layout=tab")).Content.ReadAsStringAsync(Ct);
+        var reader = await (await GetAsync(_web.SignIn("ac.r", [Home, "SYS_API_CLIENT_MGT:READ"]), "/Sys/ApiClient?_layout=tab")).Content.ReadAsStringAsync(Ct);
+        var secretBody = new { clientId = "erp-sync", rowVer = new byte[] { 0, 0, 0, 0, 0, 0, 0, 5 } };
+
+        Assert.Contains("id=\"apiclient-save\"", all, StringComparison.Ordinal);
+        Assert.Contains("id=\"apiclient-add\"", all, StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"apiclient-save\"", reader, StringComparison.Ordinal);
+        Assert.Contains("PING", reader, StringComparison.Ordinal);
+        Assert.DoesNotContain("OPENAPI", reader, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(_web.SignIn("ac.s", [Home, "SYS_API_CLIENT_MGT:READ"]), "/Sys/ApiClient/Secret", secretBody)).StatusCode);
+
+        var issued = await PostAsync(_web.SignIn("ac.u", [Home, "SYS_API_CLIENT_MGT:READ", "SYS_API_CLIENT_MGT:UPDATE"]), "/Sys/ApiClient/Secret", secretBody);
+        var json = await JsonAsync(issued);
+        Assert.Equal(HttpStatusCode.OK, issued.StatusCode);
+        Assert.Contains("no-store", issued.Headers.CacheControl?.ToString(), StringComparison.Ordinal);
+        Assert.Equal(43, json.GetProperty("data").GetProperty("clientSecret").GetString()!.Length);
+        // 원문 비밀값은 SP로 가지 않고 접근 기록에도 남지 않는다
+        var secret = json.GetProperty("data").GetProperty("clientSecret").GetString()!;
+        Assert.DoesNotContain(_web.Sp.Calls.SelectMany(c => c.Parameters.Values), v => v is string text && text.Contains(secret, StringComparison.Ordinal));
+        Assert.DoesNotContain(_web.DrainAccessLog(), e => e.RequestPath.Contains(secret, StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task 공지팝업_관리화면은_기능별_권한이_있을때만_버튼이_그려지고_홈_팝업은_홈권한만_있으면_받는다()
     {
         _web.Sp.Returns(PopupAdminService.ListSp, new PageResult<PopupDto> { Items = [], TotalCount = 0, PageNo = 1, PageSize = 20 });
