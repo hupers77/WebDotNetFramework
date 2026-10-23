@@ -324,3 +324,10 @@ button:disabled { opacity: .55; cursor: not-allowed; }
     .dash-span-11 { grid-column: span 11; }
     .dash-span-12 { grid-column: span 12; }
 }
+
+/* 공지 팝업 (홈 화면) */
+.popup-notice { max-width: min(32rem, calc(100vw - 2rem)); border: 1px solid var(--fw-border); border-radius: 6px; padding: 1rem 1.2rem; background: var(--fw-surface); color: var(--fw-text); }
+.popup-notice h2 { margin-top: 0; font-size: 1.1rem; }
+.popup-notice-body { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 50vh; overflow: auto; }
+.popup-notice-footer { display: flex; align-items: center; gap: .5rem; margin-top: 1rem; }
+.popup-notice-footer button { margin-left: auto; }

@@ -1,0 +1,65 @@
+@model PopupIndexModel
+@{
+    var title = Menus.ProgramTitle(PopupController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/popup.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="popup-screen" class="md-layout"
+     data-langs="@Model.LanguagesJson"
+     data-url-list="@Url.Action("List")"
+     data-url-create="@Url.Action("Create")"
+     data-url-save="@Url.Action("Save")"
+     data-url-delete="@Url.Action("Delete")">
+    <section class="md-master" aria-labelledby="popup-list-heading">
+        <h2 id="popup-list-heading">@L["SYS.POPUP.LIST"]</h2>
+        <form id="popup-search" class="search-bar" role="search">
+            <label for="popup-use-filter">@L["LBL.USE_YN"]</label>
+            <select id="popup-use-filter">
+                <option value="">@L["LBL.ALL"]</option>
+                <option value="Y">@L["LBL.IN_USE"]</option>
+                <option value="N">@L["LBL.NOT_IN_USE"]</option>
+            </select>
+            <label for="popup-keyword">@L["LBL.KEYWORD"]</label>
+            <input id="popup-keyword" type="search" maxlength="100" autocomplete="off" />
+            <button type="submit">@L["BTN.SEARCH"]</button>
+        </form>
+        <div class="toolbar">
+            <p id="popup-total" class="hint toolbar-spacer" aria-live="polite"></p>
+            <fw-button func="CREATE" text-key="BTN.NEW" id="popup-new" />
+        </div>
+        <ul id="popup-list" class="pick-list" role="listbox" aria-labelledby="popup-list-heading"></ul>
+        <div id="popup-pager" class="pager" hidden>
+            <button type="button" id="popup-prev">@L["BTN.PREV"]</button>
+            <span id="popup-page" aria-live="polite"></span>
+            <button type="button" id="popup-next">@L["BTN.NEXT"]</button>
+        </div>
+    </section>
+    <section class="md-detail" aria-labelledby="popup-heading">
+        <h2 id="popup-heading">@L["SYS.POPUP.DETAIL"]</h2>
+        <p id="popup-hint" class="hint">@L["SYS.POPUP.SELECT"]</p>
+        <div id="popup-detail" hidden>
+            <form id="popup-form" class="form" novalidate>
+                <label for="popup-scope">@L["SYS.POPUP.SCOPE"]</label>
+                <select id="popup-scope">
+                    <option value="ALL">@L["SYS.POPUP.SCOPE_ALL"]</option>
+                    <option value="EMP">@L["SYS.POPUP.SCOPE_EMP"]</option>
+                    <option value="PARTNER">@L["SYS.POPUP.SCOPE_PARTNER"]</option>
+                </select>
+                <label for="popup-start">@L["SYS.POPUP.START"]</label>
+                <input id="popup-start" type="date" required />
+                <label for="popup-end">@L["SYS.POPUP.END"]</label>
+                <input id="popup-end" type="date" required />
+                <label><input id="popup-use" type="checkbox" /> @L["LBL.USE_YN"]</label>
+                <div id="popup-langs"></div>
+            </form>
+            <div class="toolbar">
+                <fw-button func="DELETE" text-key="BTN.DELETE" id="popup-delete" />
+                <fw-button func="CREATE" text-key="BTN.SAVE" id="popup-create" class="primary" />
+                <fw-button func="UPDATE" text-key="BTN.SAVE" id="popup-save" class="primary" />
+            </div>
+        </div>
+    </section>
+</div>
