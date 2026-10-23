@@ -1,0 +1,66 @@
+@* 개인정보 접속기록 (표준 화면 1 조회): 검색 조건, 목록, 쪽 넘김, 엑셀. *@
+@model PiiLogIndexModel
+@{
+    var title = Menus.ProgramTitle(PiiController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/log/pii.js" asp-append-version="true"></script>
+}
+<h1 id="pii-heading">@title</h1>
+<div id="pii-screen"
+     data-url-list="@Url.Action("List")"
+     data-url-export="@Url.Action("Export")">
+    <form id="log-search" class="search-bar" role="search">
+        <label for="pii-from">@L["LBL.START_DT"]</label>
+        <input id="pii-from" type="date" required />
+        <label for="pii-to">@L["LBL.END_DT"]</label>
+        <input id="pii-to" type="date" required />
+        <label for="pii-user">@L["LBL.USER_ID"]</label>
+        <input id="pii-user" maxlength="30" autocomplete="off" spellcheck="false" />
+        <label for="pii-program">@L["LBL.PROGRAM"]</label>
+        <select id="pii-program">
+            <option value="">@L["LBL.ALL"]</option>
+            @foreach (var (code, name) in Model.Programs)
+            {
+                <option value="@code">@name</option>
+            }
+        </select>
+        <label for="pii-action">@L["LBL.ACTION"]</label>
+        <select id="pii-action">
+            <option value="">@L["LBL.ALL"]</option>
+            <option value="VIEW">@L["LOG.PII.ACTION_VIEW"]</option>
+            <option value="DOWNLOAD">@L["LOG.PII.ACTION_DOWNLOAD"]</option>
+            <option value="UNMASK">@L["LOG.PII.ACTION_UNMASK"]</option>
+        </select>
+        <label for="pii-ip">@L["LBL.CLIENT_IP"]</label>
+        <input id="pii-ip" maxlength="45" autocomplete="off" spellcheck="false" />
+        <button type="submit">@L["BTN.SEARCH"]</button>
+    </form>
+    <p class="hint">@L["LOG.PII.HINT"]</p>
+    <div class="toolbar">
+        <p id="pii-total" class="hint toolbar-spacer" aria-live="polite"></p>
+        <fw-button func="EXPORT" text-key="BTN.EXCEL" id="pii-export" />
+    </div>
+    <div class="grid-wrap">
+        <table class="fw-grid pii-grid" aria-labelledby="pii-heading">
+            <thead>
+                <tr>
+                    <th scope="col">@L["LBL.LOG_DT"]</th>
+                    <th scope="col">@L["LBL.USER_ID"]</th>
+                    <th scope="col">@L["LBL.PROGRAM"]</th>
+                    <th scope="col">@L["LBL.ACTION"]</th>
+                    <th scope="col">@L["LBL.TARGET_DESC"]</th>
+                    <th scope="col">@L["LBL.REASON"]</th>
+                    <th scope="col">@L["LBL.CLIENT_IP"]</th>
+                </tr>
+            </thead>
+            <tbody id="pii-body"></tbody>
+        </table>
+    </div>
+    <div id="pii-pager" class="pager" hidden>
+        <button type="button" id="pii-prev">@L["BTN.PREV"]</button>
+        <span id="pii-page" aria-live="polite"></span>
+        <button type="button" id="pii-next">@L["BTN.NEXT"]</button>
+    </div>
+</div>

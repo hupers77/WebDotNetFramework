@@ -255,3 +255,6 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .audit-diff td { white-space: pre-wrap; overflow-wrap: anywhere; vertical-align: top; width: 45%; }
 .audit-diff tbody th { font-weight: normal; vertical-align: top; }
 .audit-diff tr.audit-changed td, .audit-diff tr.audit-changed th { background: color-mix(in srgb, var(--fw-notice) 15%, transparent); font-weight: 600; }
+
+/* 개인정보 접속기록: 대상(조건 JSON)은 줄을 바꿔 보여 준다 */
+.pii-grid td.pii-target { white-space: normal; overflow-wrap: anywhere; min-width: 16rem; font-size: .8rem; }
