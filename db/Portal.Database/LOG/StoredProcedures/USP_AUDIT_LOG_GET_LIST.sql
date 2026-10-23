@@ -1,0 +1,54 @@
+-- 데이터 변경 기록 조회 (목록 SP 표준 템플릿). 프로그램: LOG_AUDIT_INQ
+-- 기간은 UTC [@P_FROM_DT, @P_TO_DT) 이고 31일까지. 변경 내용에는 여러 회사의 데이터가 섞이므로 데이터 범위가 전체인 사용자만 본다(아니면 0건).
+-- 대상 키는 앞부분 일치, 테이블·작업·변경자·IP는 정확히 일치. 변경 전후 JSON은 @P_JSON_YN = 'Y'(엑셀 내보내기)일 때만 돌려준다.
+-- 결과셋 1: 목록(최근 순), 결과셋 2: 전체 건수
+CREATE PROCEDURE [LOG].[USP_AUDIT_LOG_GET_LIST]
+  @P_FROM_DT         DATETIME2(3),
+  @P_TO_DT           DATETIME2(3),
+  @P_TABLE_NM        VARCHAR(100)  = NULL,
+  @P_ACTION_CD       CHAR(1)       = NULL,
+  @P_ROW_KEY         NVARCHAR(200) = NULL,
+  @P_TARGET_USER_ID  VARCHAR(30)   = NULL,
+  @P_IP              VARCHAR(45)   = NULL,
+  @P_JSON_YN         CHAR(1)       = 'N',
+  @P_PAGE_NO         INT           = 1,
+  @P_PAGE_SIZE       INT           = 50,
+  @P_USER_ID         VARCHAR(30),
+  @P_LANG_CD         VARCHAR(5),
+  @P_CLIENT_IP       VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  IF @P_FROM_DT IS NULL OR @P_TO_DT IS NULL OR @P_TO_DT <= @P_FROM_DT OR DATEDIFF(HOUR, @P_FROM_DT, @P_TO_DT) > 31 * 24
+    THROW 50003, 'MSG.LOG_PERIOD', 1;
+
+  DECLARE @ALL CHAR(1) = (SELECT [ALL_YN] FROM [FW].[UFN_DATA_SCOPE_ALL](@P_USER_ID, 'LOG_AUDIT_INQ'));
+  SET @P_PAGE_NO = CASE WHEN @P_PAGE_NO < 1 THEN 1 ELSE @P_PAGE_NO END;
+  SET @P_PAGE_SIZE = CASE WHEN @P_PAGE_SIZE < 1 THEN 1 WHEN @P_PAGE_SIZE > 1000 THEN 1000 ELSE @P_PAGE_SIZE END;
+
+  SELECT A.[LOG_ID], A.[LOG_DT], A.[USER_ID], A.[TABLE_NM], A.[ACTION_CD], A.[ROW_KEY], A.[CLIENT_IP],
+         IIF(@P_JSON_YN = 'Y', A.[BEFORE_JSON], NULL) AS [BEFORE_JSON], IIF(@P_JSON_YN = 'Y', A.[AFTER_JSON], NULL) AS [AFTER_JSON]
+    FROM [LOG].[TB_AUDIT_LOG] A
+   WHERE @ALL = 'Y'
+     AND A.[LOG_DT] >= @P_FROM_DT AND A.[LOG_DT] < @P_TO_DT
+     AND (@P_TABLE_NM IS NULL OR A.[TABLE_NM] = @P_TABLE_NM)
+     AND (@P_ACTION_CD IS NULL OR A.[ACTION_CD] = @P_ACTION_CD)
+     AND (@P_ROW_KEY IS NULL OR A.[ROW_KEY] LIKE REPLACE(REPLACE(REPLACE(@P_ROW_KEY, '[', '[[]'), '%', '[%]'), '_', '[_]') + '%')
+     AND (@P_TARGET_USER_ID IS NULL OR A.[USER_ID] = @P_TARGET_USER_ID)
+     AND (@P_IP IS NULL OR A.[CLIENT_IP] = @P_IP)
+   ORDER BY A.[LOG_DT] DESC, A.[LOG_ID] DESC
+  OFFSET (@P_PAGE_NO - 1) * @P_PAGE_SIZE ROWS FETCH NEXT @P_PAGE_SIZE ROWS ONLY
+  OPTION (RECOMPILE);
+
+  SELECT COUNT(*) AS [TOTAL_CNT]
+    FROM [LOG].[TB_AUDIT_LOG] A
+   WHERE @ALL = 'Y'
+     AND A.[LOG_DT] >= @P_FROM_DT AND A.[LOG_DT] < @P_TO_DT
+     AND (@P_TABLE_NM IS NULL OR A.[TABLE_NM] = @P_TABLE_NM)
+     AND (@P_ACTION_CD IS NULL OR A.[ACTION_CD] = @P_ACTION_CD)
+     AND (@P_ROW_KEY IS NULL OR A.[ROW_KEY] LIKE REPLACE(REPLACE(REPLACE(@P_ROW_KEY, '[', '[[]'), '%', '[%]'), '_', '[_]') + '%')
+     AND (@P_TARGET_USER_ID IS NULL OR A.[USER_ID] = @P_TARGET_USER_ID)
+     AND (@P_IP IS NULL OR A.[CLIENT_IP] = @P_IP)
+  OPTION (RECOMPILE);
+END

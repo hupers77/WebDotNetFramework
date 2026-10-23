@@ -1,0 +1,90 @@
+@* 데이터 변경 기록 (표준 화면 1 조회 + 상세): 검색 조건, 목록, 쪽 넘김, 엑셀. 한 건을 고르면 변경 전후 값을 나란히 보여 준다. *@
+@model AuditLogIndexModel
+@{
+    var title = Menus.ProgramTitle(AuditController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/log/audit.js" asp-append-version="true"></script>
+}
+<h1 id="audit-heading">@title</h1>
+<div id="audit-screen"
+     data-url-list="@Url.Action("List")"
+     data-url-detail="@Url.Action("Detail")"
+     data-url-export="@Url.Action("Export")">
+    <form id="log-search" class="search-bar" role="search">
+        <label for="audit-from">@L["LBL.START_DT"]</label>
+        <input id="audit-from" type="date" required />
+        <label for="audit-to">@L["LBL.END_DT"]</label>
+        <input id="audit-to" type="date" required />
+        <label for="audit-table">@L["LBL.TABLE"]</label>
+        <select id="audit-table">
+            <option value="">@L["LBL.ALL"]</option>
+            @foreach (var table in Model.Tables)
+            {
+                <option value="@table">@table</option>
+            }
+        </select>
+        <label for="audit-action">@L["LBL.ACTION"]</label>
+        <select id="audit-action">
+            <option value="">@L["LBL.ALL"]</option>
+            <option value="I">@L["LOG.AUDIT.ACTION_I"]</option>
+            <option value="U">@L["LOG.AUDIT.ACTION_U"]</option>
+            <option value="D">@L["LOG.AUDIT.ACTION_D"]</option>
+        </select>
+        <label for="audit-key">@L["LBL.ROW_KEY"]</label>
+        <input id="audit-key" maxlength="200" autocomplete="off" spellcheck="false" />
+        <label for="audit-user">@L["LBL.CHG_USER"]</label>
+        <input id="audit-user" maxlength="30" autocomplete="off" spellcheck="false" />
+        <label for="audit-ip">@L["LBL.CLIENT_IP"]</label>
+        <input id="audit-ip" maxlength="45" autocomplete="off" spellcheck="false" />
+        <button type="submit">@L["BTN.SEARCH"]</button>
+    </form>
+    <p class="hint">@L["LOG.AUDIT.HINT"]</p>
+    <div class="toolbar">
+        <p id="audit-total" class="hint toolbar-spacer" aria-live="polite"></p>
+        <fw-button func="EXPORT" text-key="BTN.EXCEL" id="audit-export" />
+    </div>
+    <div class="grid-wrap">
+        <table class="fw-grid audit-grid" aria-labelledby="audit-heading">
+            <thead>
+                <tr>
+                    <th scope="col">@L["LBL.LOG_DT"]</th>
+                    <th scope="col">@L["LBL.CHG_USER"]</th>
+                    <th scope="col">@L["LBL.TABLE"]</th>
+                    <th scope="col">@L["LBL.ACTION"]</th>
+                    <th scope="col">@L["LBL.ROW_KEY"]</th>
+                    <th scope="col">@L["LBL.CLIENT_IP"]</th>
+                </tr>
+            </thead>
+            <tbody id="audit-body"></tbody>
+        </table>
+    </div>
+    <div id="audit-pager" class="pager" hidden>
+        <button type="button" id="audit-prev">@L["BTN.PREV"]</button>
+        <span id="audit-page" aria-live="polite"></span>
+        <button type="button" id="audit-next">@L["BTN.NEXT"]</button>
+    </div>
+    <section id="audit-detail" aria-labelledby="audit-detail-heading" hidden>
+        <h2 id="audit-detail-heading" tabindex="-1"></h2>
+        <dl class="detail-list">
+            <dt>@L["LBL.LOG_DT"]</dt><dd id="audit-d-dt"></dd>
+            <dt>@L["LBL.CHG_USER"]</dt><dd id="audit-d-user"></dd>
+            <dt>@L["LBL.ROW_KEY"]</dt><dd id="audit-d-key"></dd>
+            <dt>@L["LBL.CLIENT_IP"]</dt><dd id="audit-d-ip"></dd>
+        </dl>
+        <div class="grid-wrap">
+            <table class="fw-grid audit-diff" aria-labelledby="audit-detail-heading">
+                <thead>
+                    <tr>
+                        <th scope="col">@L["LBL.FIELD"]</th>
+                        <th scope="col">@L["LBL.OLD_VAL"]</th>
+                        <th scope="col">@L["LBL.NEW_VAL"]</th>
+                    </tr>
+                </thead>
+                <tbody id="audit-diff-body"></tbody>
+            </table>
+        </div>
+        <p class="hint">@L["LOG.AUDIT.DIFF_HINT"]</p>
+    </section>
+</div>

@@ -246,3 +246,12 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 #log-search input { flex: 0 1 10rem; }
 #log-search > span:not([hidden]) { display: inline-flex; gap: .4rem; align-items: center; }
 .fw-grid tr.log-fail td { color: var(--fw-error); }
+
+/* 데이터 변경 기록: 일시를 눌러 상세, 고른 행·바뀐 항목 강조 */
+.link-button { background: none; border: 0; padding: 0; color: var(--fw-primary); text-decoration: underline; cursor: pointer; font: inherit; }
+.fw-grid tr[aria-selected="true"] td { background: var(--fw-current); }
+.fw-grid tr.audit-D td { color: var(--fw-muted); }
+#audit-detail { margin-top: 1rem; }
+.audit-diff td { white-space: pre-wrap; overflow-wrap: anywhere; vertical-align: top; width: 45%; }
+.audit-diff tbody th { font-weight: normal; vertical-align: top; }
+.audit-diff tr.audit-changed td, .audit-diff tr.audit-changed th { background: color-mix(in srgb, var(--fw-notice) 15%, transparent); font-weight: 600; }
