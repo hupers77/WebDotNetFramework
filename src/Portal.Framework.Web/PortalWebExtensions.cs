@@ -13,6 +13,7 @@ using Portal.Core.Config;
 using Portal.Core.Context;
 using Portal.Core.Keys;
 using Portal.Data;
+using Portal.Framework.Web.Api;
 using Portal.Framework.Web.Authentication;
 using Portal.Framework.Web.Authorization;
 using Portal.Framework.Web.Context;
@@ -100,6 +101,7 @@ public static class PortalWebExtensions
             };
         });
 
+        services.AddPortalApi(configuration);
         services.AddScoped<IPiiAccessLog, PiiAccessLog>();
         services.AddSingleton<AccessLogBuffer>();
         services.AddHostedService<AccessLogWriter>();
@@ -125,6 +127,8 @@ public static class PortalWebExtensions
         app.UseMiddleware<AccessLogMiddleware>();
         app.UseAuthentication();
         app.UseRateLimiter();
+        app.UsePortalApiGateway();
+        app.MapPortalApi();
         // 시스템·업무 화면은 Area(/Sys/Code)로, 공통 화면은 기본 경로(/My/Password)로 찾는다
         app.MapControllerRoute("area", "{area:exists}/{controller=Home}/{action=Index}/{id?}");
         app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
