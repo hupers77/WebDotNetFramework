@@ -39,6 +39,9 @@ public static class ConfigKeys
     /// <summary>비밀번호 변경 주기(일).</summary>
     public const string PwdExpireDays = "PWD.EXPIRE_DAYS";
 
+    /// <summary>비밀번호 만료 사전 안내 (만료 며칠 전, 0 = 안내 안 함).</summary>
+    public const string PwdExpireNoticeDays = "PWD.EXPIRE_NOTICE_DAYS";
+
     /// <summary>실패 잠금 횟수.</summary>
     public const string PwdLockCount = "PWD.LOCK_COUNT";
 
@@ -56,6 +59,9 @@ public static class ConfigKeys
 
     /// <summary>미접속 휴면 전환(일).</summary>
     public const string UserDormantDays = "USER.DORMANT_DAYS";
+
+    /// <summary>휴면 전환 사전 안내 (전환 며칠 전).</summary>
+    public const string UserDormantNoticeDays = "USER.DORMANT_NOTICE_DAYS";
 
     /// <summary>파일 1개 최대 크기(MB).</summary>
     public const string FileMaxSizeMb = "FILE.MAX_SIZE_MB";
@@ -113,6 +119,9 @@ public static class ConfigKeys
 
     /// <summary>처리한 가입 신청의 이메일 보관 기간(일). 데이터 정리 작업(SP)이 읽는다.</summary>
     public const string PartnerJoinKeepDays = "PARTNER.JOIN_KEEP_DAYS";
+
+    /// <summary>협력사 계정 만료 사전 안내 (기한 며칠 전, 0 = 안내 안 함).</summary>
+    public const string PartnerExpireNoticeDays = "PARTNER.EXPIRE_NOTICE_DAYS";
 
     /// <summary>배치 작업 실행 이력 보관 기간(일). 데이터 정리 작업(SP)이 읽는다.</summary>
     public const string JobHistKeepDays = "JOB.HIST_KEEP_DAYS";

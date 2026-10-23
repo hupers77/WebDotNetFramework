@@ -29,9 +29,9 @@ public sealed class UserDormantJobTests(DbFixture fixture)
         await db.ExecAsync("""
             UPDATE FW.TB_USER
                SET REG_DT = DATEADD(DAY, -730, SYSUTCDATETIME()), EMAIL_ENC = 0x01,
-                   LAST_LOGIN_DT = DATEADD(DAY, -@L, SYSUTCDATETIME()),
-                   DORMANT_NOTICE_DT = DATEADD(DAY, -@N, SYSUTCDATETIME()),
-                   STAT_CHG_DT = DATEADD(DAY, -@S, SYSUTCDATETIME())
+                   LAST_LOGIN_DT = DATEADD(DAY, -CAST(@L AS INT), SYSUTCDATETIME()),
+                   DORMANT_NOTICE_DT = DATEADD(DAY, -CAST(@N AS INT), SYSUTCDATETIME()),
+                   STAT_CHG_DT = DATEADD(DAY, -CAST(@S AS INT), SYSUTCDATETIME())
              WHERE USER_ID = @U
             """, ("@U", userId), ("@L", loginDaysAgo), ("@N", noticeDaysAgo), ("@S", statChgDaysAgo));
     }

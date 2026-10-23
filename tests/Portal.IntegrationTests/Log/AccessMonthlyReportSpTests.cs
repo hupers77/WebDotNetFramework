@@ -90,6 +90,8 @@ public sealed class AccessMonthlyReportSpTests(DbFixture fixture)
     public async Task 데이터범위가전체가아니면_거부()
     {
         await using var db = await fixture.BeginAsync();
+        // 회사가 본사 하나뿐이면 '회사' 범위도 전체와 같아지므로 협력사를 하나 더 둔다
+        await db.SeedCompanyAsync("ITRM1");
         await db.ExecAsync("""
             INSERT INTO FW.TB_ROLE (ROLE_ID, ROLE_NM, COMPANY_TYPE_CD, DATA_SCOPE_CD, SORT_NO) VALUES ('IT_RM_HQ', N'본사 범위', 'HQ', 'COMPANY', 900);
             INSERT INTO FW.TB_ROLE_PROGRAM_FUNC (ROLE_ID, PROGRAM_ID, FUNC_CD) VALUES ('IT_RM_HQ', 'RPT_LOG_MONTHLY', 'READ');

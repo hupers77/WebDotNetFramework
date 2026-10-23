@@ -29,7 +29,7 @@ public sealed class PartnerExpireJobTests(DbFixture fixture)
     {
         await db.SeedUserAsync(userId, company, type);
         await db.ExecAsync(
-            "UPDATE FW.TB_USER SET EMAIL_ENC = 0x01, ACCOUNT_END_DT = DATEADD(DAY, @D, CAST(GETDATE() AS DATE)) WHERE USER_ID = @U",
+            "UPDATE FW.TB_USER SET EMAIL_ENC = 0x01, ACCOUNT_END_DT = DATEADD(DAY, CAST(@D AS INT), CAST(GETDATE() AS DATE)) WHERE USER_ID = @U",
             ("@U", userId), ("@D", endInDays));
     }
 
