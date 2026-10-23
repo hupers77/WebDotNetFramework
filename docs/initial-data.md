@@ -193,10 +193,9 @@ Oct 21, 2026 · @사랑나무아빠
 | `PDF.EDGE_PATH` | C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe | STRING | N | Edge 실행 파일 경로 |
 | `API.TOKEN_MINUTES` | 30 | INT | N | 외부 API 토큰 유효 시간 |
 | `API.DEFAULT_RATE_PER_MIN` | 600 | INT | N | 클라이언트 기본 호출 한도 |
-| `AD.LDAP_SERVER` | (입력) | STRING | N | LDAPS 서버 (636) |
-| `AD.BASE_DN` | (입력) | STRING | N | 동기화 대상 OU |
-| `AD.BIND_PASSWORD` | (입력) | SECRET | N | 동기화 계정 비밀번호 (gMSA 사용 시 불필요) |
+| `AD.SYNC_VIEW` | (입력) | STRING | N | AD 마스터 뷰 이름 (조직·사용자 동기화 원본) |
 | `APPROVAL.GATEWAY` | NONE | STRING | Y | 전자결재 연동 구현 이름 (업무 개발 시 지정) |
+| `APPROVAL.VIEW_URL` | (입력) | STRING | N | 전자결재 화면 주소 (결재 문서 번호 자리에 `{DOC_ID}`) |
 | `NOTIFY.POLL_SECONDS` | 60 | INT | N | 알림 확인 주기 (헤더 배지, 세션을 연장하지 않는 요청) |
 | `NOTIFY.KEEP_DAYS` | 90 | INT | N | 포털 알림 보관 기간(일, 읽었는지와 상관없이) |
 | `SYS.MAINTENANCE_MODE` | N | BOOL | N | Y면 관리자만 접속 |
@@ -213,7 +212,7 @@ Oct 21, 2026 · @사랑나무아빠
 | `JOB_SESSION_CLEANUP` | 시간이 지난 세션 종료, 끝난 지 30일 지난 세션 행 삭제 | 10분마다 (`*/10 * * * *`) | 등록됨 (SP `FW.USP_JOB_SESSION_CLEANUP_EXEC`) |
 | `JOB_TEMP_CLEANUP` | 확정되지 않은 첨부(하루 지남)·삭제한 지 30일 지난 첨부를 저장소에서 삭제 | 매일 05:00 (`0 5 * * *`) | 등록됨 (클래스 `FileCleanup`) |
 | `JOB_DATA_CLEANUP` | 처리한 가입 신청 이메일(30일), 발송 끝난 메일 대기열(90일), 작업 이력(365일), 포털 알림(90일) 삭제 | 매일 05:10 (`10 5 * * *`) | 등록됨 (SP `FW.USP_JOB_DATA_CLEANUP_EXEC`) |
-| `JOB_AD_SYNC` | AD 조직·사용자 동기화, 퇴사자 잠금 | 매일 04:00 | 3단계 |
+| `JOB_AD_SYNC` | AD 마스터 뷰에서 조직·사용자 동기화, 퇴사자 잠금 | 매일 04:00 | 3단계 |
 | `JOB_USER_DORMANT` | 미접속 계정 휴면 전환 (30일 전 사전 안내, 안내 없이 바로 전환하지 않음, 시스템 계정 제외) | 매일 04:30 (`30 4 * * *`) | 등록됨 (SP `FW.USP_JOB_USER_DORMANT_EXEC`) |
 | `JOB_PARTNER_EXPIRE` | 사용 기한(계정 기한과 회사 계약 종료일 중 이른 날)이 지난 협력사 계정 만료(`EXPIRED`), 7일 전 사전 안내 (기한을 늘리면 다시 안내) | 매일 04:40 (`40 4 * * *`) | 등록됨 (SP `FW.USP_JOB_PARTNER_EXPIRE_EXEC`) |
 | `JOB_PWD_EXPIRE_NOTICE` | 비밀번호 만료 7일 전 안내 (메일과 포털 알림, 변경 주기마다 한 번, 이미 만료·변경 강제·AD 전용·시스템 계정 제외) | 매일 08:00 (`0 8 * * *`) | 등록됨 (SP `FW.USP_JOB_PWD_EXPIRE_NOTICE_EXEC`) |

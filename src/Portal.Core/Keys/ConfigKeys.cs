@@ -150,17 +150,14 @@ public static class ConfigKeys
     /// <summary>API 클라이언트 기본 호출 한도.</summary>
     public const string ApiDefaultRatePerMin = "API.DEFAULT_RATE_PER_MIN";
 
-    /// <summary>LDAPS 서버.</summary>
-    public const string AdLdapServer = "AD.LDAP_SERVER";
-
-    /// <summary>동기화 대상 OU.</summary>
-    public const string AdBaseDn = "AD.BASE_DN";
-
-    /// <summary>동기화 계정 비밀번호(SECRET).</summary>
-    public const string AdBindPassword = "AD.BIND_PASSWORD";
+    /// <summary>AD 마스터 뷰 이름(조직·사용자 동기화 원본).</summary>
+    public const string AdSyncView = "AD.SYNC_VIEW";
 
     /// <summary>전자결재 연동 구현 이름(재시작 필요).</summary>
     public const string ApprovalGateway = "APPROVAL.GATEWAY";
+
+    /// <summary>전자결재 화면 주소({DOC_ID} 자리에 결재 문서 번호).</summary>
+    public const string ApprovalViewUrl = "APPROVAL.VIEW_URL";
 
     /// <summary>알림 확인 주기(초).</summary>
     public const string NotifyPollSeconds = "NOTIFY.POLL_SECONDS";
