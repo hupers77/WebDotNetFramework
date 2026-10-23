@@ -114,6 +114,9 @@ public static class ConfigKeys
     /// <summary>처리한 가입 신청의 이메일 보관 기간(일). 데이터 정리 작업(SP)이 읽는다.</summary>
     public const string PartnerJoinKeepDays = "PARTNER.JOIN_KEEP_DAYS";
 
+    /// <summary>협력사 계정 만료 사전 안내 (기한 며칠 전, 0 = 안내 안 함).</summary>
+    public const string PartnerExpireNoticeDays = "PARTNER.EXPIRE_NOTICE_DAYS";
+
     /// <summary>배치 작업 실행 이력 보관 기간(일). 데이터 정리 작업(SP)이 읽는다.</summary>
     public const string JobHistKeepDays = "JOB.HIST_KEEP_DAYS";
 
