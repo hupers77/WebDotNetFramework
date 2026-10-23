@@ -3,12 +3,16 @@
 @{
     ViewData["Title"] = L["BTN.LOGIN"];
 }
-<h1>@L["BTN.LOGIN"]</h1>
+<h1>@(Model.PartnerPage ? L["LBL.PARTNER_LOGIN"] : L["BTN.LOGIN"])</h1>
+@if (Model.PartnerPage)
+{
+    <p class="hint">@L["LOGIN.PARTNER_GUIDE"]</p>
+}
 @if (Model.MessageKey is not null)
 {
     <p class="error" role="alert">@L[Model.MessageKey]</p>
 }
-<form method="post" asp-action="Login" class="form">
+<form method="post" asp-action="@(Model.PartnerPage ? "PartnerLogin" : "Login")" class="form">
     <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
     <label for="UserId">@L["LBL.USER_ID"]</label>
     <input id="UserId" name="UserId" value="@Model.UserId" autocomplete="username" maxlength="50" required autofocus />
@@ -16,6 +20,16 @@
     <input id="Password" name="Password" type="password" autocomplete="current-password" maxlength="128" required />
     <button type="submit" class="primary">@L["BTN.LOGIN"]</button>
 </form>
+<p class="login-switch">
+    @if (Model.PartnerPage)
+    {
+        <a asp-action="Login">@L["LOGIN.GO_EMPLOYEE"]</a>
+    }
+    else
+    {
+        <a asp-action="PartnerLogin">@L["LOGIN.GO_PARTNER"]</a>
+    }
+</p>
 <p class="login-join">@L["JOIN.LOGIN_HINT"] <a asp-action="Join">@L["BTN.JOIN"]</a></p>
 <form method="post" asp-action="Language" class="lang-form login-lang">
     <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />

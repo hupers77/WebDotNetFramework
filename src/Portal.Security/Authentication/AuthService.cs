@@ -52,13 +52,13 @@ public sealed partial class AuthService(
         var user = await sp.QuerySingleAsync<AuthUser>(AuthSp.GetUser, new { P_LOGIN_USER_ID = loginId }, cancellationToken);
 
         bool passwordOk;
-        if (user is { PwdHash: { } pwdHash, PwdSalt: { } pwdSalt })
+        if (user is { PwdHash: { } pwdHash, PwdSalt: { } pwdSalt } && (!request.PartnerPage || user.UserTypeCd == "PARTNER"))
         {
             passwordOk = hasher.Verify(request.Password, pwdHash, pwdSalt);
         }
         else
         {
-            // 없는 ID, AD 전용 계정: 결과는 버리고 계산만 한다
+            // 없는 ID, AD 전용 계정, 협력사 화면에 들어온 본사 계정: 결과는 버리고 계산만 한다
             _ = hasher.Verify(request.Password, DummyHash, DummySalt);
             passwordOk = false;
         }

@@ -4,7 +4,8 @@ namespace Portal.Security.Authentication;
 /// <param name="UserId">입력한 사용자 ID.</param>
 /// <param name="Password">입력한 비밀번호. 기록하지 않는다.</param>
 /// <param name="UserAgent">브라우저 정보 (300자까지 기록).</param>
-public sealed record LoginRequest(string UserId, string Password, string? UserAgent);
+/// <param name="PartnerPage">협력사 전용 로그인 화면에서 온 요청이면 true: 협력사 계정만 로그인할 수 있다(그 밖의 계정은 비밀번호 오류와 똑같이 거절).</param>
+public sealed record LoginRequest(string UserId, string Password, string? UserAgent, bool PartnerPage = false);
 
 /// <summary>로그인 결과.</summary>
 /// <param name="Succeeded">성공 여부.</param>

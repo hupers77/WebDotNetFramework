@@ -578,4 +578,27 @@ public sealed class AuthServiceTests
         Assert.NotEqual(EmailOtp.Hash("a", "123456"), EmailOtp.Hash("b", "123456"));
         Assert.Equal(32, EmailOtp.Hash("a", "123456").Length);
     }
+
+    [Theory]
+    [InlineData("PARTNER", true, true)]
+    [InlineData("EMP", true, false)]
+    [InlineData("EMP", false, true)]
+    [InlineData("PARTNER", false, true)]
+    public async Task 협력사화면은_협력사계정만_본사화면은_모두(string type, bool partnerPage, bool allowed)
+    {
+        _config.Set(ConfigKeys.AuthPartnerMfa, "N").Set(ConfigKeys.AuthAdminMfa, "N");
+        var user = User();
+        user.UserTypeCd = type;
+        Given(user);
+
+        var result = await Service.LoginAsync(new LoginRequest("hong", Pwd, null, partnerPage));
+
+        Assert.Equal(allowed, result.Succeeded);
+        if (!allowed)
+        {
+            Assert.Equal(MessageKeys.LoginFailed, result.MessageKey);
+            Assert.Equal(LoginResultCodes.FailPassword, LoggedResult());
+            Assert.DoesNotContain(_sp.Calls, c => c.SpName == AuthSp.LoginSuccess);
+        }
+    }
 }

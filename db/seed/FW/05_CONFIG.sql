@@ -54,10 +54,9 @@ USING (VALUES
   (N'PDF.EDGE_PATH', N'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe', N'STRING', N'N', N'PDF', N'Edge 실행 파일 경로', N'N'),
   (N'API.TOKEN_MINUTES', N'30', N'INT', N'N', N'API', N'외부 API 토큰 유효 시간(분)', N'N'),
   (N'API.DEFAULT_RATE_PER_MIN', N'600', N'INT', N'N', N'API', N'클라이언트 기본 호출 한도', N'N'),
-  (N'AD.LDAP_SERVER', NULL, N'STRING', N'N', N'AD', N'LDAPS 서버 (636)', N'N'),
-  (N'AD.BASE_DN', NULL, N'STRING', N'N', N'AD', N'동기화 대상 OU', N'N'),
-  (N'AD.BIND_PASSWORD', NULL, N'SECRET', N'Y', N'AD', N'동기화 계정 비밀번호 (gMSA 사용 시 불필요)', N'N'),
+  (N'AD.SYNC_VIEW', NULL, N'STRING', N'N', N'AD', N'AD 마스터 뷰 이름 (조직·사용자 동기화 원본, 예: 스키마.뷰명)', N'N'),
   (N'APPROVAL.GATEWAY', N'NONE', N'STRING', N'N', N'APPROVAL', N'전자결재 연동 구현 이름 (업무 개발 시 지정)', N'Y'),
+  (N'APPROVAL.VIEW_URL', NULL, N'STRING', N'N', N'APPROVAL', N'전자결재 화면 주소 (결재 문서 번호 자리에 {DOC_ID})', N'N'),
   (N'NOTIFY.POLL_SECONDS', N'60', N'INT', N'N', N'NOTIFY', N'알림 확인 주기(초)', N'N'),
   (N'NOTIFY.KEEP_DAYS', N'90', N'INT', N'N', N'NOTIFY', N'포털 알림 보관 기간(일, 읽었는지와 상관없이)', N'N'),
   (N'SYS.MAINTENANCE_MODE', N'N', N'BOOL', N'N', N'SYS', N'Y면 관리자만 접속', N'N')
@@ -65,4 +64,8 @@ USING (VALUES
    ON T.[CONFIG_KEY] = S.[CONFIG_KEY]
 WHEN MATCHED THEN UPDATE SET T.[VAL_TYPE_CD] = S.[VAL_TYPE_CD], T.[ENC_YN] = S.[ENC_YN], T.[CATEGORY_CD] = S.[CATEGORY_CD], T.[DESCRIPTION] = S.[DESCRIPTION], T.[RESTART_YN] = S.[RESTART_YN]
 WHEN NOT MATCHED THEN INSERT ([CONFIG_KEY], [CONFIG_VAL], [VAL_TYPE_CD], [ENC_YN], [CATEGORY_CD], [DESCRIPTION], [RESTART_YN]) VALUES (S.[CONFIG_KEY], S.[CONFIG_VAL], S.[VAL_TYPE_CD], S.[ENC_YN], S.[CATEGORY_CD], S.[DESCRIPTION], S.[RESTART_YN]);
+GO
+
+-- 쓰지 않기로 한 설정 정리 (AD는 LDAPS가 아니라 AD 마스터 뷰로 동기화한다)
+DELETE FROM [FW].[TB_CONFIG] WHERE [CONFIG_KEY] IN (N'AD.LDAP_SERVER', N'AD.BASE_DN', N'AD.BIND_PASSWORD');
 GO
