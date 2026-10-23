@@ -54,6 +54,24 @@ public sealed class AuditChainTests(DbFixture fixture)
         Assert.Equal(ids[^1], (await VerifyAsync(db, from)).BrokenLogId);
     }
 
+    [Fact]
+    public async Task 구간경계앞행삭제_다음구간첫행검출()
+    {
+        await using var db = await fixture.BeginAsync();
+        await WriteAsync(db, "K1", null, "1");
+        await WriteAsync(db, "K2", null, "2");
+        await WriteAsync(db, "K3", null, "3");
+        var rows = await db.ColumnAsync<long>("SELECT LOG_ID FROM LOG.TB_AUDIT_LOG WHERE TABLE_NM = 'IT.TABLE' ORDER BY LOG_ID");
+        var lastAt = await db.ScalarAsync<DateTime>("SELECT LOG_DT FROM LOG.TB_AUDIT_LOG WHERE LOG_ID = @ID", ("@ID", rows[^1]));
+
+        await db.ExecAsync("DELETE FROM LOG.TB_AUDIT_LOG WHERE LOG_ID = @ID", ("@ID", rows[^2]));
+
+        // 마지막 행만 들어가는 구간으로 점검해도 바로 앞 구간의 행과 이어지는지 본다 (배치는 기간을 잘라 점검한다)
+        var result = (await db.Sp.QuerySingleAsync<VerifyResult>("LOG.USP_AUDIT_VERIFY_EXEC",
+            new { P_FROM_DT = lastAt, P_TO_DT = lastAt.AddHours(1) }, TestContext.Current.CancellationToken))!;
+        Assert.Equal(rows[^1], result.BrokenLogId);
+    }
+
     private static Task<Portal.Data.SaveResult> WriteAsync(TestDb db, string rowKey, string? before, string? after) =>
         db.Sp.ExecuteAsync("LOG.USP_AUDIT_WRITE", new
         {

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Portal.Core.Scheduling;
 using Portal.Infrastructure.Files;
+using Portal.Infrastructure.Logging;
 using Portal.Infrastructure.Messaging;
 
 namespace Portal.Infrastructure.Scheduling;
@@ -11,7 +12,7 @@ namespace Portal.Infrastructure.Scheduling;
 public static class SchedulerServiceCollectionExtensions
 {
     /// <summary>
-    /// 작업 실행기와 프레임워크 기본 작업(<c>MailSend</c>, <c>FileCleanup</c>)을 등록한다. <see cref="InfrastructureServiceCollectionExtensions.AddPortalInfrastructure"/> 다음에 부른다.
+    /// 작업 실행기와 프레임워크 기본 작업(<c>MailSend</c>, <c>FileCleanup</c>, <c>LogIntegrity</c>)을 등록한다. <see cref="InfrastructureServiceCollectionExtensions.AddPortalInfrastructure"/> 다음에 부른다.
     /// 업무 모듈의 작업은 <c>services.AddScoped&lt;IScheduledJob, 내작업&gt;()</c>으로 추가한다.
     /// </summary>
     public static IServiceCollection AddPortalScheduler(this IServiceCollection services, IConfiguration configuration)
@@ -21,6 +22,7 @@ public static class SchedulerServiceCollectionExtensions
         services.AddSingleton<JobScheduler>();
         services.AddScoped<IScheduledJob, MailSendJob>();
         services.AddScoped<IScheduledJob, FileCleanupJob>();
+        services.AddScoped<IScheduledJob, LogIntegrityJob>();
         return services;
     }
 }
