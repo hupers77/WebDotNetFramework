@@ -1,0 +1,37 @@
+@* 화면 출력 (현재 화면 PDF): 공통 머리글 + 화면이 보낸 표. 칸 글자는 인코딩해 그리고, 숫자처럼 보이는 칸은 오른쪽 정렬한다. *@
+@model ReportDocumentModel
+@{
+    Layout = "_ReportLayout.cshtml";
+}
+@foreach (var table in Model.Tables ?? [])
+{
+    <table class="rpt-table rpt-screen">
+        @if (!string.IsNullOrWhiteSpace(table.Caption))
+        {
+            <caption>@table.Caption</caption>
+        }
+        <thead>
+            <tr>
+                @foreach (var column in table.Columns)
+                {
+                    <th scope="col">@column</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @if (table.Rows.Count == 0)
+            {
+                <tr><td colspan="@table.Columns.Count" class="rpt-empty">@L["RPT.NO_DATA"]</td></tr>
+            }
+            @foreach (var row in table.Rows)
+            {
+                <tr>
+                    @foreach (var cell in row)
+                    {
+                        <td class="@(ReportFormat.LooksNumeric(cell) ? "num" : null)">@cell</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}

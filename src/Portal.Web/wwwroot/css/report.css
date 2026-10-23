@@ -27,3 +27,6 @@ body { margin: 0; padding: 12px; background: #fff; color: #111; font: 10pt/1.4 '
 .rpt-review { margin-top: 12px; break-inside: avoid; }
 .rpt-review h2 { margin: 0 0 4px; font-size: 11pt; }
 .rpt-review-box { height: 30mm; margin-top: 4px; border: 1px solid var(--rpt-line); }
+.rpt-screen { margin-bottom: 10px; }
+.rpt-screen caption { caption-side: top; text-align: left; font-weight: 600; padding: 2px 0; }
+.rpt-screen td { overflow-wrap: anywhere; }

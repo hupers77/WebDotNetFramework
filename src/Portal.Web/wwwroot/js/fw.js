@@ -227,6 +227,73 @@ document.addEventListener('change', (e) => {
 // 탭 안 화면이 바뀌면 (링크 이동·새로고침) 세션 타이머를 다시 맞춘다
 touch();
 
+// [인쇄] 버튼 (<fw-button func="PRINT" text-key="BTN.PRINT" data-print-area="#화면" />): 화면에 보이는 검색 조건과 표를
+// 글자로 모아 서버가 PDF로 만든다(HTML은 보내지 않는다). 버튼은 PRINT 권한이 있을 때만 그려지고 서버도 다시 확인한다.
+// 개인정보가 보이는 화면은 버튼에 data-pii="Y"를 붙여 사유를 묻는다. 지금 쪽에 보이는 행만 나온다(전체는 엑셀·레포트).
+const PRINT_PATH = '/Rpt/Print/Pdf';
+
+const shown = (el) => !el.closest('[hidden], dialog:not([open])');
+
+function fieldText(field) {
+    if (field instanceof HTMLSelectElement) {
+        return field.value ? field.selectedOptions[0]?.textContent.trim() ?? '' : '';
+    }
+
+    return field.type === 'checkbox' || field.type === 'radio' ? (field.checked ? 'Y' : '') : field.value.trim();
+}
+
+function screenData(area) {
+    const conditions = [...area.querySelectorAll('form.search-bar label[for]')]
+        .map((label) => [label, document.getElementById(label.htmlFor)])
+        .filter(([, field]) => field && shown(field))
+        .map(([label, field]) => ({ label: label.textContent.trim(), value: fieldText(field) }))
+        .filter((c) => c.value);
+
+    const tables = [...area.querySelectorAll('table')]
+        .filter((table) => table.tHead?.rows.length && shown(table))
+        .map((table) => {
+            const columns = [...table.tHead.rows[0].cells].map((c) => c.textContent.trim());
+            const rows = [...table.tBodies].flatMap((b) => [...b.rows])
+                .filter((r) => r.cells.length === columns.length && shown(r))
+                .map((r) => [...r.cells].map((c) => {
+                    const field = c.querySelector('input, select, textarea');
+                    return field ? fieldText(field) : c.textContent.trim();
+                }));
+            return { caption: table.caption?.textContent.trim() || null, columns, rows };
+        });
+
+    return { conditions, tables };
+}
+
+async function printScreen(button) {
+    const area = document.querySelector(button.dataset.printArea) ?? document.body;
+    const { conditions, tables } = screenData(area);
+    if (tables.length === 0) {
+        notify(t('RPT.NOTHING_TO_PRINT'));
+        return;
+    }
+
+    let reason = null;
+    if (button.dataset.pii === 'Y') {
+        reason = await dialog.prompt(t('CNF.PII_DOWNLOAD'), { label: t('LBL.PII_REASON'), maxLength: 200 });
+        if (reason === null) {
+            return;
+        }
+    }
+
+    const result = await download(PRINT_PATH, { programId: button.dataset.program, conditions, tables, reason });
+    if (!result.success) {
+        notify(result.error.message);
+    }
+}
+
+document.addEventListener('click', (e) => {
+    const button = e.target instanceof Element ? e.target.closest('button[data-func="PRINT"][data-print-area]') : null;
+    if (button) {
+        printScreen(button);
+    }
+});
+
 const format = {
     /** 바이트 → "1.2 MB" 같은 크기 표시. */
     fileSize(bytes) {

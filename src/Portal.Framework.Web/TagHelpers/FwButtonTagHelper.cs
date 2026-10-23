@@ -52,6 +52,12 @@ public sealed class FwButtonTagHelper(CurrentPermissions permissions, IPortalLoc
         }
 
         output.Attributes.SetAttribute("data-func", Func);
+        if (Func == FuncCodes.Print)
+        {
+            // 화면 출력(fw.js)이 이 프로그램으로 PRINT 권한을 확인받는다
+            output.Attributes.SetAttribute("data-program", programId);
+        }
+
         output.Content.SetContent(localizer[TextKey]);
     }
 }

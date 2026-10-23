@@ -1,0 +1,16 @@
+-- 프로그램 한 건 (화면 출력 등 공통 기능이 요청의 프로그램을 확인할 때). 사용 안 함이면 0행이다.
+-- 결과: PROGRAM_ID, MODULE_CD, PII_YN
+CREATE PROCEDURE [FW].[USP_PROGRAM_GET]
+  @P_PROGRAM_ID  VARCHAR(30),
+  @P_USER_ID     VARCHAR(30),
+  @P_LANG_CD     VARCHAR(5),
+  @P_CLIENT_IP   VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  SELECT [PROGRAM_ID], [MODULE_CD], [PII_YN]
+    FROM [FW].[TB_PROGRAM]
+   WHERE [PROGRAM_ID] = @P_PROGRAM_ID
+     AND [USE_YN] = 'Y';
+END

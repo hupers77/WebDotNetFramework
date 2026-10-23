@@ -96,8 +96,8 @@ public sealed class SeedDataTests(DbFixture fixture)
     [InlineData("SELECT COUNT(*) FROM FW.TB_PROGRAM P WHERE NOT EXISTS (SELECT 1 FROM FW.TB_PROGRAM_FUNC F WHERE F.PROGRAM_ID = P.PROGRAM_ID AND F.FUNC_CD = 'READ')", 0)]
     // 기능코드는 공통코드 FUNC_CD에 있어야 한다
     [InlineData("SELECT COUNT(*) FROM FW.TB_PROGRAM_FUNC F WHERE NOT EXISTS (SELECT 1 FROM FW.TB_CODE C WHERE C.GROUP_CD = 'FUNC_CD' AND C.CODE = F.FUNC_CD)", 0)]
-    // 감사자는 관리·로그 화면에서 조회·내보내기만 한다
-    [InlineData("SELECT COUNT(*) FROM FW.TB_ROLE_PROGRAM_FUNC WHERE ROLE_ID = 'SECURITY_AUDITOR' AND FUNC_CD NOT IN ('READ', 'EXPORT') AND (PROGRAM_ID LIKE 'SYS[_]%' OR PROGRAM_ID LIKE 'LOG[_]%')", 0)]
+    // 감사자는 관리·로그 화면에서 조회·내보내기·인쇄만 한다
+    [InlineData("SELECT COUNT(*) FROM FW.TB_ROLE_PROGRAM_FUNC WHERE ROLE_ID = 'SECURITY_AUDITOR' AND FUNC_CD NOT IN ('READ', 'EXPORT', 'PRINT') AND (PROGRAM_ID LIKE 'SYS[_]%' OR PROGRAM_ID LIKE 'LOG[_]%')", 0)]
     // 협력사 역할은 본사 전용(EMP) 메뉴의 프로그램 권한을 갖지 않는다
     [InlineData("SELECT COUNT(*) FROM FW.TB_ROLE_PROGRAM_FUNC F JOIN FW.TB_MENU M ON M.PROGRAM_ID = F.PROGRAM_ID WHERE F.ROLE_ID LIKE 'PARTNER%' AND M.OPEN_SCOPE_CD = 'EMP'", 0)]
     public async Task 초기데이터_정합성(string sql, int expected)
