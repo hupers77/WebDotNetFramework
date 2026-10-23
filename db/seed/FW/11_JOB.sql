@@ -12,6 +12,7 @@ USING (VALUES
   (N'JOB_DATA_CLEANUP', N'보관 기간 지난 데이터 정리', N'SP', N'FW.USP_JOB_DATA_CLEANUP_EXEC', N'10 5 * * *', 60, N'처리한 가입 신청 이메일, 발송 끝난 메일 대기열, 오래된 작업 이력·포털 알림 삭제'),
   (N'JOB_USER_DORMANT', N'휴면 전환', N'SP', N'FW.USP_JOB_USER_DORMANT_EXEC', N'30 4 * * *', 30, N'오래 로그인하지 않은 계정에 휴면 전환 안내를 보내고, 안내 후에도 로그인하지 않으면 휴면으로 전환'),
   (N'JOB_PARTNER_EXPIRE', N'협력사 계정 만료', N'SP', N'FW.USP_JOB_PARTNER_EXPIRE_EXEC', N'40 4 * * *', 30, N'사용 기한이나 계약 종료일이 다가온 협력사 계정에 안내를 보내고, 지나면 만료로 전환'),
+  (N'JOB_PWD_EXPIRE_NOTICE', N'비밀번호 만료 안내', N'SP', N'FW.USP_JOB_PWD_EXPIRE_NOTICE_EXEC', N'0 8 * * *', 30, N'비밀번호 변경 주기가 7일 안에 끝나는 계정에 메일과 포털 알림으로 안내'),
   (N'JOB_LOG_INTEGRITY', N'로그 무결성 점검', N'CLASS', N'LogIntegrity', N'0 6 1 * *', 180, N'지난달 로그인·접근·데이터 변경·개인정보 접속기록의 해시 체인 점검, 위·변조나 삭제가 있으면 실패로 알림')
 ) AS S ([JOB_ID], [JOB_NM], [JOB_TYPE_CD], [JOB_TARGET], [CRON_EXPR], [TIMEOUT_MIN], [DESCRIPTION])
    ON T.[JOB_ID] = S.[JOB_ID]

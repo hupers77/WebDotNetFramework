@@ -153,6 +153,7 @@ Oct 21, 2026 · @사랑나무아빠
 | `PWD.MIN_LEN_2TYPES` | 10 | INT | N | 2종류 조합 최소 길이 |
 | `PWD.HISTORY_COUNT` | 3 | INT | N | 재사용 금지 이력 수 |
 | `PWD.EXPIRE_DAYS` | 90 | INT | N | 변경 주기 |
+| `PWD.EXPIRE_NOTICE_DAYS` | 7 | INT | N | 비밀번호 만료 사전 안내 (만료 며칠 전, 0이면 안내 안 함) |
 | `PWD.LOCK_COUNT` | 5 | INT | N | 실패 잠금 횟수 |
 | `PWD.LOCK_MINUTES` | 30 | INT | N | 자동 해제 시간 (0 = 관리자 해제만) |
 | `SESSION.IDLE_MINUTES` | 30 | INT | N | 비활동 만료 |
@@ -211,7 +212,7 @@ Oct 21, 2026 · @사랑나무아빠
 | `JOB_AD_SYNC` | AD 조직·사용자 동기화, 퇴사자 잠금 | 매일 04:00 | 3단계 |
 | `JOB_USER_DORMANT` | 미접속 계정 휴면 전환 (30일 전 사전 안내, 안내 없이 바로 전환하지 않음, 시스템 계정 제외) | 매일 04:30 (`30 4 * * *`) | 등록됨 (SP `FW.USP_JOB_USER_DORMANT_EXEC`) |
 | `JOB_PARTNER_EXPIRE` | 사용 기한(계정 기한과 회사 계약 종료일 중 이른 날)이 지난 협력사 계정 만료(`EXPIRED`), 7일 전 사전 안내 (기한을 늘리면 다시 안내) | 매일 04:40 (`40 4 * * *`) | 등록됨 (SP `FW.USP_JOB_PARTNER_EXPIRE_EXEC`) |
-| `JOB_PWD_EXPIRE_NOTICE` | 비밀번호 만료 7일 전 안내 | 매일 08:00 | 예정 |
+| `JOB_PWD_EXPIRE_NOTICE` | 비밀번호 만료 7일 전 안내 (메일과 포털 알림, 변경 주기마다 한 번, 이미 만료·변경 강제·AD 전용·시스템 계정 제외) | 매일 08:00 (`0 8 * * *`) | 등록됨 (SP `FW.USP_JOB_PWD_EXPIRE_NOTICE_EXEC`) |
 | `JOB_LOG_PARTITION` | 다음 달 로그 파티션 생성, 1년 지난 파티션 읽기 전용 전환, 보관 기간 지난 파티션 삭제 | 매월 1일 05:00 | 예정 |
 | `JOB_LOG_INTEGRITY` | 지난달 로그인·접근·데이터 변경·개인정보 접속기록의 해시 체인 점검 (위·변조나 삭제가 있으면 실패로 알림) | 매월 1일 06:00 (`0 6 1 * *`) | 등록됨 (클래스 `LogIntegrity`) |
 
@@ -224,7 +225,7 @@ Oct 21, 2026 · @사랑나무아빠
 | `TPL_PARTNER_REJECTED` | 가입 반려 안내 | 메일 |
 | `TPL_PWD_RESET` | 비밀번호 초기화 링크 (30분 유효) | 메일 |
 | `TPL_MFA_OTP` | 2단계 인증 번호 (5분 유효) | 메일 |
-| `TPL_PWD_EXPIRE` | 비밀번호 만료 예정 | 메일, 포털 |
+| `TPL_PWD_EXPIRE` | 비밀번호 만료 예정 (알림을 누르면 비밀번호 변경 화면) | 메일, 포털 |
 | `TPL_DORMANT_NOTICE` | 휴면 전환 예정 | 메일 |
 | `TPL_ACCOUNT_EXPIRE` | 협력사 계정 만료 예정 | 메일 |
 | `TPL_ACCOUNT_LOCKED` | 로그인 실패로 계정 잠김 | 메일 |
@@ -233,4 +234,4 @@ Oct 21, 2026 · @사랑나무아빠
 
 템플릿 본문의 치환 변수는 `{{USER_NM}}`, `{{SITE_NM}}`, `{{LINK}}`, `{{EXPIRE_DT}}`처럼 쓰고, 치환값은 HTML 인코딩되어 들어갑니다. 메일 본문에 비밀번호 자체는 넣지 않습니다.
 
-템플릿은 그 기능을 만드는 변경에서 `db/seed/FW/10_MSG_TEMPLATE.sql`에 추가합니다(현재: `TPL_PARTNER_SIGNUP_REQ`, `TPL_PARTNER_APPROVED`, `TPL_PARTNER_REJECTED`, `TPL_DORMANT_NOTICE`, `TPL_ACCOUNT_EXPIRE`, `TPL_JOB_FAILED`). 템플릿마다 메일(`MAIL_YN`)·포털(`PORTAL_YN`) 채널을 켜고 끌 수 있고, `USE_YN = 'N'`이면 쌓지 않습니다. 포털 알림은 받는 사람이 포털 사용자일 때만 쌓이고, 제목은 템플릿 제목(앞의 [사이트명] 제외), 내용은 본문에서 글자만 남긴 것이며, 볼 때 보는 사람의 화면 언어로 만듭니다. `LINK_PROGRAM_ID`를 정하면 알림을 눌렀을 때 그 화면을 탭으로 엽니다. `{{SITE_NM}}`(받는 사람 언어의 사이트명)과 `{{LINK}}`(포털 주소)는 발송 작업이 채우고, 나머지 치환값은 업무 SP가 JSON으로 넘깁니다. 받는 사람 언어의 문구가 없으면 기본 언어 문구로 보냅니다.
+템플릿은 그 기능을 만드는 변경에서 `db/seed/FW/10_MSG_TEMPLATE.sql`에 추가합니다(현재: `TPL_PARTNER_SIGNUP_REQ`, `TPL_PARTNER_APPROVED`, `TPL_PARTNER_REJECTED`, `TPL_PWD_EXPIRE`, `TPL_DORMANT_NOTICE`, `TPL_ACCOUNT_EXPIRE`, `TPL_JOB_FAILED`). 템플릿마다 메일(`MAIL_YN`)·포털(`PORTAL_YN`) 채널을 켜고 끌 수 있고, `USE_YN = 'N'`이면 쌓지 않습니다. 포털 알림은 받는 사람이 포털 사용자일 때만 쌓이고, 제목은 템플릿 제목(앞의 [사이트명] 제외), 내용은 본문에서 글자만 남긴 것이며, 볼 때 보는 사람의 화면 언어로 만듭니다. `LINK_PROGRAM_ID`를 정하면 알림을 눌렀을 때 그 화면을 탭으로 엽니다. `{{SITE_NM}}`(받는 사람 언어의 사이트명)과 `{{LINK}}`(포털 주소)는 발송 작업이 채우고, 나머지 치환값은 업무 SP가 JSON으로 넘깁니다. 받는 사람 언어의 문구가 없으면 기본 언어 문구로 보냅니다.

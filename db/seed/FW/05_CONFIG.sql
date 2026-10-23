@@ -15,6 +15,7 @@ USING (VALUES
   (N'PWD.MIN_LEN_2TYPES', N'10', N'INT', N'N', N'PWD', N'2종류 조합 최소 길이', N'N'),
   (N'PWD.HISTORY_COUNT', N'3', N'INT', N'N', N'PWD', N'재사용 금지 이력 수', N'N'),
   (N'PWD.EXPIRE_DAYS', N'90', N'INT', N'N', N'PWD', N'변경 주기(일)', N'N'),
+  (N'PWD.EXPIRE_NOTICE_DAYS', N'7', N'INT', N'N', N'PWD', N'비밀번호 만료 사전 안내(만료 며칠 전, 0 = 안내 안 함)', N'N'),
   (N'PWD.LOCK_COUNT', N'5', N'INT', N'N', N'PWD', N'실패 잠금 횟수', N'N'),
   (N'PWD.LOCK_MINUTES', N'30', N'INT', N'N', N'PWD', N'자동 해제 시간(분, 0 = 관리자 해제만)', N'N'),
   (N'SESSION.IDLE_MINUTES', N'30', N'INT', N'N', N'SESSION', N'비활동 만료(분)', N'N'),
