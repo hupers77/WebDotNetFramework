@@ -63,3 +63,19 @@ public sealed class WidgetRowDto
         set => field = value is { } v ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : null;
     }
 }
+
+/// <summary>지금 띄울 공지 팝업 (<c>FW.USP_POPUP_ACTIVE_GET_LIST</c>). 내용은 글자만이다.</summary>
+public sealed class PopupActiveDto
+{
+    /// <summary>팝업 ID.</summary>
+    public long PopupId { get; set; }
+
+    /// <summary>제목 (화면 언어).</summary>
+    public string Title { get; set; } = "";
+
+    /// <summary>내용 (글자만, HTML 아님).</summary>
+    public string Content { get; set; } = "";
+
+    /// <summary>내용이 바뀌면 달라지는 값. "오늘 하루 보지 않기" 기준이다.</summary>
+    public string VerKey { get; set; } = "";
+}
