@@ -5,6 +5,8 @@ using Portal.Core.Keys;
 using Portal.Core.Results;
 using Portal.Data;
 using Portal.Web.Areas.Board.Models;
+using Portal.Web.Areas.Dash.Models;
+using Portal.Web.Areas.Dash.Services;
 using Portal.Web.Areas.Board.Services;
 using static Portal.IntegrationTests.Web.WebTestHttp;
 
@@ -303,5 +305,31 @@ public sealed class BoardScreenTests : IClassFixture<PortalWebFactory>
         Assert.Equal(HttpStatusCode.Forbidden, (await GetAsync(_web.SignIn("bd.a.x", [Home, Reader[1]]), "/Board/Admin")).StatusCode);
         var save = await PostAsync(_web.SignIn("bd.a.s", [Home, "BRD_BOARD_MGT:READ"]), "/Board/Admin/Save", new { rows = Array.Empty<object>() });
         Assert.Equal(HttpStatusCode.Forbidden, save.StatusCode);
+    }
+
+    [Fact]
+    public async Task 대시보드_위젯은_홈권한이_있어야_하고_위젯의_프로그램_권한이_없으면_없는_위젯이다()
+    {
+        _web.Sp.Returns(DashService.ListSp, new List<WidgetDto>
+        {
+            new() { WidgetCd = "W_BOARD", TypeCd = "LIST", DataSp = "FW.USP_WIDGET_TEST", ProgramId = Program, WidgetNm = "공지" },
+        });
+        _web.Sp.Returns("FW.USP_WIDGET_TEST", new List<WidgetRowDto> { new() { Text = "제목", Link = "/Board/Test/View/1" } });
+        var withRead = _web.SignIn("ds.r", Reader);
+        var homeOnly = _web.SignIn("ds.h", [Home]);
+
+        var shown = await JsonAsync(await _web.NewClient(withRead).SendAsync(Ajax(HttpMethod.Get, "/Dash/Widgets"), Ct));
+        var hidden = await JsonAsync(await _web.NewClient(homeOnly).SendAsync(Ajax(HttpMethod.Get, "/Dash/Widgets"), Ct));
+        var data = await JsonAsync(await _web.NewClient(withRead).SendAsync(Ajax(HttpMethod.Get, "/Dash/Data?widgetCd=W_BOARD"), Ct));
+        var denied = await JsonAsync(await _web.NewClient(homeOnly).SendAsync(Ajax(HttpMethod.Get, "/Dash/Data?widgetCd=W_BOARD"), Ct));
+        var bad = await JsonAsync(await _web.NewClient(withRead).SendAsync(Ajax(HttpMethod.Get, "/Dash/Data?widgetCd=a%27b"), Ct));
+
+        Assert.Equal(1, shown.GetProperty("data").GetArrayLength());
+        Assert.False(shown.GetProperty("data")[0].TryGetProperty("dataSp", out _));
+        Assert.Equal(0, hidden.GetProperty("data").GetArrayLength());
+        Assert.Equal("제목", data.GetProperty("data")[0].GetProperty("text").GetString());
+        Assert.Equal(MessageKeys.NotFound, denied.GetProperty("error").GetProperty("code").GetString());
+        Assert.Equal(MessageKeys.InvalidInput, bad.GetProperty("error").GetProperty("code").GetString());
+        Assert.Equal(HttpStatusCode.Forbidden, (await _web.NewClient(_web.SignIn("ds.n", [])).SendAsync(Ajax(HttpMethod.Get, "/Dash/Widgets"), Ct)).StatusCode);
     }
 }

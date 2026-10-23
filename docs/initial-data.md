@@ -266,3 +266,12 @@ Oct 21, 2026 · @사랑나무아빠
 
 글을 고치거나 상단 고정·공개 대상 회사를 정하는 "관리자"는 그 게시판 프로그램의 수정(UPDATE) 권한이 있는 사람입니다. 사내 게시판(`BRD_EMP_FREE`)은 수정 권한이 없으므로 모두 자기 글만 고칠 수 있습니다.
 
+
+## 10. 기본 대시보드 위젯
+
+홈 화면의 위젯은 `TB_WIDGET`에 등록하고(`db/seed/FW/14_WIDGET.sql`), 제목은 `TB_WIDGET_LANG`에 언어별로 둡니다. 위젯의 데이터는 `USP_WIDGET_`로 시작하는 SP가 `LABEL, VALUE, TEXT, LINK, DT` 열로 돌려주고, 유형(`CARD` 숫자 카드, `LIST` 목록)이 표시 방법을 정합니다. `PROGRAM_ID`가 있으면 그 프로그램의 읽기(READ) 권한이 있는 사용자만 위젯을 보며, 데이터는 사용자별로 `CACHE_SEC`초 동안 서버 메모리에 둡니다. 시드는 이미 있는 위젯의 설정을 덮어쓰지 않습니다.
+
+| 위젯 코드 | 유형 | 데이터 SP | 권한 프로그램 | 칸 수 | 캐시(초) |
+| --- | --- | --- | --- | --- | --- |
+| `NOTICE_RECENT` | LIST | `FW.USP_WIDGET_NOTICE_RECENT` | `BRD_NOTICE` | 8 | 60 |
+| `NOTI_UNREAD` | CARD | `FW.USP_WIDGET_NOTI_UNREAD` | `MY_NOTIFICATION` | 4 | 30 |

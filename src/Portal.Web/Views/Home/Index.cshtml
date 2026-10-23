@@ -1,4 +1,13 @@
 @{
     ViewData["Title"] = L["SITE.NAME"];
 }
+@section Scripts {
+    <script type="module" src="~/js/dash/home.js" asp-append-version="true"></script>
+}
 <h1>@L["SITE.NAME"]</h1>
+<div id="dash-home"
+     data-url-widgets="@Url.Action("Widgets", "Dash", new { area = "Dash" })"
+     data-url-data="@Url.Action("Data", "Dash", new { area = "Dash" })">
+    <p id="dash-empty" class="hint" hidden>@L["DSH.EMPTY"]</p>
+    <div id="dash-grid" class="dash-grid"></div>
+</div>
