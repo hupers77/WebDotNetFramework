@@ -1,0 +1,18 @@
+@{
+    var title = Menus.ProgramTitle(BoardAdminController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/board/admin.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="board-admin"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")">
+    <div class="toolbar">
+        <p id="board-admin-total" class="hint" aria-live="polite"></p>
+        <fw-button func="UPDATE" text-key="BTN.SAVE" id="board-admin-save" class="primary" />
+    </div>
+    <p class="hint">@L["BRD.ADM_HINT"]</p>
+    <div id="board-admin-grid" class="grid-wrap"></div>
+</div>

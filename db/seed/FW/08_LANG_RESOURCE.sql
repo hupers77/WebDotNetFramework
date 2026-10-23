@@ -1710,7 +1710,28 @@ USING (VALUES
   (N'BRD.ED_CLEAR', N'zh-CN', N'清除格式', N'LABEL'),
   (N'BRD.ED_LINK_PROMPT', N'ko', N'연결할 주소(http:// 또는 https://)를 입력하세요.', N'LABEL'),
   (N'BRD.ED_LINK_PROMPT', N'en', N'Enter the address to link to (http:// or https://).', N'LABEL'),
-  (N'BRD.ED_LINK_PROMPT', N'zh-CN', N'请输入链接地址（http:// 或 https://）。', N'LABEL')
+  (N'BRD.ED_LINK_PROMPT', N'zh-CN', N'请输入链接地址（http:// 或 https://）。', N'LABEL'),
+  (N'BRD.ADM_HINT', N'ko', N'게시판별로 쓸 기능을 켜고 끕니다. 게시판을 새로 만들 때는 개발팀에 요청하세요.', N'LABEL'),
+  (N'BRD.ADM_HINT', N'en', N'Turn features on or off for each board. Ask the development team to add a new board.', N'LABEL'),
+  (N'BRD.ADM_HINT', N'zh-CN', N'按公告板开关功能。新增公告板请联系开发团队。', N'LABEL'),
+  (N'BRD.ADM_NAME_KO', N'ko', N'이름(한국어)', N'LABEL'),
+  (N'BRD.ADM_NAME_KO', N'en', N'Name (Korean)', N'LABEL'),
+  (N'BRD.ADM_NAME_KO', N'zh-CN', N'名称(韩语)', N'LABEL'),
+  (N'BRD.ADM_NAME_EN', N'ko', N'이름(영어)', N'LABEL'),
+  (N'BRD.ADM_NAME_EN', N'en', N'Name (English)', N'LABEL'),
+  (N'BRD.ADM_NAME_EN', N'zh-CN', N'名称(英语)', N'LABEL'),
+  (N'BRD.ADM_NAME_ZH', N'ko', N'이름(중국어)', N'LABEL'),
+  (N'BRD.ADM_NAME_ZH', N'en', N'Name (Chinese)', N'LABEL'),
+  (N'BRD.ADM_NAME_ZH', N'zh-CN', N'名称(中文)', N'LABEL'),
+  (N'BRD.ADM_ATTACH', N'ko', N'첨부', N'LABEL'),
+  (N'BRD.ADM_ATTACH', N'en', N'Attachments', N'LABEL'),
+  (N'BRD.ADM_ATTACH', N'zh-CN', N'附件', N'LABEL'),
+  (N'BRD.ADM_PIN', N'ko', N'상단 고정', N'LABEL'),
+  (N'BRD.ADM_PIN', N'en', N'Pin to top', N'LABEL'),
+  (N'BRD.ADM_PIN', N'zh-CN', N'置顶', N'LABEL'),
+  (N'BRD.ADM_BOARD_CD', N'ko', N'게시판 코드', N'LABEL'),
+  (N'BRD.ADM_BOARD_CD', N'en', N'Board code', N'LABEL'),
+  (N'BRD.ADM_BOARD_CD', N'zh-CN', N'公告板代码', N'LABEL')
 ) AS S ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE])
    ON T.[RES_KEY] = S.[RES_KEY] AND T.[LANG_CD] = S.[LANG_CD]
 WHEN NOT MATCHED THEN INSERT ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE]) VALUES (S.[RES_KEY], S.[LANG_CD], S.[RES_TEXT], S.[RES_TYPE]);

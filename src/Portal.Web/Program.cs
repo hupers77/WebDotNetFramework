@@ -32,6 +32,7 @@ builder.Services.AddSingleton<Portal.Web.Areas.Rpt.Services.ReportRunProcessor>(
 builder.Services.AddHostedService<Portal.Web.Areas.Rpt.Services.ReportRunWorker>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IDeptAdminService, Portal.Web.Areas.Sys.Services.DeptAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Board.Services.IBoardService, Portal.Web.Areas.Board.Services.BoardService>();
+builder.Services.AddScoped<Portal.Web.Areas.Board.Services.IBoardAdminService, Portal.Web.Areas.Board.Services.BoardAdminService>();
 
 var app = builder.Build();
 
