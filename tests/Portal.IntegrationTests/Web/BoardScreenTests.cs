@@ -332,4 +332,19 @@ public sealed class BoardScreenTests : IClassFixture<PortalWebFactory>
         Assert.Equal(MessageKeys.InvalidInput, bad.GetProperty("error").GetProperty("code").GetString());
         Assert.Equal(HttpStatusCode.Forbidden, (await _web.NewClient(_web.SignIn("ds.n", [])).SendAsync(Ajax(HttpMethod.Get, "/Dash/Widgets"), Ct)).StatusCode);
     }
+
+    [Fact]
+    public async Task 위젯관리_화면은_WIDGET_MGT권한으로_열리고_저장버튼은_UPDATE권한이_있을때만()
+    {
+        _web.Sp.Returns(WidgetAdminService.ListSp, new PageResult<WidgetAdminDto> { Items = [], TotalCount = 0, PageNo = 1, PageSize = 20 });
+        var admin = await (await GetAsync(_web.SignIn("wg.a", [Home, "DSH_WIDGET_MGT:READ", "DSH_WIDGET_MGT:UPDATE"]), "/Dash/Widget?_layout=tab")).Content.ReadAsStringAsync(Ct);
+        var reader = await (await GetAsync(_web.SignIn("wg.r", [Home, "DSH_WIDGET_MGT:READ"]), "/Dash/Widget?_layout=tab")).Content.ReadAsStringAsync(Ct);
+
+        Assert.Contains("js/dash/admin.js", admin, StringComparison.Ordinal);
+        Assert.Contains("id=\"widget-admin-save\"", admin, StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"widget-admin-save\"", reader, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Forbidden, (await GetAsync(_web.SignIn("wg.x", [Home]), "/Dash/Widget")).StatusCode);
+        var save = await PostAsync(_web.SignIn("wg.s", [Home, "DSH_WIDGET_MGT:READ"]), "/Dash/Widget/Save", new { rows = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.Forbidden, save.StatusCode);
+    }
 }

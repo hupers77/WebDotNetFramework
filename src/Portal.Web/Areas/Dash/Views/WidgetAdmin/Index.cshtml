@@ -1,0 +1,18 @@
+@{
+    var title = Menus.ProgramTitle(WidgetAdminController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/dash/admin.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="widget-admin"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")">
+    <div class="toolbar">
+        <p id="widget-admin-total" class="hint" aria-live="polite"></p>
+        <fw-button func="UPDATE" text-key="BTN.SAVE" id="widget-admin-save" class="primary" />
+    </div>
+    <p class="hint">@L["DSH.ADM_HINT"]</p>
+    <div id="widget-admin-grid" class="grid-wrap"></div>
+</div>
