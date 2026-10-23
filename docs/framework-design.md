@@ -160,7 +160,7 @@ Portal.sln
 | 인증 쿠키 | `__Host-` 접두어, Secure, HttpOnly, SameSite=Lax | (코드 고정 보안값) |
 | 로그인 실패 잠금 | 5회, 관리자 해제 또는 30분 후 자동 해제 | `PWD.LOCK_COUNT`, `PWD.LOCK_MINUTES` |
 | 비밀번호 규칙 | 3종류 조합 8자 또는 2종류 10자 이상, 최근 3개 재사용 금지 | `PWD.*` |
-| 휴면 계정 | 1년 미접속 시 휴면 전환 | `USER.DORMANT_DAYS` |
+| 휴면 계정 | 1년 미접속 시 휴면 전환 (30일 전 메일 안내, 관리자가 사용자 관리에서 해제) | `USER.DORMANT_DAYS`, `USER.DORMANT_NOTICE_DAYS` |
 | 외부 API 토큰 | Client Credentials, Access Token 30분 (서명 JWT) | `API.TOKEN_MINUTES` |
 
 ## 6. 권한·메뉴 모델

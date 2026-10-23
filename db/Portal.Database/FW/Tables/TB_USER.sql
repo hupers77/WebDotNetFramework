@@ -21,6 +21,8 @@ CREATE TABLE [FW].[TB_USER] (
   [MFA_SECRET_ENC] VARBINARY(256) NULL,                 -- TOTP 비밀키, 애플리케이션에서 암호화 (등록 전 NULL)
   [MFA_LAST_STEP]  BIGINT         NULL,                 -- 마지막으로 쓴 TOTP 시간 단계 (같은 코드 재사용 방지)
   [LAST_LOGIN_DT]  DATETIME2(0)   NULL,
+  [STAT_CHG_DT]    DATETIME2(0)   NULL,                 -- 상태를 마지막으로 바꾼 시각 (휴면 해제 후 다시 바로 휴면되지 않게 미접속 기간 기준에 쓴다)
+  [DORMANT_NOTICE_DT] DATETIME2(0) NULL,                -- 휴면 전환 사전 안내를 보낸 시각 (JOB_USER_DORMANT)
   [REG_ID]         VARCHAR(30)    NOT NULL CONSTRAINT [DF_TB_USER_REG_ID] DEFAULT ('SYSTEM'),
   [REG_DT]         DATETIME2(0)   NOT NULL CONSTRAINT [DF_TB_USER_REG_DT] DEFAULT (SYSUTCDATETIME()),
   [UPD_ID]         VARCHAR(30)    NOT NULL CONSTRAINT [DF_TB_USER_UPD_ID] DEFAULT ('SYSTEM'),

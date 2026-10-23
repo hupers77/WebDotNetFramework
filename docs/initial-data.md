@@ -158,7 +158,8 @@ Oct 21, 2026 · @사랑나무아빠
 | `SESSION.IDLE_MINUTES` | 30 | INT | N | 비활동 만료 |
 | `SESSION.CONCURRENT_POLICY` | KICK\_OLD | STRING | N | KICK\_OLD / DENY\_NEW / ALLOW |
 | `SESSION.KEEP_DAYS` | 30 | INT | N | 끝난 세션 행 보관 기간(일). 로그인 기록은 따로 10년 보관 |
-| `USER.DORMANT_DAYS` | 365 | INT | N | 미접속 휴면 전환 |
+| `USER.DORMANT_DAYS` | 365 | INT | N | 미접속 휴면 전환 (일, 0이면 휴면 전환 안 함) |
+| `USER.DORMANT_NOTICE_DAYS` | 30 | INT | N | 휴면 전환 사전 안내 (전환 며칠 전, 안내 후 이 기간이 지나야 전환) |
 | `FILE.MAX_SIZE_MB` | 20 | INT | N | 파일 1개 최대 크기 |
 | `FILE.MAX_COUNT` | 10 | INT | N | 첨부 묶음 하나의 최대 파일 수 |
 | `FILE.DELETED_KEEP_DAYS` | 30 | INT | N | 삭제한 첨부를 저장소에서 지우기까지 기간(일) |
@@ -207,7 +208,7 @@ Oct 21, 2026 · @사랑나무아빠
 | `JOB_TEMP_CLEANUP` | 확정되지 않은 첨부(하루 지남)·삭제한 지 30일 지난 첨부를 저장소에서 삭제 | 매일 05:00 (`0 5 * * *`) | 등록됨 (클래스 `FileCleanup`) |
 | `JOB_DATA_CLEANUP` | 처리한 가입 신청 이메일(30일), 발송 끝난 메일 대기열(90일), 작업 이력(365일), 포털 알림(90일) 삭제 | 매일 05:10 (`10 5 * * *`) | 등록됨 (SP `FW.USP_JOB_DATA_CLEANUP_EXEC`) |
 | `JOB_AD_SYNC` | AD 조직·사용자 동기화, 퇴사자 잠금 | 매일 04:00 | 3단계 |
-| `JOB_USER_DORMANT` | 미접속 계정 휴면 전환 (30일 전 사전 안내) | 매일 04:30 | 예정 |
+| `JOB_USER_DORMANT` | 미접속 계정 휴면 전환 (30일 전 사전 안내, 안내 없이 바로 전환하지 않음, 시스템 계정 제외) | 매일 04:30 (`30 4 * * *`) | 등록됨 (SP `FW.USP_JOB_USER_DORMANT_EXEC`) |
 | `JOB_PARTNER_EXPIRE` | 계약 종료일 지난 협력사 계정 잠금 (7일 전 사전 안내) | 매일 04:30 | 예정 |
 | `JOB_PWD_EXPIRE_NOTICE` | 비밀번호 만료 7일 전 안내 | 매일 08:00 | 예정 |
 | `JOB_LOG_PARTITION` | 다음 달 로그 파티션 생성, 1년 지난 파티션 읽기 전용 전환, 보관 기간 지난 파티션 삭제 | 매월 1일 05:00 | 예정 |
