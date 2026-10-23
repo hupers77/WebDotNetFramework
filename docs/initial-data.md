@@ -150,6 +150,8 @@ Oct 21, 2026 · @사랑나무아빠
 | `AUTH.AD_AUTO_PROVISION` | Y | BOOL | N | AD 로그인 시 포털 계정 자동 생성 |
 | `AUTH.PARTNER_MFA` | Y | BOOL | N | 협력사 2단계 인증 |
 | `AUTH.ADMIN_MFA` | Y | BOOL | N | 관리자 역할 2단계 인증 |
+| `AUTH.PARTNER_EMAIL_OTP` | Y | BOOL | N | 협력사 2단계 인증에 이메일 인증번호 허용 |
+| `AUTH.ADMIN_EMAIL_OTP` | N | BOOL | N | 관리자 역할 2단계 인증에 이메일 인증번호 허용 |
 | `AUTH.LOGIN_RATE_PER_MIN` | 10 | INT | N | IP당 분당 로그인 시도 한도 |
 | `PWD.MIN_LEN_3TYPES` | 8 | INT | N | 3종류 조합 최소 길이 |
 | `PWD.MIN_LEN_2TYPES` | 10 | INT | N | 2종류 조합 최소 길이 |
@@ -226,7 +228,6 @@ Oct 21, 2026 · @사랑나무아빠
 | `TPL_PARTNER_APPROVED` | 계정 승인 완료 및 최초 로그인 안내 | 메일 |
 | `TPL_PARTNER_REJECTED` | 가입 반려 안내 | 메일 |
 | `TPL_PWD_RESET` | 비밀번호 초기화 링크 (30분 유효) | 메일 |
-| `TPL_MFA_OTP` | 2단계 인증 번호 (5분 유효) | 메일 |
 | `TPL_PWD_EXPIRE` | 비밀번호 만료 예정 (알림을 누르면 비밀번호 변경 화면) | 메일, 포털 |
 | `TPL_DORMANT_NOTICE` | 휴면 전환 예정 | 메일 |
 | `TPL_ACCOUNT_EXPIRE` | 협력사 계정 만료 예정 | 메일 |
@@ -235,6 +236,8 @@ Oct 21, 2026 · @사랑나무아빠
 | `TPL_REPORT_DONE` | 레포트 백그라운드 생성 완료 (요청자에게, 알림을 누르면 내 레포트 화면) | 포털 |
 | `TPL_REPORT_FAILED` | 레포트 백그라운드 생성 실패 (요청자에게) | 포털 |
 | `TPL_BOARD_REPLY` | 내 글에 답글·댓글 | 포털 |
+
+2단계 인증 이메일 인증번호(5분 유효)는 메일 대기열을 거치지 않고 로그인 도중 바로 보내므로(번호를 대기열 테이블에 남기지 않기 위해) 템플릿이 아니라 언어 리소스 `MAIL.OTP_SUBJECT`·`MAIL.OTP_BODY`(`{0}` = 번호)를 씁니다.
 
 템플릿 본문의 치환 변수는 `{{USER_NM}}`, `{{SITE_NM}}`, `{{LINK}}`, `{{EXPIRE_DT}}`처럼 쓰고, 치환값은 HTML 인코딩되어 들어갑니다. 메일 본문에 비밀번호 자체는 넣지 않습니다.
 

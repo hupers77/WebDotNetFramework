@@ -74,6 +74,9 @@ public sealed class PortalWebFactory : WebApplicationFactory<Program>
     /// <summary>PDF 변환 (브라우저 없이 받은 HTML을 남긴다).</summary>
     public FakePdfConverter Pdf { get; } = new();
 
+    /// <summary>2단계 인증 이메일 인증번호 발송 (보낸 번호를 남긴다).</summary>
+    public FakeMfaCodeMailer Mailer { get; } = new();
+
     public FakePortalConfig Config { get; } = new FakePortalConfig().Set("AUTH.LOGIN_RATE_PER_MIN", "1000");
 
     /// <summary>화면에 쓰는 몇 개 문구 (나머지는 키가 그대로 보인다).</summary>
@@ -153,6 +156,8 @@ public sealed class PortalWebFactory : WebApplicationFactory<Program>
             services.AddSingleton<ISpExecutor>(Sp);
             services.RemoveAll<IPortalConfig>();
             services.AddSingleton<IPortalConfig>(Config);
+            services.RemoveAll<Portal.Security.Mfa.IMfaCodeMailer>();
+            services.AddSingleton<Portal.Security.Mfa.IMfaCodeMailer>(Mailer);
             services.RemoveAll<Portal.Infrastructure.Files.IFileStorage>();
             services.AddSingleton<Portal.Infrastructure.Files.IFileStorage>(Files);
             services.RemoveAll<Portal.Infrastructure.Pdf.IPdfConverter>();

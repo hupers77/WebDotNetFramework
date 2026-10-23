@@ -18,8 +18,8 @@ internal static class AuthTestContext
     /// <summary>테스트끼리 같은 키를 쓴다 (한 테스트에서 등록한 비밀키를 다시 읽을 수 있게).</summary>
     public static readonly DataProtectionMfaSecretProtector MfaSecrets = new(new EphemeralDataProtectionProvider());
 
-    public static AuthService NewAuth(TestDb db, FakePortalConfig? config = null, TimeProvider? time = null) =>
-        new(db.Sp, Hasher, config ?? new FakePortalConfig(), db.User, time ?? TimeProvider.System, MfaSecrets, NullLogger<AuthService>.Instance);
+    public static AuthService NewAuth(TestDb db, FakePortalConfig? config = null, TimeProvider? time = null, FakeMfaCodeMailer? mailer = null) =>
+        new(db.Sp, Hasher, config ?? new FakePortalConfig(), db.User, time ?? TimeProvider.System, MfaSecrets, mailer ?? new FakeMfaCodeMailer(), NullLogger<AuthService>.Instance);
 
     /// <summary>2단계 인증을 끈 설정 (비밀번호 단계만 보는 테스트).</summary>
     public static FakePortalConfig PasswordOnly() =>

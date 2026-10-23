@@ -30,9 +30,15 @@ public sealed record LoginResult(
 
 /// <summary>2단계 인증 코드 확인 요청.</summary>
 /// <param name="Ticket">비밀번호 확인 뒤 받은 대기표.</param>
-/// <param name="Code">인증 앱의 6자리 코드.</param>
+/// <param name="Code">인증 앱 또는 이메일로 받은 6자리 코드.</param>
 /// <param name="UserAgent">브라우저 정보.</param>
-public sealed record MfaVerifyRequest(Mfa.MfaTicket Ticket, string? Code, string? UserAgent);
+/// <param name="Email">true면 이메일 인증번호로 확인한다 (인증 앱 코드가 아니라).</param>
+public sealed record MfaVerifyRequest(Mfa.MfaTicket Ticket, string? Code, string? UserAgent, bool Email = false);
+
+/// <summary>이메일 인증번호 발송 결과.</summary>
+/// <param name="Sent">보냈는지.</param>
+/// <param name="MessageKey">보냈으면 안내, 못 보냈으면 사유 메시지 키.</param>
+public sealed record MfaEmailSendResult(bool Sent, string MessageKey);
 
 /// <summary>세션 확인 결과. <see cref="User"/>가 null이면 로그아웃 상태이고 <see cref="EndReasonCd"/>가 사유다.</summary>
 /// <param name="User">로그인 사용자.</param>
@@ -114,6 +120,22 @@ internal sealed class AuthUser
     public long? MfaLastStep { get; set; }
 
     public string AdminYn { get; set; } = "N";
+
+    public string HasEmail { get; set; } = "N";
+}
+
+/// <summary><c>USP_AUTH_OTP_ISSUE_EXEC</c> 결과.</summary>
+internal sealed class OtpIssued
+{
+    public byte[]? EmailEnc { get; set; }
+
+    public string LangCd { get; set; } = "ko";
+}
+
+/// <summary><c>USP_AUTH_OTP_VERIFY_EXEC</c> 결과.</summary>
+internal sealed class OtpVerified
+{
+    public string MatchYn { get; set; } = "N";
 }
 
 /// <summary><c>USP_AUTH_LOGIN_SUCCESS_EXEC</c> 결과.</summary>

@@ -18,6 +18,12 @@ public static class ConfigKeys
     /// <summary>관리자 역할 2단계 인증.</summary>
     public const string AuthAdminMfa = "AUTH.ADMIN_MFA";
 
+    /// <summary>협력사가 2단계 인증을 이메일 인증번호로도 할 수 있게 한다.</summary>
+    public const string AuthPartnerEmailOtp = "AUTH.PARTNER_EMAIL_OTP";
+
+    /// <summary>관리자 역할이 2단계 인증을 이메일 인증번호로도 할 수 있게 한다.</summary>
+    public const string AuthAdminEmailOtp = "AUTH.ADMIN_EMAIL_OTP";
+
     /// <summary>IP당 분당 로그인 시도 한도.</summary>
     public const string AuthLoginRatePerMin = "AUTH.LOGIN_RATE_PER_MIN";
 

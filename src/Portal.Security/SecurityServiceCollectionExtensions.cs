@@ -33,6 +33,7 @@ public static class SecurityServiceCollectionExtensions
         services.TryAddScoped<PartnerJoinService>();
         services.TryAddSingleton<IMfaSecretProtector, DataProtectionMfaSecretProtector>();
         services.TryAddSingleton<MfaTicketProtector>();
+        services.TryAddSingleton<IMfaCodeMailer, NoMfaCodeMailer>();
         return services;
     }
 
