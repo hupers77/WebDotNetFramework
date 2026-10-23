@@ -41,6 +41,7 @@ USING (VALUES
   (N'MAIL.FROM', NULL, N'STRING', N'N', N'MAIL', N'보내는 주소', N'N'),
   (N'MSG.KEEP_DAYS', N'90', N'INT', N'N', N'MSG', N'발송을 마친 메일 대기열 보관 기간(일)', N'N'),
   (N'PARTNER.JOIN_KEEP_DAYS', N'30', N'INT', N'N', N'PARTNER', N'처리한 가입 신청의 이메일 보관 기간(일)', N'N'),
+  (N'PARTNER.EXPIRE_NOTICE_DAYS', N'7', N'INT', N'N', N'PARTNER', N'협력사 계정 만료 사전 안내(기한 며칠 전, 0 = 안내 안 함)', N'N'),
   (N'JOB.HIST_KEEP_DAYS', N'365', N'INT', N'N', N'JOB', N'배치 작업 실행 이력 보관 기간(일)', N'N'),
   (N'LOG.RETENTION_YEARS', N'10', N'INT', N'N', N'LOG', N'접속기록·감사 로그 보관 기간(년)', N'N'),
   (N'LOG.ERROR_RETENTION_DAYS', N'365', N'INT', N'N', N'LOG', N'오류 로그 보관 기간(일)', N'N'),

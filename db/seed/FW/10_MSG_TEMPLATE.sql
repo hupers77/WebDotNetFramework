@@ -11,6 +11,7 @@ USING (VALUES
   (N'TPL_PARTNER_REJECTED', N'협력사 가입 반려 안내', N'Y', N'N', NULL),
   (N'TPL_PARTNER_SIGNUP_REQ', N'협력사 가입 신청 알림 (승인 담당자에게)', N'Y', N'Y', N'SYS_PARTNER_APPROVE'),
   (N'TPL_DORMANT_NOTICE', N'휴면 전환 사전 안내', N'Y', N'N', NULL),
+  (N'TPL_ACCOUNT_EXPIRE', N'협력사 계정 만료 사전 안내', N'Y', N'N', NULL),
   (N'TPL_JOB_FAILED', N'배치 작업 실패 알림', N'Y', N'Y', N'SYS_JOB_MGT')
 ) AS S ([TEMPLATE_ID], [TEMPLATE_NM], [MAIL_YN], [PORTAL_YN], [LINK_PROGRAM_ID])
    ON T.[TEMPLATE_ID] = S.[TEMPLATE_ID]
@@ -33,6 +34,9 @@ USING (VALUES
   (N'TPL_DORMANT_NOTICE', N'ko', N'[{{SITE_NM}}] {{NOTICE_DAYS}}일 뒤 계정이 휴면으로 바뀝니다', N'<p>{{USER_NM}}님, 안녕하세요.</p><p>계정 <strong>{{USER_ID}}</strong>으로 오랫동안 로그인하지 않으셨습니다. {{NOTICE_DAYS}}일 안에 로그인하지 않으면 계정이 휴면으로 바뀌고, 그 뒤에는 관리자가 해제해야 로그인할 수 있습니다.</p><p>계속 사용하시려면 아래 주소에서 로그인해 주세요.</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
   (N'TPL_DORMANT_NOTICE', N'en', N'[{{SITE_NM}}] Your account will become dormant in {{NOTICE_DAYS}} days', N'<p>Hello {{USER_NM}},</p><p>You have not signed in to the account <strong>{{USER_ID}}</strong> for a long time. If you do not sign in within {{NOTICE_DAYS}} days, the account becomes dormant and an administrator must reactivate it before you can sign in.</p><p>To keep using it, sign in at the address below.</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
   (N'TPL_DORMANT_NOTICE', N'zh-CN', N'[{{SITE_NM}}] 您的账户将在{{NOTICE_DAYS}}天后转为休眠', N'<p>{{USER_NM}}，您好：</p><p>您已长时间未使用账户 <strong>{{USER_ID}}</strong> 登录。如果{{NOTICE_DAYS}}天内仍未登录，该账户将转为休眠，之后需由管理员解除才能登录。</p><p>如需继续使用，请通过以下地址登录。</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
+  (N'TPL_ACCOUNT_EXPIRE', N'ko', N'[{{SITE_NM}}] 계정 사용 기한이 {{EXPIRE_DT}}에 끝납니다', N'<p>{{USER_NM}}님, 안녕하세요.</p><p>계정 <strong>{{USER_ID}}</strong>의 사용 기한이 <strong>{{EXPIRE_DT}}</strong>({{DAYS_LEFT}}일 남음)에 끝납니다. 기한이 지나면 계정이 만료되어 로그인할 수 없습니다.</p><p>계약이 연장되었거나 계속 사용해야 하면 본사 담당자에게 기한 연장을 요청해 주세요.</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
+  (N'TPL_ACCOUNT_EXPIRE', N'en', N'[{{SITE_NM}}] Your account expires on {{EXPIRE_DT}}', N'<p>Hello {{USER_NM}},</p><p>The account <strong>{{USER_ID}}</strong> can be used until <strong>{{EXPIRE_DT}}</strong> ({{DAYS_LEFT}} days left). After that date the account expires and you cannot sign in.</p><p>If your contract was extended or you still need access, ask your contact at headquarters to extend the account.</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
+  (N'TPL_ACCOUNT_EXPIRE', N'zh-CN', N'[{{SITE_NM}}] 您的账户将于{{EXPIRE_DT}}到期', N'<p>{{USER_NM}}，您好：</p><p>账户 <strong>{{USER_ID}}</strong> 的使用期限将于 <strong>{{EXPIRE_DT}}</strong>（剩余{{DAYS_LEFT}}天）结束。到期后账户将失效，无法登录。</p><p>如合同已续签或仍需使用，请联系总部负责人延长使用期限。</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
   (N'TPL_JOB_FAILED', N'ko', N'[{{SITE_NM}}] 배치 작업 실패: {{JOB_NM}}', N'<p>배치 작업 <strong>{{JOB_NM}}</strong>({{JOB_ID}})이(가) 실패했습니다.</p><p>사유: {{RESULT_MSG}}</p><p>운영 > 스케줄 관리에서 실행 이력을 확인하세요. 같은 작업이 계속 실패해도 다시 성공할 때까지는 이 메일을 다시 보내지 않습니다.</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
   (N'TPL_JOB_FAILED', N'en', N'[{{SITE_NM}}] Scheduled job failed: {{JOB_NM}}', N'<p>The scheduled job <strong>{{JOB_NM}}</strong> ({{JOB_ID}}) failed.</p><p>Reason: {{RESULT_MSG}}</p><p>Check the run history in Operations > Schedules. If the job keeps failing, this mail is not sent again until it succeeds.</p><p><a href="{{LINK}}">{{LINK}}</a></p>'),
   (N'TPL_JOB_FAILED', N'zh-CN', N'[{{SITE_NM}}] 计划任务失败：{{JOB_NM}}', N'<p>计划任务 <strong>{{JOB_NM}}</strong>（{{JOB_ID}}）运行失败。</p><p>原因：{{RESULT_MSG}}</p><p>请在“运维 > 计划任务”中查看运行记录。在任务再次成功之前，即使继续失败也不会重复发送此邮件。</p><p><a href="{{LINK}}">{{LINK}}</a></p>')

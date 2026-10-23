@@ -96,6 +96,26 @@ public sealed class CompanyAdminSpTests(DbFixture fixture)
     }
 
     [Fact]
+    public async Task 수정_계약을연장하면_기한이지나만료된계정이다시사용으로돌아온다()
+    {
+        await using var db = await fixture.BeginAsync();
+        var oldEnd = DateOnly.FromDateTime(DateTime.Today.AddDays(-3));
+        var ptn = await CreateAsync(db, end: oldEnd);
+        await db.SeedUserAsync("it.co.expired", ptn, "PARTNER");
+        await db.SeedUserAsync("it.co.retired", ptn, "PARTNER");
+        await db.ExecAsync("UPDATE FW.TB_USER SET ACCOUNT_END_DT = @E, USER_STAT_CD = 'EXPIRED' WHERE USER_ID = 'it.co.expired'", ("@E", oldEnd.ToDateTime(TimeOnly.MinValue)));
+        await db.ExecAsync("UPDATE FW.TB_USER SET ACCOUNT_END_DT = @E, USER_STAT_CD = 'RETIRED' WHERE USER_ID = 'it.co.retired'", ("@E", oldEnd.ToDateTime(TimeOnly.MinValue)));
+
+        await SaveAsync(db, ptn, (await GetAsync(db, ptn)).RowVer, end: oldEnd.AddYears(1));
+
+        Assert.Equal(
+            ["it.co.expired|ACTIVE", "it.co.retired|RETIRED"],
+            await db.ColumnAsync<string>("SELECT CONCAT(USER_ID, '|', USER_STAT_CD) FROM FW.TB_USER WHERE USER_ID IN ('it.co.expired', 'it.co.retired') ORDER BY USER_ID"));
+        var audit = await db.ScalarAsync<string>("SELECT TOP 1 AFTER_JSON FROM LOG.TB_AUDIT_LOG WHERE TABLE_NM = 'FW.TB_USER' AND ROW_KEY = @C ORDER BY LOG_ID DESC", ("@C", ptn));
+        Assert.Contains("\"USER_STAT_CD\":\"ACTIVE\"", audit, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task 수정_기한없던회사에종료일을두면_기한없던계정도따라간다()
     {
         await using var db = await fixture.BeginAsync();
