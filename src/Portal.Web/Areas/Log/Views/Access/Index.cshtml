@@ -1,0 +1,93 @@
+@* 로그인·접근 기록 (표준 화면 1 조회): 검색 조건, 목록, 쪽 넘김, 엑셀. 기록 종류에 따라 표와 조건을 바꾼다. *@
+@model AccessLogIndexModel
+@{
+    var title = Menus.ProgramTitle(AccessController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/log/access.js" asp-append-version="true"></script>
+}
+<h1 id="log-heading">@title</h1>
+<div id="log-screen"
+     data-url-logins="@Url.Action("Logins")"
+     data-url-accesses="@Url.Action("Accesses")"
+     data-url-export="@Url.Action("Export")">
+    <form id="log-search" class="search-bar" role="search">
+        <label for="log-kind">@L["LBL.LOG_KIND"]</label>
+        <select id="log-kind">
+            <option value="LOGIN">@L["LOG.ACCESS.LOGIN"]</option>
+            <option value="ACCESS">@L["LOG.ACCESS.ACCESS"]</option>
+        </select>
+        <label for="log-from">@L["LBL.START_DT"]</label>
+        <input id="log-from" type="date" required />
+        <label for="log-to">@L["LBL.END_DT"]</label>
+        <input id="log-to" type="date" required />
+        <label for="log-user">@L["LBL.USER_ID"]</label>
+        <input id="log-user" maxlength="30" autocomplete="off" spellcheck="false" />
+        <span class="login-only">
+            <label for="log-result">@L["LBL.RESULT"]</label>
+            <select id="log-result">
+                <option value="">@L["LBL.ALL"]</option>
+                @foreach (var (code, name) in Model.Results)
+                {
+                    <option value="@code">@name</option>
+                }
+            </select>
+        </span>
+        <span class="access-only" hidden>
+            <label for="log-program">@L["LBL.PROGRAM"]</label>
+            <select id="log-program">
+                <option value="">@L["LBL.ALL"]</option>
+                @foreach (var (code, name) in Model.Programs)
+                {
+                    <option value="@code">@name</option>
+                }
+            </select>
+            <label><input id="log-error" type="checkbox" /> @L["LBL.ERROR_ONLY"]</label>
+        </span>
+        <label for="log-ip">@L["LBL.CLIENT_IP"]</label>
+        <input id="log-ip" maxlength="45" autocomplete="off" spellcheck="false" />
+        <button type="submit">@L["BTN.SEARCH"]</button>
+    </form>
+    <p class="hint">@L["LOG.ACCESS.HINT"]</p>
+    <div class="toolbar">
+        <p id="log-total" class="hint toolbar-spacer" aria-live="polite"></p>
+        <fw-button func="EXPORT" text-key="BTN.EXCEL" id="log-export" />
+    </div>
+    <div class="grid-wrap">
+        <table id="login-table" class="fw-grid" aria-labelledby="log-heading">
+            <thead>
+                <tr>
+                    <th scope="col">@L["LBL.LOG_DT"]</th>
+                    <th scope="col">@L["LBL.USER_ID"]</th>
+                    <th scope="col">@L["LBL.RESULT"]</th>
+                    <th scope="col">@L["LBL.AUTH_METHOD"]</th>
+                    <th scope="col">@L["LBL.CLIENT_IP"]</th>
+                    <th scope="col">@L["LBL.USER_AGENT"]</th>
+                </tr>
+            </thead>
+            <tbody id="login-body"></tbody>
+        </table>
+        <table id="access-table" class="fw-grid" aria-labelledby="log-heading" hidden>
+            <thead>
+                <tr>
+                    <th scope="col">@L["LBL.LOG_DT"]</th>
+                    <th scope="col">@L["LBL.USER_ID"]</th>
+                    <th scope="col">@L["LBL.PROGRAM"]</th>
+                    <th scope="col">@L["LBL.FUNC"]</th>
+                    <th scope="col">@L["LBL.REQUEST_PATH"]</th>
+                    <th scope="col">@L["LBL.STATUS_CODE"]</th>
+                    <th scope="col">@L["LBL.ELAPSED_MS"]</th>
+                    <th scope="col">@L["LBL.CLIENT_IP"]</th>
+                    <th scope="col">@L["LBL.TRACE_ID"]</th>
+                </tr>
+            </thead>
+            <tbody id="access-body"></tbody>
+        </table>
+    </div>
+    <div id="log-pager" class="pager" hidden>
+        <button type="button" id="log-prev">@L["BTN.PREV"]</button>
+        <span id="log-page" aria-live="polite"></span>
+        <button type="button" id="log-next">@L["BTN.NEXT"]</button>
+    </div>
+</div>

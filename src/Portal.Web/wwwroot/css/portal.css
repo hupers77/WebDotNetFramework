@@ -241,3 +241,8 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .role-auth-grid td { text-align: center; }
 .role-auth-grid tbody th { font-weight: normal; white-space: normal; }
 .role-auth-grid tr.group-row th { background: var(--fw-hover); font-weight: 600; }
+
+/* 로그 조회: 조건 칸은 늘리지 않고, 실패·오류 행은 빨간 글씨 */
+#log-search input { flex: 0 1 10rem; }
+#log-search > span:not([hidden]) { display: inline-flex; gap: .4rem; align-items: center; }
+.fw-grid tr.log-fail td { color: var(--fw-error); }
