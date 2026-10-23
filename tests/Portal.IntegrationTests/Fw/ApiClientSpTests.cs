@@ -55,4 +55,38 @@ public sealed class ApiClientSpTests(DbFixture fixture)
         Assert.Equal(1, saved.AffectedCnt);
         Assert.Equal(1, await db.ScalarAsync<int>("SELECT COUNT(*) FROM LOG.TB_API_LOG WHERE CLIENT_ID = 't-on' AND URL = '/api/v1/ping' AND STATUS_CODE = 200"));
     }
+
+    [Fact]
+    public async Task 관리화면_저장_수정_삭제와_비밀값발급이_동작한다()
+    {
+        await using var db = await fixture.BeginAsync();
+        var service = new Portal.Web.Areas.Sys.Services.ApiClientAdminService(db.Sp, new Portal.Security.Passwords.Pbkdf2PasswordHasher());
+        await service.SaveAsync(new Portal.Web.Areas.Sys.Models.ApiClientSaveRequest
+        {
+            Rows = [new() { RowStat = "I", ClientId = "t-new", ClientNm = "신규", ApiCodes = "PING", UseYn = "Y" }],
+        }, Ct);
+
+        var created = (await service.GetListAsync(Ct)).Items.Single(c => c.ClientId == "t-new");
+        Assert.Equal("N", created.SecretYn);
+
+        var issued = await service.IssueSecretAsync(new Portal.Web.Areas.Sys.Models.ApiClientSecretRequest { ClientId = "t-new", RowVer = created.RowVer }, Ct);
+        var after = (await service.GetListAsync(Ct)).Items.Single(c => c.ClientId == "t-new");
+        Assert.Equal("Y", after.SecretYn);
+        Assert.NotNull(after.SecretIssuedDt);
+        Assert.Equal(0, await db.ScalarAsync<int>("SELECT COUNT(*) FROM LOG.TB_AUDIT_LOG WHERE AFTER_JSON LIKE '%' + @S + '%'", ("@S", issued.ClientSecret)));
+
+        // 이전 RowVer로는 다시 발급할 수 없다 (동시성)
+        await Assert.ThrowsAsync<Portal.Core.Errors.BizException>(() =>
+            service.IssueSecretAsync(new Portal.Web.Areas.Sys.Models.ApiClientSecretRequest { ClientId = "t-new", RowVer = created.RowVer }, Ct));
+        await Assert.ThrowsAsync<Portal.Core.Errors.BizException>(() => service.SaveAsync(new Portal.Web.Areas.Sys.Models.ApiClientSaveRequest
+        {
+            Rows = [new() { RowStat = "I", ClientId = "t-new", ClientNm = "중복", UseYn = "Y" }],
+        }, Ct));
+
+        await service.SaveAsync(new Portal.Web.Areas.Sys.Models.ApiClientSaveRequest
+        {
+            Rows = [new() { RowStat = "D", ClientId = "t-new", RowVer = after.RowVer }],
+        }, Ct);
+        Assert.DoesNotContain((await service.GetListAsync(Ct)).Items, c => c.ClientId == "t-new");
+    }
 }
