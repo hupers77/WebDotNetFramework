@@ -72,22 +72,26 @@ public sealed class AuthOtpSpTests(DbFixture fixture)
         Assert.Equal(AuthMessageKeys.OtpInvalid, second.MessageKey);
     }
 
+    private static Task<int> AgeSendAsync(TestDb db) =>
+        db.ExecAsync("UPDATE FW.TB_AUTH_OTP SET SEND_DT = DATEADD(SECOND, -61, SEND_DT) WHERE USER_ID = 'it.otp'");
+
+    // SP 오류(XACT_ABORT)는 테스트 트랜잭션도 롤백하므로, 오류를 확인하는 호출은 각 테스트의 마지막에 둔다
+
     [Fact]
-    public async Task 직전발송_1분안에는_다시보낼수없다()
+    public async Task 직전발송_1분이지나면_다시보내고_1분안에는_보낼수없다()
     {
         await using var db = await PartnerAsync(fixture);
         var mailer = new FakeMfaCodeMailer();
         var auth = NewAuth(db, EmailOtpOn(), mailer: mailer);
 
-        await auth.SendMfaEmailAsync(Ticket, Ct);
+        Assert.True((await auth.SendMfaEmailAsync(Ticket, Ct)).Sent);
+        await AgeSendAsync(db);
+        Assert.True((await auth.SendMfaEmailAsync(Ticket, Ct)).Sent);
         var again = await auth.SendMfaEmailAsync(Ticket, Ct);
 
         Assert.False(again.Sent);
         Assert.Equal(AuthMessageKeys.OtpTooSoon, again.MessageKey);
-        Assert.Single(mailer.Sent);
-
-        await db.ExecAsync("UPDATE FW.TB_AUTH_OTP SET SEND_DT = DATEADD(SECOND, -61, SEND_DT) WHERE USER_ID = 'it.otp'");
-        Assert.True((await auth.SendMfaEmailAsync(Ticket, Ct)).Sent);
+        Assert.Equal(2, mailer.Sent.Count);
     }
 
     [Fact]
@@ -100,14 +104,28 @@ public sealed class AuthOtpSpTests(DbFixture fixture)
         for (var i = 0; i < 5; i++)
         {
             Assert.True((await auth.SendMfaEmailAsync(Ticket, Ct)).Sent);
-            await db.ExecAsync("UPDATE FW.TB_AUTH_OTP SET SEND_DT = DATEADD(SECOND, -61, SEND_DT) WHERE USER_ID = 'it.otp'");
+            await AgeSendAsync(db);
         }
 
         var sixth = await auth.SendMfaEmailAsync(Ticket, Ct);
-        Assert.Equal(AuthMessageKeys.OtpLimit, sixth.MessageKey);
 
-        // 구간(1시간)이 지나면 다시 센다
+        Assert.Equal(AuthMessageKeys.OtpLimit, sixth.MessageKey);
+        Assert.Equal(5, mailer.Sent.Count);
+    }
+
+    [Fact]
+    public async Task 시간구간이지나면_발송수를_다시센다()
+    {
+        await using var db = await PartnerAsync(fixture);
+        var auth = NewAuth(db, EmailOtpOn(), mailer: new FakeMfaCodeMailer());
+        for (var i = 0; i < 5; i++)
+        {
+            await auth.SendMfaEmailAsync(Ticket, Ct);
+            await AgeSendAsync(db);
+        }
+
         await db.ExecAsync("UPDATE FW.TB_AUTH_OTP SET WINDOW_DT = DATEADD(MINUTE, -61, WINDOW_DT) WHERE USER_ID = 'it.otp'");
+
         Assert.True((await auth.SendMfaEmailAsync(Ticket, Ct)).Sent);
         Assert.Equal(1, await db.ScalarAsync<int>("SELECT SEND_CNT FROM FW.TB_AUTH_OTP WHERE USER_ID = 'it.otp'"));
     }
