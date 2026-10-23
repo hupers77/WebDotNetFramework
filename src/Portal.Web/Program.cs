@@ -33,6 +33,7 @@ builder.Services.AddHostedService<Portal.Web.Areas.Rpt.Services.ReportRunWorker>
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IDeptAdminService, Portal.Web.Areas.Sys.Services.DeptAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Board.Services.IBoardService, Portal.Web.Areas.Board.Services.BoardService>();
 builder.Services.AddScoped<Portal.Web.Areas.Board.Services.IBoardAdminService, Portal.Web.Areas.Board.Services.BoardAdminService>();
+builder.Services.AddScoped<Portal.Web.Areas.Dash.Services.IDashService, Portal.Web.Areas.Dash.Services.DashService>();
 
 var app = builder.Build();
 

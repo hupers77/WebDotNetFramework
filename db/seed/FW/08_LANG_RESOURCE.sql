@@ -1731,7 +1731,13 @@ USING (VALUES
   (N'BRD.ADM_PIN', N'zh-CN', N'置顶', N'LABEL'),
   (N'BRD.ADM_BOARD_CD', N'ko', N'게시판 코드', N'LABEL'),
   (N'BRD.ADM_BOARD_CD', N'en', N'Board code', N'LABEL'),
-  (N'BRD.ADM_BOARD_CD', N'zh-CN', N'公告板代码', N'LABEL')
+  (N'BRD.ADM_BOARD_CD', N'zh-CN', N'公告板代码', N'LABEL'),
+  (N'DSH.EMPTY', N'ko', N'표시할 위젯이 없습니다.', N'LABEL'),
+  (N'DSH.EMPTY', N'en', N'No widgets to show.', N'LABEL'),
+  (N'DSH.EMPTY', N'zh-CN', N'没有可显示的小组件。', N'LABEL'),
+  (N'DSH.LOADING', N'ko', N'불러오는 중…', N'LABEL'),
+  (N'DSH.LOADING', N'en', N'Loading…', N'LABEL'),
+  (N'DSH.LOADING', N'zh-CN', N'加载中…', N'LABEL')
 ) AS S ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE])
    ON T.[RES_KEY] = S.[RES_KEY] AND T.[LANG_CD] = S.[LANG_CD]
 WHEN NOT MATCHED THEN INSERT ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE]) VALUES (S.[RES_KEY], S.[LANG_CD], S.[RES_TEXT], S.[RES_TYPE]);

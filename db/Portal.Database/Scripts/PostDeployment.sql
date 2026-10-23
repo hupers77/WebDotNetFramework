@@ -15,3 +15,4 @@ GO
 :r ../../seed/FW/11_JOB.sql
 :r ../../seed/FW/12_REPORT.sql
 :r ../../seed/FW/13_BOARD.sql
+:r ../../seed/FW/14_WIDGET.sql

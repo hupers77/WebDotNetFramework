@@ -299,3 +299,28 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .comment-meta { color: var(--fw-muted); font-size: .8rem; display: flex; gap: .6rem; align-items: baseline; }
 .comment-text { margin: .25rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .comment-form { display: flex; flex-direction: column; gap: .4rem; max-width: 40rem; }
+
+/* 홈 대시보드: 12칸 그리드, 좁은 화면에서는 한 줄에 하나 */
+.dash-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem; }
+.dash-widget { grid-column: span 12; background: var(--fw-surface); border: 1px solid var(--fw-border); border-radius: 6px; padding: .8rem 1rem; }
+.dash-widget-title { margin: 0 0 .6rem; font-size: 1rem; }
+.dash-card-value { margin: 0; font-size: 2rem; font-weight: 600; }
+.dash-list { list-style: none; margin: 0; padding: 0; }
+.dash-list li { display: flex; justify-content: space-between; gap: .8rem; padding: .35rem 0; border-bottom: 1px solid var(--fw-border); }
+.dash-list li:last-child { border-bottom: 0; }
+.dash-list-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-list-date { color: var(--fw-muted); font-size: .8rem; white-space: nowrap; }
+@media (min-width: 768px) {
+    .dash-span-1 { grid-column: span 1; }
+    .dash-span-2 { grid-column: span 2; }
+    .dash-span-3 { grid-column: span 3; }
+    .dash-span-4 { grid-column: span 4; }
+    .dash-span-5 { grid-column: span 5; }
+    .dash-span-6 { grid-column: span 6; }
+    .dash-span-7 { grid-column: span 7; }
+    .dash-span-8 { grid-column: span 8; }
+    .dash-span-9 { grid-column: span 9; }
+    .dash-span-10 { grid-column: span 10; }
+    .dash-span-11 { grid-column: span 11; }
+    .dash-span-12 { grid-column: span 12; }
+}
