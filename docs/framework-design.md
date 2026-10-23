@@ -37,7 +37,7 @@ Oct 21, 2026 · @사랑나무아빠
 | --- | --- | --- | --- |
 | 웹 프레임워크 | ASP.NET Core MVC + Razor Pages, Web API | MIT (Microsoft) | 서버 렌더링 중심, SPA 프레임워크 미사용 |
 | DB 접근 | Microsoft.Data.SqlClient + 자체 SP 실행기 | MIT (Microsoft) | Dapper 수준의 경량 매퍼를 직접 구현 |
-| AD SSO | Microsoft.AspNetCore.Authentication.Negotiate | MIT (Microsoft) | Kerberos SSO (PC 로그인이 AD 계정이므로 유지. 사용자·조직은 AD 마스터 뷰(링크드 서버)로 동기화. LDAP 직접 연결은 구현이 단순하면 추가 검토 — AD 마스터 뷰 작업 때 재확인) |
+| AD SSO | Microsoft.AspNetCore.Authentication.Negotiate | MIT (Microsoft) | Kerberos SSO (PC 로그인이 AD 계정이므로 유지. 사용자·조직 동기화는 업무 사이트별로 개발하고, 프레임워크는 선택 사용할 LDAP 조회 모듈만 제공) |
 | 암호화 | System.Security.Cryptography, ASP.NET Core Data Protection | MIT (Microsoft) | PBKDF2, AES-256-GCM |
 | 캐시 | IMemoryCache, HybridCache, SQL Server 분산 캐시 | MIT (Microsoft) | 웹팜 확장 시 Redis 없이 동작 |
 | 로깅 | Microsoft.Extensions.Logging + 자체 DB/파일 Provider | MIT (Microsoft) | Serilog/NLog 미사용 |
@@ -103,7 +103,7 @@ Portal.sln
 │  ├─ Portal.Modules.Dashboard 대시보드, 위젯 (Area: Dash)
 │  ├─ Portal.Modules.Sample  표준 화면 예제 (Area: Sample)
 │  ├─ Portal.Web             호스트: Program.cs, 레이아웃, 로그인, 외부 API(/api/v1)
-│  └─ Portal.Worker          Windows 서비스: 스케줄러, 메일 발송, AD 동기화, 로그 정리
+│  └─ Portal.Worker          Windows 서비스: 스케줄러, 메일 발송, 로그 정리
 ├─ db/
 │  └─ Portal.Database        SSDT: 스키마별 테이블, SP, TVP 타입, 초기 데이터 스크립트
 └─ tests/
@@ -139,7 +139,7 @@ Portal.sln
 2. AD 계정(`objectSid`, `sAMAccountName`)을 `TB_USER_LOGIN_MAP`으로 포털 사용자와 연결. 매핑이 없으면 설정에 따라 자동 생성(`AUTH.AD_AUTO_PROVISION`) 또는 거부
 3. 웹 세션은 ID/PW와 같은 쿠키 세션으로 전환 (매 요청 Kerberos 현상 방지)
 4. 도메인 밖(모바일, 외부)에서는 포털 ID/PW 폼 로그인을 씁니다. 포털은 AD 비밀번호를 받지도 AD에 대신 확인하지도 않습니다(LDAPS Bind 없음, 2026-10-23 결정)
-5. **AD 마스터 뷰 동기화** (2026-10-23 결정): AD에 직접 연결하지 않고, 본사가 제공하는 AD 마스터 뷰(`AD.SYNC_VIEW`)를 읽어 포털 테이블(`TB_DEPT`, `TB_USER`, `TB_USER_LOGIN_MAP`, `TB_USER_AD_GROUP`)로 이관합니다. Portal.Worker의 `JOB_AD_SYNC`가 야간에 뷰를 읽어 동기화 SP로 반영하고(부서 → 사용자 순, 변경분만, 한 건 실패가 전체를 막지 않음), 뷰에서 사라지거나 비활성인 사용자는 포털 계정을 잠급니다(퇴사자 처리). 처음에는 개발 DB에서 변환 결과를 검증하고 운영에 적용합니다. 뷰의 컬럼 정의는 받는 대로 데이터 사전에 추가합니다. AD 그룹 → 포털 역할 매핑(`TB_AD_GROUP_ROLE`)은 뷰에 그룹 정보가 있을 때 지원합니다
+5. **AD 마스터 연동은 업무 사이트별로 개발합니다** (2026-10-23 사용자 결정): 프레임워크는 AD 동기화 작업(`JOB_AD_SYNC`)을 넣지 않고, 선택 사용할 **LDAP 모듈**(`ILdapDirectory`: 사용자·그룹 조회, `System.DirectoryServices.Protocols` 사용, 외부 패키지 없음)만 제공합니다. 사용자·조직·AD 그룹을 포털 테이블(`TB_DEPT`, `TB_USER`, `TB_USER_LOGIN_MAP`, `TB_USER_AD_GROUP`)로 옮기는 방식(AD 마스터 뷰, LDAP 등)과 퇴사자 잠금 규칙은 각 업무 사이트의 환경에 맞춰 그 업무 개발 때 구현합니다. 이전 설계안(AD 마스터 뷰 `AD.SYNC_VIEW` → 야간 `JOB_AD_SYNC` → 동기화 SP, 뷰에서 사라진 사용자 잠금)은 참고 설계로만 남깁니다. 포털 테이블과 설정 키(`AD.SYNC_VIEW`)는 그대로 둡니다
 6. 협력사 사용자는 AD 계정이 없으므로 **협력사 전용 로그인 화면**(ID/PW + 2단계 인증, 가입 신청 링크)을 본사 SSO 진입과 따로 둡니다. 본사 사용자는 기본 주소에서 SSO로 바로 들어오고, 협력사 사용자는 협력사 로그인 주소로 들어옵니다(2026-10-22 요구사항). 협력사 로그인 화면(`/Account/PartnerLogin`)은 만들어져 있고 협력사 계정만 통과시킵니다(본사 계정은 비밀번호 오류와 같은 응답). 본사 로그인 화면은 AD SSO를 붙일 때 SSO 진입으로 바꾸고, 그때 협력사 계정은 협력사 화면으로만 들어오게 막습니다
 
 향후 ADFS 또는 Microsoft Entra ID를 도입하면 OpenID Connect 핸들러(Microsoft 제공)를 추가하는 것만으로 확장되도록 인증 제공자를 인터페이스(`IAuthProvider`)로 분리합니다.
@@ -609,7 +609,7 @@ Cache-Control: no-store   (인증이 필요한 동적 페이지)
 | 감사 로그·접속기록 | 보안 심사, 개인정보 법적 의무 | 로그인, 화면 접근, 데이터 변경 전/후, 개인정보 조회 사유. 조회 화면과 월별 점검 리포트 |
 | 알림센터·메일 | 승인 요청, 댓글, 배치 결과 전달 | 포털 알림(상단 배지, 60초 폴링 또는 SSE), 메일 큐 + SMTP 발송, 템플릿 다국어. 업무 SP가 같은 트랜잭션으로 `TB_MSG_QUEUE`에 템플릿 ID·치환값·암호화한 주소를 쌓고, 발송을 마치면 주소·치환값을 지운다. Portal.Worker가 1분마다 최대 20건씩 잠가 가져가(`USP_MSG_QUEUE_CLAIM_EXEC`, 여러 대가 떠도 중복 발송 없음) SMTP로 보내고, 실패는 최대 3회 재시도한다. Worker는 웹과 같은 Data Protection 키 폴더를 공유한다. 포털 알림은 같은 SP가 템플릿의 포털 채널이 켜져 있으면 `TB_NOTIFICATION`에 쌓고(문구는 볼 때 화면 언어로), 헤더 배지가 `NOTIFY.POLL_SECONDS`마다 안 읽은 수를 센다. 배지 조회는 세션을 연장하지 않고(`X-Portal-Background`) 접속기록도 남기지 않는다(`[SkipAccessLog]`). 승인 담당자처럼 기능 권한으로 받는 사람을 고를 때는 `FW.UFN_FUNC_USERS`를 쓴다 |
 | 스케줄러 | 야간 동기화, 집계, 정리 작업 | Portal.Worker의 Cron 스케줄러(자체 구현, 5필드, 한국 시간), `TB_JOB`에 주기·대상 SP/클래스 등록, 수동 실행(`RUN_REQ_YN`), 실패 알림(연속 실패는 한 번), 중복 실행 방지(DB 잠금, 제한 시간이 지나면 넘겨받음), 실행 이력 `TB_JOB_HIST`. SP 작업은 `USP_JOB_..._EXEC` 이름만 실행한다. 운영 > 스케줄 관리(`SYS_JOB_MGT`)에서 주기·제한 시간·사용 여부를 바꾸고 수동 실행한다(저장 동시성은 Worker가 바꾸는 `ROW_VER` 대신 `EDIT_VER`로 검사) |
-| 승인(결재) 엔진 | 업무 문서 승인 흐름 공통화 | 사내 전자결재 연동이 기본이며 **결재 과정은 전자결재 시스템에 위임**합니다(2026-10-23 결정): 포털은 결재 화면 주소(URI, `APPROVAL.VIEW_URL`)를 띄워 보여 주고 결재선·승인 처리는 하지 않으며, 결과(진행·승인·반려)만 확인합니다. \`IApprovalGateway\`는 ① 결재 문서의 화면 주소 만들기 ② 결과 조회로 분리하고 실제 연동(결과 확인 방식)은 업무 개발 시 구현. 업무 키와 결재 문서 번호 매핑(\`TB\_APPROVAL\_LINK\`), 결재 결과 수신 시 업무 SP 실행. 전자결재를 쓸 수 없는 협력사 업무용으로 간단한 내부 승인선 제공 |
+| 승인(결재) 엔진 | 업무 문서 승인 흐름 공통화 | 사내 전자결재 연동이 기본이며 **결재 과정은 전자결재 시스템에 위임**합니다. 포털은 결재 화면 주소(URI, `APPROVAL.VIEW_URL`)를 띄워 보여 주고 결재선·승인 처리는 하지 않으며, 결과(진행·승인·반려)만 확인합니다. **프레임워크는 연동 코드를 넣지 않고(2026-10-23 사용자 결정), 업무 사이트별 특성에 맞춰 각 업무 개발 때 구현합니다.** 구현할 때의 구성안: `IApprovalGateway`를 ① 결재 문서 화면 주소 만들기 ② 결과 조회로 나누고, 업무 키와 결재 문서 번호 매핑(`TB_APPROVAL_LINK`)을 둠. 전자결재를 쓸 수 없는 협력사 업무용 내부 승인선은 필요할 때 추가 |
 | 권한 위임·대리 | 휴가·출장 시 업무 공백 방지 | 기간 한정 역할 위임, 위임 중 처리는 "대리자(원권한자)"로 기록 |
 | 공지 팝업·시스템 점검 모드 | 운영 공지, 배포 중 접근 차단 | 기간·대상 지정 팝업, 점검 모드 시 관리자만 접속 |
 | 통합 검색 | 메뉴·게시글·사용자 빠른 찾기 | 메뉴 검색은 클라이언트, 게시글은 SQL Server Full-Text Search |
@@ -711,7 +711,7 @@ Cache-Control: no-store   (인증이 필요한 동적 페이지)
 | 서버 | 운영계·개발계 각 웹 1대 + DB 1대 | 1장, 3장 |
 | 사용자 | 본사 + 다수 협력사 | 5장, 6장, 7장 |
 | 언어 | 한국어, 영어, 중국어(간체로 가정) | 10장 |
-| 전자결재 | 결재 화면은 URI로 보여 주고 결재는 전자결재 시스템에 위임, 결과만 확인(2026-10-23). 연동 구현은 실제 개발 시 적용 | 11장 |
+| 전자결재 | 결재 화면은 URI로 보여 주고 결재는 전자결재 시스템에 위임, 결과만 확인(2026-10-23). 프레임워크에는 연동 코드를 넣지 않고 업무 사이트별로 구현(2026-10-23 사용자 결정) | 11장 |
 | HTML→PDF | 서버에 MS Edge 설치 | 2장, 11장 |
 | 개인정보 | 저장하지 않음이 원칙, 불가피하면 암호화 정책 적용 | 7장, 9장 |
 | 접속기록 | 10년 보관 | 7장, 9장 |
