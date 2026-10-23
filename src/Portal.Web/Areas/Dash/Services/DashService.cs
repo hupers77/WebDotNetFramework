@@ -17,12 +17,16 @@ public interface IDashService
 
     /// <summary>위젯 하나의 데이터. 볼 수 없거나 없는 위젯은 없는 것과 같다(NOT_FOUND).</summary>
     Task<IReadOnlyList<WidgetRowDto>> GetDataAsync(string widgetCd, PermissionSet permissions, CancellationToken cancellationToken = default);
+
+    /// <summary>지금 홈 화면에 띄울 공지 팝업 (기간·공개 대상이 맞는 것).</summary>
+    Task<IReadOnlyList<PopupActiveDto>> GetPopupsAsync(CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
 public sealed partial class DashService(ISpExecutor sp, IMemoryCache cache, ICurrentUser currentUser) : IDashService
 {
     internal const string ListSp = "FW.USP_WIDGET_GET_LIST";
+    internal const string PopupSp = "FW.USP_POPUP_ACTIVE_GET_LIST";
 
     /// <summary>화면에 줄 최대 행 수 (목록 위젯이 SP 실수로 너무 많이 돌려줘도 막는다).</summary>
     internal const int MaxRows = 20;
@@ -64,6 +68,10 @@ public sealed partial class DashService(ISpExecutor sp, IMemoryCache cache, ICur
 
         return rows;
     }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<PopupActiveDto>> GetPopupsAsync(CancellationToken cancellationToken = default) =>
+        sp.QueryAsync<PopupActiveDto>(PopupSp, cancellationToken: cancellationToken);
 
     private static bool CanView(WidgetDto widget, PermissionSet permissions) =>
         widget.ProgramId is null || permissions.Can(widget.ProgramId, FuncCodes.Read);

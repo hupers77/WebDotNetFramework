@@ -275,3 +275,5 @@ Oct 21, 2026 · @사랑나무아빠
 | --- | --- | --- | --- | --- | --- |
 | `NOTICE_RECENT` | LIST | `FW.USP_WIDGET_NOTICE_RECENT` | `BRD_NOTICE` | 8 | 60 |
 | `NOTI_UNREAD` | CARD | `FW.USP_WIDGET_NOTI_UNREAD` | `MY_NOTIFICATION` | 4 | 30 |
+
+공지 팝업은 시드 없이 운영자가 공지 팝업 화면(`SYS_POPUP_MGT`)에서 등록합니다. 기간(시작일~종료일, 포함)과 공개 대상(모든 사용자/본사/협력사)이 맞는 팝업이 홈 화면에 뜨고, 사용자는 "오늘 하루 보지 않기"를 고를 수 있습니다(브라우저에만 기록, 내용이 바뀌면 다시 뜸).

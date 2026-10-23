@@ -24,4 +24,9 @@ public sealed class DashController(IDashService dash, CurrentPermissions permiss
     public async Task<ApiResult<IReadOnlyList<WidgetRowDto>>> Data(
         [Required(ErrorMessage = "MSG.INVALID_INPUT"), RegularExpression("^[A-Z0-9_]{1,30}$", ErrorMessage = "MSG.INVALID_INPUT")] string widgetCd) =>
         Ok(await dash.GetDataAsync(widgetCd, await permissions.GetAsync(HttpContext.RequestAborted), HttpContext.RequestAborted));
+
+    /// <summary>지금 띄울 공지 팝업.</summary>
+    [HttpGet("Popups")]
+    public async Task<ApiResult<IReadOnlyList<PopupActiveDto>>> Popups(CancellationToken cancellationToken) =>
+        Ok(await dash.GetPopupsAsync(cancellationToken));
 }

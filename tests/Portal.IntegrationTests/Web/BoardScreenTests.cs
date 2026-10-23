@@ -368,4 +368,22 @@ public sealed class BoardScreenTests : IClassFixture<PortalWebFactory>
         Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(updater, "/Sys/Holiday/Save", insertRow)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await GetAsync(_web.SignIn("hd.x", [Home]), "/Sys/Holiday")).StatusCode);
     }
+
+    [Fact]
+    public async Task 공지팝업_관리화면은_기능별_권한이_있을때만_버튼이_그려지고_홈_팝업은_홈권한만_있으면_받는다()
+    {
+        _web.Sp.Returns(PopupAdminService.ListSp, new PageResult<PopupDto> { Items = [], TotalCount = 0, PageNo = 1, PageSize = 20 });
+        _web.Sp.Returns(DashService.PopupSp, new List<PopupActiveDto> { new() { PopupId = 1, Title = "점검", Content = "<b>내용</b>", VerKey = "1-x" } });
+        var all = await (await GetAsync(_web.SignIn("pp.a", [Home, "SYS_POPUP_MGT:READ", "SYS_POPUP_MGT:CREATE", "SYS_POPUP_MGT:UPDATE", "SYS_POPUP_MGT:DELETE"]), "/Sys/Popup?_layout=tab")).Content.ReadAsStringAsync(Ct);
+        var reader = await (await GetAsync(_web.SignIn("pp.r", [Home, "SYS_POPUP_MGT:READ"]), "/Sys/Popup?_layout=tab")).Content.ReadAsStringAsync(Ct);
+        var popups = await JsonAsync(await _web.NewClient(_web.SignIn("pp.h", [Home])).SendAsync(Ajax(HttpMethod.Get, "/Dash/Popups"), Ct));
+
+        Assert.Contains("id=\"popup-create\"", all, StringComparison.Ordinal);
+        Assert.Contains("id=\"popup-delete\"", all, StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"popup-create\"", reader, StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"popup-save\"", reader, StringComparison.Ordinal);
+        Assert.Equal("<b>내용</b>", popups.GetProperty("data")[0].GetProperty("content").GetString());
+        Assert.Equal(HttpStatusCode.Forbidden, (await GetAsync(_web.SignIn("pp.x", [Home]), "/Sys/Popup")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(_web.SignIn("pp.d", [Home, "SYS_POPUP_MGT:READ"]), "/Sys/Popup/Delete", new { popupId = 1, rowVer = "AAAAAAAAAAE=" })).StatusCode);
+    }
 }

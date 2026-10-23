@@ -6,7 +6,7 @@ await fw.ready;
 
 const $ = (selector) => document.querySelector(selector);
 const root = $('#dash-home');
-const urls = { widgets: root.dataset.urlWidgets, data: root.dataset.urlData };
+const urls = { widgets: root.dataset.urlWidgets, data: root.dataset.urlData, popups: root.dataset.urlPopups };
 
 const isSitePath = (url) => typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') && !url.includes('\\');
 
@@ -89,5 +89,59 @@ if (!result.success) {
         section.append(title, body);
         grid.append(section);
         loadWidget(widget, body).finally(() => body.removeAttribute('aria-busy'));
+    }
+}
+
+// 공지 팝업: 기간·대상이 맞는 것을 차례로 띄운다. "오늘 하루 보지 않기"는 이 브라우저에만 기록한다(내용이 바뀌면 다시 뜬다).
+const today = new Date().toLocaleDateString('sv');
+const hideKey = (popup) => `fw.popup.${popup.verKey}`;
+const isHidden = (popup) => {
+    try {
+        return localStorage.getItem(hideKey(popup)) === today;
+    } catch {
+        return false;
+    }
+};
+
+function showPopup(popup) {
+    return new Promise((resolve) => {
+        const dialog = element('dialog', 'popup-notice');
+        dialog.setAttribute('aria-labelledby', 'popup-notice-title');
+        const title = element('h2', undefined, popup.title);
+        title.id = 'popup-notice-title';
+        const body = element('p', 'popup-notice-body', popup.content);
+        const hide = element('input');
+        hide.type = 'checkbox';
+        hide.id = 'popup-notice-hide';
+        const hideLabel = element('label', undefined, fw.t('DSH.POPUP_HIDE_TODAY'));
+        hideLabel.htmlFor = hide.id;
+        const close = element('button', 'primary', fw.t('BTN.CLOSE'));
+        close.type = 'button';
+        const footer = element('div', 'popup-notice-footer');
+        footer.append(hide, hideLabel, close);
+        dialog.append(title, body, footer);
+        close.addEventListener('click', () => dialog.close());
+        dialog.addEventListener('close', () => {
+            if (hide.checked) {
+                try {
+                    localStorage.setItem(hideKey(popup), today);
+                } catch {
+                    // 저장할 수 없으면 다음에 다시 뜬다
+                }
+            }
+
+            dialog.remove();
+            resolve();
+        });
+        document.body.append(dialog);
+        dialog.showModal();
+        close.focus();
+    });
+}
+
+const popups = await fw.ajax(urls.popups);
+if (popups.success) {
+    for (const popup of popups.data.filter((p) => !isHidden(p))) {
+        await showPopup(popup);
     }
 }
