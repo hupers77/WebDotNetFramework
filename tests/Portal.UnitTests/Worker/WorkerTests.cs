@@ -30,7 +30,7 @@ public sealed class WorkerTests
         await using var scope = provider.CreateAsyncScope();
 
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<MailQueueSender>());
-        Assert.Equal(["MailSend", "FileCleanup"], scope.ServiceProvider.GetServices<IScheduledJob>().Select(j => j.Name));
+        Assert.Equal(["MailSend", "FileCleanup", "LogIntegrity"], scope.ServiceProvider.GetServices<IScheduledJob>().Select(j => j.Name));
         Assert.Contains(provider.GetServices<IHostedService>(), s => s is SchedulerService);
         Assert.Equal(TimeSpan.FromHours(9), provider.GetRequiredService<JobScheduler>().TimeZone.BaseUtcOffset);
         var user = provider.GetRequiredService<ICurrentUser>();
