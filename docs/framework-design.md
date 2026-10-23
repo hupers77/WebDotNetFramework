@@ -43,7 +43,7 @@ Oct 21, 2026 · @사랑나무아빠
 | 로깅 | Microsoft.Extensions.Logging + 자체 DB/파일 Provider | MIT (Microsoft) | Serilog/NLog 미사용 |
 | 엑셀 | DocumentFormat.OpenXml (Open XML SDK) | MIT (Microsoft) | 업/다운로드, 대용량 스트리밍 |
 | PDF 생성 | PDFsharp / MigraDoc 6.x | MIT (OSS 허용) | 코드 기반 문서, 병합, 워터마크 |
-| HTML→PDF | Microsoft Edge Headless (`--print-to-pdf`) | 무료 (런타임) | 레포트 HTML을 그대로 PDF화, 서버에 Edge 설치 필요 |
+| HTML→PDF | Microsoft Edge Headless (개발자 도구 프로토콜 `Page.printToPDF`, 외부 패키지 없음) | 무료 (런타임) | 레포트 HTML을 그대로 PDF화, 쪽 번호·출력자 바닥글, 서버에 Edge 설치 필요 |
 | UI 기반 | Bootstrap 5.3 | MIT (OSS 허용) | 레이아웃/폼 스타일만, jQuery 미사용 |
 | 차트 | Chart.js 4.x | MIT (OSS 허용) | 대시보드 위젯 |
 | QR 코드 | QRCoder 1.6 | MIT (OSS 허용) | 2단계 인증(TOTP) 앱 등록, 의존성 없음 |
@@ -585,7 +585,7 @@ Cache-Control: no-store   (인증이 필요한 동적 페이지)
 | 기준정보 | 회사·부서(트리, 유효기간으로 조직 개편 이력 보존), 직급·직책, 휴일/영업일 달력, 환율. 공통 선택 팝업(사용자/부서/코드 검색) 제공 |
 | 공통코드 | 그룹-코드 2단 + 코드 내 계층, 추가 속성 5개(그룹별 의미 정의), 유효기간. 화면에서는 `<fw-select code-group="USER_STAT">` 한 줄로 사용 |
 | 게시판 | 게시판 마스터 설정으로 무한 생성: 유형(일반/공지/FAQ/자료실/Q&A), 답글·댓글·첨부·익명·비밀글·게시기간·상단 고정·조회자 목록 사용 여부, 게시판별 역할 권한. 편집기는 자체 경량 에디터(contenteditable) + 서버 HTML 화이트리스트 필터 |
-| PDF 변환 | ① 화면/레포트 HTML → Edge Headless로 PDF(인쇄용 CSS 적용) ② 코드 기반 문서 → MigraDoc ③ PDF 병합·워터마크(출력자·일시)·암호 설정 → PDFsharp. 변환은 큐로 처리해 동시 실행 수를 제한(기본 4) |
+| PDF 변환 | ① 화면/레포트 HTML → Edge Headless로 PDF(`IPdfConverter`, 인쇄용 CSS 적용, 모든 쪽에 출력자·일시 바닥글과 쪽 번호, 외부 자원·스크립트 차단) ② 코드 기반 문서 → MigraDoc ③ PDF 병합·암호 설정 → PDFsharp(②③은 필요한 업무가 생길 때 추가). 동시 실행 수를 제한(기본 4)하고 한 건당 제한 시간(기본 60초)을 둠 |
 | 레포트 | `TB_REPORT`에 레포트 ID, 데이터 SP, 파라미터 정의, 템플릿(Razor 뷰)을 등록하면 파라미터 입력 화면·미리보기·PDF/엑셀 출력이 자동 제공. 머리글/바닥글/페이지 번호/결재란 공통 파셜. 대용량은 백그라운드 생성 후 알림 |
 | 대시보드 | 위젯 = 데이터 SP + 표시 유형(숫자 카드/막대/선/도넛/목록/공지) + 캐시 TTL + 권한. 사용자는 허용된 위젯을 12칸 그리드에 배치하고 레이아웃을 저장. 위젯은 비동기로 각각 로드해 한 위젯이 느려도 화면은 즉시 표시 |
 | 외부 API (수신) | `/api/v1/*`, OAuth2 Client Credentials 토큰, 클라이언트별 허용 API·IP·호출 한도, OpenAPI 문서 자동 생성(.NET 내장), 요청/응답 로그(민감 필드 마스킹) |

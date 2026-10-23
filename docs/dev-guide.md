@@ -136,6 +136,8 @@ Controller에는 업무 로직을 두지 않습니다. 사용자 ID·언어·IP�
 
 빈 칸은 값을 지우고(필수 값은 오류), 날짜는 엑셀 날짜 서식 또는 `yyyy-MM-dd` 글자로 받습니다. 예: 공통코드 화면의 `Upload`.
 
+**PDF 만들기**: HTML을 PDF로 바꿀 때는 `IPdfConverter.ConvertAsync(html, new PdfPageOptions(바닥글 문구, 가로 여부))`를 씁니다. 서버의 Microsoft Edge를 헤드리스로 띄워 A4로 인쇄하고, 모든 쪽 아래에 바닥글 문구(출력자·출력 일시 등)와 쪽 번호(쪽 / 전체 쪽)를 넣습니다. HTML은 인쇄용 CSS까지 들어 있는 완성된 문서여야 합니다. 변환할 때는 외부 자원을 막으므로 CSS는 `<style>`로 문서 안에 넣고, 그림과 글꼴은 `data:` URL로 넣습니다. 스크립트도 실행되지 않습니다. 동시에 4건까지 변환하고, 그 이상은 앞 변환이 끝날 때까지 기다립니다. 한 건이 60초를 넘으면 실패합니다(`Portal:Pdf:MaxConcurrency`, `TimeoutSeconds`). 브라우저 경로는 `Portal:Pdf:BrowserPath`로 정하고, 비우면 Edge 기본 설치 경로를 씁니다. 실제 변환 테스트(`BrowserPdfConverterTests`)는 환경 변수 `PORTAL_PDF_BROWSER`에 Edge나 Chromium 경로를 넣을 때만 돕니다.
+
 **프레임워크 시스템 화면**(공통코드, 설정 관리 등)은 업무 모듈과 같은 구조로 `src/Portal.Web/Areas/Sys/`(Controllers, Services, Models, Views)와 `wwwroot/js/sys/`에 둡니다.
 
 **첨부 파일**: 화면은 첨부를 직접 받지 않고 공통 API(`/File/Upload`, `/File/List`, `/File/Download/{id}`, `/File/Delete`)를 씁니다. 업무 테이블에는 `FILE_GROUP_ID BIGINT NULL` 컬럼 하나만 두고, 순서는 다음과 같습니다.
