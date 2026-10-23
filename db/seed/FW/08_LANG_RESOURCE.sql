@@ -1581,7 +1581,19 @@ USING (VALUES
   (N'MAIL.OTP_SUBJECT', N'zh-CN', N'[{0}] 两步验证验证码', N'LABEL'),
   (N'MAIL.OTP_BODY', N'ko', N'<p>로그인 2단계 인증 번호입니다. 5분 안에 입력하세요.</p><p style="font-size:24px;letter-spacing:4px"><strong>{0}</strong></p><p>본인이 요청하지 않았다면 이 메일을 무시하고 비밀번호를 바꾸세요.</p>', N'LABEL'),
   (N'MAIL.OTP_BODY', N'en', N'<p>Your two-step verification code is below. Enter it within 5 minutes.</p><p style="font-size:24px;letter-spacing:4px"><strong>{0}</strong></p><p>If you did not request this, ignore this email and change your password.</p>', N'LABEL'),
-  (N'MAIL.OTP_BODY', N'zh-CN', N'<p>这是登录两步验证的验证码，请在5分钟内输入。</p><p style="font-size:24px;letter-spacing:4px"><strong>{0}</strong></p><p>如果不是您本人操作，请忽略此邮件并修改密码。</p>', N'LABEL')
+  (N'MAIL.OTP_BODY', N'zh-CN', N'<p>这是登录两步验证的验证码，请在5分钟内输入。</p><p style="font-size:24px;letter-spacing:4px"><strong>{0}</strong></p><p>如果不是您本人操作，请忽略此邮件并修改密码。</p>', N'LABEL'),
+  (N'LBL.PARTNER_LOGIN', N'ko', N'협력사 로그인', N'LABEL'),
+  (N'LBL.PARTNER_LOGIN', N'en', N'Partner sign-in', N'LABEL'),
+  (N'LBL.PARTNER_LOGIN', N'zh-CN', N'合作公司登录', N'LABEL'),
+  (N'LOGIN.PARTNER_GUIDE', N'ko', N'협력사 계정(ID/비밀번호)으로 로그인합니다. 로그인 뒤 2단계 인증을 합니다.', N'LABEL'),
+  (N'LOGIN.PARTNER_GUIDE', N'en', N'Sign in with your partner account (ID and password). You will then complete two-step verification.', N'LABEL'),
+  (N'LOGIN.PARTNER_GUIDE', N'zh-CN', N'使用合作公司账户（ID和密码）登录，登录后需进行两步验证。', N'LABEL'),
+  (N'LOGIN.GO_PARTNER', N'ko', N'협력사 직원은 여기에서 로그인하세요', N'LABEL'),
+  (N'LOGIN.GO_PARTNER', N'en', N'Partner staff: sign in here', N'LABEL'),
+  (N'LOGIN.GO_PARTNER', N'zh-CN', N'合作公司员工请在此登录', N'LABEL'),
+  (N'LOGIN.GO_EMPLOYEE', N'ko', N'본사 직원 로그인으로 돌아가기', N'LABEL'),
+  (N'LOGIN.GO_EMPLOYEE', N'en', N'Back to employee sign-in', N'LABEL'),
+  (N'LOGIN.GO_EMPLOYEE', N'zh-CN', N'返回总部员工登录', N'LABEL')
 ) AS S ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE])
    ON T.[RES_KEY] = S.[RES_KEY] AND T.[LANG_CD] = S.[LANG_CD]
 WHEN NOT MATCHED THEN INSERT ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE]) VALUES (S.[RES_KEY], S.[LANG_CD], S.[RES_TEXT], S.[RES_TYPE]);

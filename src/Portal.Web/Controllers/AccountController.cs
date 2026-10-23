@@ -51,14 +51,32 @@ public sealed class AccountController(
         return View(new LoginViewModel(null, returnUrl, ReasonKeys.Contains(reason) ? reason : null));
     }
 
+    /// <summary>협력사 전용 로그인 화면 (ID/PW + 2단계 인증, 가입 신청 링크). 본사 직원 진입(SSO)과 주소를 나눈다.</summary>
+    [HttpGet]
+    public IActionResult PartnerLogin(string? returnUrl, string? reason)
+    {
+        if (HttpContext.Features.Get<PortalUserFeature>() is not null)
+        {
+            return LocalRedirect(SafeReturnUrl(returnUrl));
+        }
+
+        return View(nameof(Login), new LoginViewModel(null, returnUrl, ReasonKeys.Contains(reason) ? reason : null, PartnerPage: true));
+    }
+
     /// <summary>로그인 처리. 성공하면 새 세션 쿠키를 쓰고, 비밀번호 변경이 필요하면 변경 화면으로 보낸다.</summary>
     [HttpPost, EnableRateLimiting(PortalWebExtensions.LoginRateLimitPolicy)]
-    public async Task<IActionResult> Login([FromForm] LoginForm form)
+    public Task<IActionResult> Login([FromForm] LoginForm form) => SignInAsync(form, partnerPage: false);
+
+    /// <summary>협력사 전용 로그인 처리. 협력사 계정만 들어올 수 있고 그 밖의 계정은 비밀번호 오류와 같은 메시지로 거절한다.</summary>
+    [HttpPost, EnableRateLimiting(PortalWebExtensions.LoginRateLimitPolicy)]
+    public Task<IActionResult> PartnerLogin([FromForm] LoginForm form) => SignInAsync(form, partnerPage: true);
+
+    private async Task<IActionResult> SignInAsync(LoginForm form, bool partnerPage)
     {
         var result = string.IsNullOrWhiteSpace(form.UserId) || string.IsNullOrEmpty(form.Password)
             ? new LoginResult(false, MessageKeys.LoginFailed)
             : await auth.LoginAsync(
-                new LoginRequest(form.UserId.Trim(), form.Password, Request.Headers[HeaderNames.UserAgent].ToString()),
+                new LoginRequest(form.UserId.Trim(), form.Password, Request.Headers[HeaderNames.UserAgent].ToString(), partnerPage),
                 HttpContext.RequestAborted);
 
         if (result is { MfaRequired: true, UserId: { } userId })
@@ -68,7 +86,7 @@ public sealed class AccountController(
             return RedirectToAction(nameof(Mfa), new { returnUrl = SafeReturnUrl(form.ReturnUrl) });
         }
 
-        return SignedIn(result, form.UserId, form.ReturnUrl);
+        return SignedIn(result, form.UserId, form.ReturnUrl, partnerPage);
     }
 
     /// <summary>2단계 인증 화면. 처음이면 인증 앱 등록 안내(QR·등록 키)를 함께 보여 준다.</summary>
@@ -183,11 +201,11 @@ public sealed class AccountController(
     }
 
     // 로그인 결과: 성공이면 세션 쿠키를 쓰고 이동, 실패면 로그인 화면에 메시지
-    private IActionResult SignedIn(LoginResult result, string? userId, string? returnUrl)
+    private IActionResult SignedIn(LoginResult result, string? userId, string? returnUrl, bool partnerPage = false)
     {
         if (!result.Succeeded || result.SessionToken is null)
         {
-            return View(nameof(Login), new LoginViewModel(userId, returnUrl, result.MessageKey ?? MessageKeys.LoginFailed));
+            return View(nameof(Login), new LoginViewModel(userId, returnUrl, result.MessageKey ?? MessageKeys.LoginFailed, partnerPage));
         }
 
         SessionCookie.Write(Response, result.SessionToken);

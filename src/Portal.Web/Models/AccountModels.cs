@@ -17,7 +17,8 @@ public sealed class LoginForm
 /// <param name="UserId">입력했던 사용자 ID.</param>
 /// <param name="ReturnUrl">로그인 후 돌아갈 경로.</param>
 /// <param name="MessageKey">안내·오류 메시지 키.</param>
-public sealed record LoginViewModel(string? UserId, string? ReturnUrl, string? MessageKey);
+/// <param name="PartnerPage">협력사 전용 로그인 화면인지.</param>
+public sealed record LoginViewModel(string? UserId, string? ReturnUrl, string? MessageKey, bool PartnerPage = false);
 
 /// <summary>비밀번호 변경 입력.</summary>
 public sealed class PasswordForm
