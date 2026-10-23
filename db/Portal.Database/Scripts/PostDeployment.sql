@@ -14,3 +14,4 @@ GO
 :r ../../seed/FW/10_MSG_TEMPLATE.sql
 :r ../../seed/FW/11_JOB.sql
 :r ../../seed/FW/12_REPORT.sql
+:r ../../seed/FW/13_BOARD.sql

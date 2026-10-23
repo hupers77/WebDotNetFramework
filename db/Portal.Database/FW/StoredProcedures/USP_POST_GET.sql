@@ -1,0 +1,60 @@
+-- 게시글 한 건 (본문 보기·수정 폼). 프로그램: 게시판의 프로그램 (READ는 애플리케이션이 확인)
+-- @P_COUNT_YN = 'Y'이면 조회 수를 올리고(보는 사람이 작성자가 아닐 때) 조회자 기록을 남긴다(본문 보기에서만 'Y', 수정 폼은 'N').
+-- 볼 수 없는 글(없음·삭제·게시기간 밖·공개 대상 밖)과 볼 수 없는 비밀글은 모두 NOT_FOUND다(글이 있는지 알려 주지 않는다).
+-- 결과셋 1: 글, 결과셋 2: 공개 대상 회사(COMPANY_CD, 원글에 지정한 것)
+CREATE PROCEDURE [FW].[USP_POST_GET]
+  @P_POST_ID      BIGINT,
+  @P_COUNT_YN     CHAR(1)     = 'N',
+  @P_MANAGER_YN   CHAR(1)     = 'N',
+  @P_USER_ID      VARCHAR(30),
+  @P_LANG_CD      VARCHAR(5),
+  @P_CLIENT_IP    VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+  SET XACT_ABORT ON;
+
+  IF @P_COUNT_YN NOT IN ('Y', 'N') OR @P_MANAGER_YN NOT IN ('Y', 'N')
+    THROW 50005, 'MSG.INVALID_INPUT', 1;
+
+  DECLARE @OK INT = (SELECT COUNT(*) FROM [FW].[UFN_POST_VISIBLE](@P_USER_ID, @P_MANAGER_YN) V WHERE V.[POST_ID] = @P_POST_ID AND V.[SECRET_OK_YN] = 'Y');
+  IF @OK = 0
+    THROW 50004, 'MSG.NOT_FOUND', 1;
+
+  IF @P_COUNT_YN = 'Y'
+  BEGIN
+    BEGIN TRY
+      BEGIN TRAN;
+
+      UPDATE [FW].[TB_POST] SET [VIEW_CNT] += 1 WHERE [POST_ID] = @P_POST_ID AND [WRITER_ID] <> @P_USER_ID;
+
+      MERGE [FW].[TB_POST_READ] AS T
+      USING (SELECT @P_POST_ID AS [POST_ID], @P_USER_ID AS [USER_ID]) AS S
+         ON T.[POST_ID] = S.[POST_ID] AND T.[USER_ID] = S.[USER_ID]
+      WHEN MATCHED THEN UPDATE SET T.[LAST_DT] = SYSUTCDATETIME(), T.[READ_CNT] += 1
+      WHEN NOT MATCHED THEN INSERT ([POST_ID], [USER_ID]) VALUES (S.[POST_ID], S.[USER_ID]);
+
+      COMMIT;
+    END TRY
+    BEGIN CATCH
+      IF @@TRANCOUNT > 0
+        ROLLBACK;
+      THROW;
+    END CATCH
+  END
+
+  SELECT P.[POST_ID], P.[BOARD_CD], P.[ROOT_POST_ID], P.[PARENT_POST_ID], P.[DEPTH], P.[TITLE], P.[CONTENT], P.[COMPANY_CD],
+         IIF(B.[ANON_YN] = 'Y' AND V.[MINE_YN] = 'N' AND @P_MANAGER_YN = 'N', NULL, W.[USER_NM]) AS [WRITER_NM],
+         V.[MINE_YN], P.[SECRET_YN], P.[PIN_YN], P.[START_DT], P.[END_DT], P.[FILE_GROUP_ID], P.[VIEW_CNT],
+         P.[REG_DT], P.[UPD_DT], P.[ROW_VER]
+    FROM [FW].[TB_POST] P
+    JOIN [FW].[TB_BOARD] B ON B.[BOARD_CD] = P.[BOARD_CD]
+    JOIN [FW].[UFN_POST_VISIBLE](@P_USER_ID, @P_MANAGER_YN) V ON V.[POST_ID] = P.[POST_ID]
+    JOIN [FW].[TB_USER] W ON W.[USER_ID] = P.[WRITER_ID]
+   WHERE P.[POST_ID] = @P_POST_ID;
+
+  SELECT T.[COMPANY_CD]
+    FROM [FW].[TB_POST_TARGET] T
+   WHERE T.[POST_ID] = (SELECT [ROOT_POST_ID] FROM [FW].[TB_POST] WHERE [POST_ID] = @P_POST_ID)
+   ORDER BY T.[COMPANY_CD];
+END

@@ -1593,7 +1593,13 @@ USING (VALUES
   (N'LOGIN.GO_PARTNER', N'zh-CN', N'合作公司员工请在此登录', N'LABEL'),
   (N'LOGIN.GO_EMPLOYEE', N'ko', N'본사 직원 로그인으로 돌아가기', N'LABEL'),
   (N'LOGIN.GO_EMPLOYEE', N'en', N'Back to employee sign-in', N'LABEL'),
-  (N'LOGIN.GO_EMPLOYEE', N'zh-CN', N'返回总部员工登录', N'LABEL')
+  (N'LOGIN.GO_EMPLOYEE', N'zh-CN', N'返回总部员工登录', N'LABEL'),
+  (N'MSG.BOARD_NO_REPLY', N'ko', N'이 게시판은 답글을 쓸 수 없습니다.', N'MSG'),
+  (N'MSG.BOARD_NO_REPLY', N'en', N'Replies are not allowed on this board.', N'MSG'),
+  (N'MSG.BOARD_NO_REPLY', N'zh-CN', N'此公告板不能回复。', N'MSG'),
+  (N'MSG.BOARD_REPLY_DEPTH', N'ko', N'답글은 3단계까지만 쓸 수 있습니다.', N'MSG'),
+  (N'MSG.BOARD_REPLY_DEPTH', N'en', N'Replies can be nested up to 3 levels.', N'MSG'),
+  (N'MSG.BOARD_REPLY_DEPTH', N'zh-CN', N'回复最多只能嵌套3层。', N'MSG')
 ) AS S ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE])
    ON T.[RES_KEY] = S.[RES_KEY] AND T.[LANG_CD] = S.[LANG_CD]
 WHEN NOT MATCHED THEN INSERT ([RES_KEY], [LANG_CD], [RES_TEXT], [RES_TYPE]) VALUES (S.[RES_KEY], S.[LANG_CD], S.[RES_TEXT], S.[RES_TYPE]);
