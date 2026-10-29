@@ -37,7 +37,7 @@ public sealed partial class DashService(ISpExecutor sp, IMemoryCache cache, ICur
     /// <inheritdoc />
     public async Task<IReadOnlyList<WidgetDto>> GetWidgetsAsync(PermissionSet permissions, CancellationToken cancellationToken = default) =>
         (await sp.QueryAsync<WidgetDto>(ListSp, cancellationToken: cancellationToken))
-            .Where(w => w.TypeCd is WidgetTypes.Card or WidgetTypes.List && CanView(w, permissions))
+            .Where(w => w.TypeCd is WidgetTypes.Card or WidgetTypes.List or WidgetTypes.Chart && CanView(w, permissions))
             .ToList();
 
     /// <inheritdoc />

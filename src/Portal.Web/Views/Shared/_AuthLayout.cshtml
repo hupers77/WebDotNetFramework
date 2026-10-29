@@ -11,9 +11,15 @@
     <script type="module" src="~/js/fw.js" asp-append-version="true"></script>
 </head>
 <body class="auth">
-    <main class="auth-box">
-        <p class="site-name">@L["SITE.NAME"]</p>
-        @RenderBody()
-    </main>
+    <div class="auth-wrap">
+        <aside class="auth-brand">
+            <span class="brand-mark" aria-hidden="true">@(L["SITE.NAME"].Length > 0 ? L["SITE.NAME"][..1] : "P")</span>
+            <p class="auth-brand-name">@L["SITE.NAME"]</p>
+            <p class="auth-brand-tag">@L["LOGIN.TAGLINE"]</p>
+        </aside>
+        <main class="auth-box">
+            @RenderBody()
+        </main>
+    </div>
 </body>
 </html>

@@ -23,7 +23,8 @@ public sealed class DashServiceTests : IDisposable
             new() { WidgetCd = "OPEN", TypeCd = "LIST", DataSp = "FW.USP_WIDGET_OPEN", CacheSec = 60 },
             new() { WidgetCd = "BOARD", TypeCd = "LIST", DataSp = "FW.USP_WIDGET_BOARD", ProgramId = "BRD_NOTICE", CacheSec = 0 },
             new() { WidgetCd = "EVIL", TypeCd = "LIST", DataSp = "FW.USP_USER_SAVE" },
-            new() { WidgetCd = "CHART", TypeCd = "BAR", DataSp = "FW.USP_WIDGET_CHART" },
+            new() { WidgetCd = "BAR", TypeCd = "BAR", DataSp = "FW.USP_WIDGET_BAR" },
+            new() { WidgetCd = "CHART", TypeCd = "CHART", DataSp = "FW.USP_WIDGET_CHART" },
         ];
         _sp.Returns(DashService.ListSp, _widgets);
         _sp.Returns("FW.USP_WIDGET_OPEN", new List<WidgetRowDto>
@@ -50,8 +51,8 @@ public sealed class DashServiceTests : IDisposable
         var without = await _service.GetWidgetsAsync(Perm(), Ct);
         var with = await _service.GetWidgetsAsync(Perm("BRD_NOTICE"), Ct);
 
-        Assert.Equal(["OPEN", "EVIL"], without.Select(w => w.WidgetCd));
-        Assert.Equal(["OPEN", "BOARD", "EVIL"], with.Select(w => w.WidgetCd));
+        Assert.Equal(["OPEN", "EVIL", "CHART"], without.Select(w => w.WidgetCd));
+        Assert.Equal(["OPEN", "BOARD", "EVIL", "CHART"], with.Select(w => w.WidgetCd));
     }
 
     [Fact]

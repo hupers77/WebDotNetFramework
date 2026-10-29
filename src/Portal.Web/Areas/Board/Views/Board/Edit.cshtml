@@ -1,4 +1,4 @@
-@* 게시글 쓰기·수정·답글: 제목, 옵션(비밀글·상단 고정·게시기간·공개 대상), 간단한 편집기, 첨부. 내용은 서버가 다시 거른다. *@
+@* 게시글 쓰기·수정·답글: 제목, 옵션(비밀글·상단 고정·게시기간·공개 대상), 편집기(fw-editor.js: 서식·사진·표), 첨부. 내용은 서버가 다시 거른다. *@
 @model BoardEditModel
 @{
     var board = Model.Board;
@@ -22,6 +22,7 @@
      data-url-list="@baseUrl"
      data-url-view="@baseUrl/View/"
      data-file-group-id="@post?.FileGroupId"
+     data-image-group-id="@post?.ImageGroupId"
      data-program="@board.ProgramId"
      data-attach="@board.AttachYn">
     <h2>@heading</h2>
@@ -62,15 +63,6 @@
             </fieldset>
         }
         <span id="brd-content-label" class="field-label">@L["LBL.CONTENT"]</span>
-        <div class="editor-toolbar" role="toolbar" aria-label="@L["BRD.EDITOR"]" aria-controls="brd-content">
-            <button type="button" data-cmd="bold"><b>B</b><span class="sr-only"> @L["BRD.ED_BOLD"]</span></button>
-            <button type="button" data-cmd="italic"><i>I</i><span class="sr-only"> @L["BRD.ED_ITALIC"]</span></button>
-            <button type="button" data-cmd="underline"><u>U</u><span class="sr-only"> @L["BRD.ED_UNDERLINE"]</span></button>
-            <button type="button" data-cmd="insertUnorderedList">@L["BRD.ED_UL"]</button>
-            <button type="button" data-cmd="insertOrderedList">@L["BRD.ED_OL"]</button>
-            <button type="button" data-cmd="link">@L["BRD.ED_LINK"]</button>
-            <button type="button" data-cmd="removeFormat">@L["BRD.ED_CLEAR"]</button>
-        </div>
         <fw-safe-html id="brd-content" class="editor" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="brd-content-label" value="@post?.Content" />
         @if (board.AttachYn == "Y")
         {

@@ -1,10 +1,16 @@
 @{
     ViewData["Title"] = L["SITE.NAME"];
+    var userName = Context.Features.Get<PortalUserFeature>()?.User?.UserNm ?? "";
 }
 @section Scripts {
     <script type="module" src="~/js/dash/home.js" asp-append-version="true"></script>
 }
-<h1>@L["SITE.NAME"]</h1>
+<div class="dash-hello">
+    <div>
+        <h1>@L["DSH.HELLO", userName]</h1>
+        <p id="dash-today"></p>
+    </div>
+</div>
 <div id="dash-home"
      data-url-widgets="@Url.Action("Widgets", "Dash", new { area = "Dash" })"
      data-url-data="@Url.Action("Data", "Dash", new { area = "Dash" })"

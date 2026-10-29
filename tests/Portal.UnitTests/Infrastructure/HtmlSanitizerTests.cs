@@ -94,4 +94,30 @@ public sealed class HtmlSanitizerTests
     [Fact]
     public void 평문으로_바꾸면_태그가_빠지고_엔티티가_풀린다() =>
         Assert.Equal("제목 본문 A & B", HtmlSanitizer.ToPlainText("<h1>제목</h1><p>본문 <b>A &amp; B</b></p><script>x</script>"));
+
+    [Theory]
+    [InlineData("<span class=\"fs-lg fc-red\">글</span>", "<span class=\"fs-lg fc-red\">글</span>")]
+    [InlineData("<p class=\"ta-center\">글</p>", "<p class=\"ta-center\">글</p>")]
+    [InlineData("<span class=\"fs-lg evil fs-lg\">글</span>", "<span class=\"fs-lg\">글</span>")]
+    [InlineData("<span class=\"evil\">글</span>", "<span>글</span>")]
+    [InlineData("<span class=\"fs-lg\" style=\"color:red\">글</span>", "<span class=\"fs-lg\">글</span>")]
+    public void 서식클래스는_정해진_이름만_남긴다(string input, string expected) =>
+        Assert.Equal(expected, HtmlSanitizer.Sanitize(input));
+
+    [Theory]
+    [InlineData("<img src=\"/File/Image/12\" alt=\"사진\">", "<img src=\"/File/Image/12\" alt=\"사진\" />")]
+    [InlineData("<img class=\"img-md\" src=\"/portal/File/Image/7\">", "<img class=\"img-md\" src=\"/portal/File/Image/7\" alt=\"\" />")]
+    [InlineData("<img src=\"/File/Image/3\" onerror=\"alert(1)\" alt=\"&quot; onload=&quot;x\">", "<img src=\"/File/Image/3\" alt=\"&quot; onload=&quot;x\" />")]
+    public void 첨부사진_주소의_img는_남긴다(string input, string expected) =>
+        Assert.Equal(expected, HtmlSanitizer.Sanitize(input));
+
+    [Theory]
+    [InlineData("<img src=\"https://evil.example/x.png\">글")]
+    [InlineData("<img src=\"//evil.example/File/Image/1\">글")]
+    [InlineData("<img src=\"data:image/png;base64,AAAA\">글")]
+    [InlineData("<img src=\"/File/Download?id=1\">글")]
+    [InlineData("<img src=\"/File/Image/1?x=javascript:1\">글")]
+    [InlineData("<img>글")]
+    public void 그밖의_img는_태그를_지운다(string input) =>
+        Assert.Equal("글", HtmlSanitizer.Sanitize(input));
 }

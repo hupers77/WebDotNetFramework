@@ -98,7 +98,7 @@ public sealed partial class LayoutTests(PortalWebFactory web) : IClassFixture<Po
 
         var html = await HtmlAsync(token, "/");
 
-        Assert.Contains(">Menu3</a>", html, StringComparison.Ordinal);
+        Assert.Contains(">Menu3</span>", html, StringComparison.Ordinal);
         Assert.Contains("<html lang=\"en\">", html, StringComparison.Ordinal);
     }
 

@@ -162,6 +162,9 @@ public sealed class PostDto
     /// <summary>첨부 묶음 ID.</summary>
     public long? FileGroupId { get; set; }
 
+    /// <summary>본문 사진 묶음 ID (편집기에서 넣은 사진, 첨부 목록에는 보이지 않는다).</summary>
+    public long? ImageGroupId { get; set; }
+
     /// <summary>조회 수.</summary>
     public int ViewCnt { get; set; }
 
@@ -224,6 +227,9 @@ public sealed class PostSaveRequest
 
     /// <summary>첨부 묶음 ID.</summary>
     public long? FileGroupId { get; set; }
+
+    /// <summary>본문 사진 묶음 ID (편집기에서 넣은 사진, 첨부 목록에는 보이지 않는다).</summary>
+    public long? ImageGroupId { get; set; }
 
     /// <summary>공개 대상 회사 코드 (원글, 관리자만 반영). 비우면 모든 회사.</summary>
     public List<string>? Targets { get; set; }

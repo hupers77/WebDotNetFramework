@@ -1,5 +1,5 @@
 // 홈 대시보드: 볼 수 있는 위젯을 12칸 그리드에 놓고, 위젯마다 따로 불러 한 위젯이 느리거나 실패해도 나머지는 바로 보인다.
-// 모든 문구는 textContent로 넣고, 바로가기는 사이트 안 경로만 쓴다.
+// 유형: CARD(숫자 카드), LIST(목록), CHART(LABEL·VALUE 막대 차트). 모든 문구는 textContent로 넣고, 바로가기는 사이트 안 경로만 쓴다.
 import { fw } from '../fw.js';
 
 await fw.ready;
@@ -33,14 +33,15 @@ function link(text, url, className) {
     return a;
 }
 
+const numberText = (value) => (value == null ? '-' : Number(value).toLocaleString(document.documentElement.lang || undefined));
+
 function renderCard(body, rows) {
-    const value = rows[0]?.value;
-    body.replaceChildren(element('p', 'dash-card-value', value == null ? '-' : Number(value).toLocaleString(document.documentElement.lang || undefined)));
+    body.replaceChildren(element('p', 'dash-card-value', numberText(rows[0]?.value)));
 }
 
 function renderList(body, rows) {
     if (rows.length === 0) {
-        body.replaceChildren(element('p', 'hint', fw.t('MSG.NO_DATA')));
+        body.replaceChildren(element('p', 'dash-empty', fw.t('MSG.NO_DATA')));
         return;
     }
 
@@ -49,7 +50,10 @@ function renderList(body, rows) {
         const li = element('li');
         li.append(link(row.text ?? '', row.link, 'dash-list-text'));
         if (row.dt) {
-            li.append(element('time', 'dash-list-date', fw.format.dateTime(row.dt)));
+            const time = element('time', 'dash-list-date', fw.format.shortDate(row.dt));
+            time.dateTime = row.dt;
+            time.title = fw.format.dateTime(row.dt);
+            li.append(time);
         }
 
         ul.append(li);
@@ -58,7 +62,32 @@ function renderList(body, rows) {
     body.replaceChildren(ul);
 }
 
-const renderers = { CARD: renderCard, LIST: renderList };
+function renderChart(body, rows) {
+    if (rows.length === 0) {
+        body.replaceChildren(element('p', 'dash-empty', fw.t('MSG.NO_DATA')));
+        return;
+    }
+
+    const max = Math.max(1, ...rows.map((r) => Number(r.value) || 0));
+    const ul = element('ul', 'dash-bars');
+    for (const row of rows) {
+        const li = element('li');
+        const track = element('span', 'dash-bar-track');
+        const fill = element('span', 'dash-bar-fill');
+        track.setAttribute('aria-hidden', 'true');
+        track.append(fill);
+        li.append(link(row.label ?? '', row.link, 'dash-bar-label'), track, element('span', 'dash-bar-value', numberText(row.value)));
+        ul.append(li);
+        // 폭은 CSSOM으로 준다(CSP가 style 속성을 막는다). 다음 그리기에서 늘어나게 해 움직임을 준다.
+        requestAnimationFrame(() => {
+            fill.style.width = `${Math.round(((Number(row.value) || 0) / max) * 100)}%`;
+        });
+    }
+
+    body.replaceChildren(ul);
+}
+
+const renderers = { CARD: renderCard, LIST: renderList, CHART: renderChart };
 
 async function loadWidget(widget, body) {
     const result = await fw.ajax(`${urls.data}?widgetCd=${encodeURIComponent(widget.widgetCd)}`);
@@ -70,6 +99,11 @@ async function loadWidget(widget, body) {
     renderers[widget.typeCd]?.(body, result.data);
 }
 
+const todayLabel = $('#dash-today');
+if (todayLabel) {
+    todayLabel.textContent = new Date().toLocaleDateString(document.documentElement.lang || undefined, { dateStyle: 'full' });
+}
+
 const result = await fw.ajax(urls.widgets);
 if (!result.success) {
     fw.notify(result.error.message);
@@ -78,15 +112,37 @@ if (!result.success) {
 } else {
     const grid = $('#dash-grid');
     for (const widget of result.data) {
-        const section = element('section', `dash-widget dash-span-${widget.spanCols}`);
+        const section = element('section', `dash-widget dash-span-${widget.spanCols} type-${widget.typeCd}`);
         section.setAttribute('aria-labelledby', `dash-title-${widget.widgetCd}`);
         const title = element('h2', 'dash-widget-title');
         title.id = `dash-title-${widget.widgetCd}`;
-        title.append(link(widget.widgetNm, widget.linkUrl));
+        const heading = link(widget.widgetNm, widget.linkUrl);
+        if (widget.iconCd && widget.typeCd !== 'CARD') {
+            heading.prepend(fw.icon(widget.iconCd));
+        }
+
+        title.append(heading);
+        if (widget.linkUrl && widget.typeCd !== 'CARD' && isSitePath(widget.linkUrl)) {
+            const more = link('', widget.linkUrl, 'dash-more');
+            more.append(fw.icon('chevron-right'));
+            more.setAttribute('aria-label', `${widget.widgetNm} ${fw.t('DSH.MORE')}`);
+            title.append(more);
+        }
+
         const body = element('div', 'dash-widget-body');
         body.setAttribute('aria-busy', 'true');
-        body.append(element('p', 'hint', fw.t('DSH.LOADING')));
-        section.append(title, body);
+        body.append(element('p', 'dash-empty', fw.t('DSH.LOADING')));
+        if (widget.typeCd === 'CARD') {
+            const iconBox = element('span', 'dash-card-icon');
+            iconBox.setAttribute('aria-hidden', 'true');
+            iconBox.append(fw.icon(widget.iconCd || 'chart'));
+            const main = element('div', 'dash-card-main');
+            main.append(title, body);
+            section.append(iconBox, main);
+        } else {
+            section.append(title, body);
+        }
+
         grid.append(section);
         loadWidget(widget, body).finally(() => body.removeAttribute('aria-busy'));
     }

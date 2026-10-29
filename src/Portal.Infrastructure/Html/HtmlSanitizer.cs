@@ -8,6 +8,8 @@ namespace Portal.Infrastructure.Html;
 /// 게시글 같은 사용자 HTML을 저장하기 전에 거르는 화이트리스트 필터(설계서 9장 XSS). 허용한 태그와 속성만 남기고 나머지는 지운다.
 /// 스크립트·스타일 등 위험한 태그는 안의 내용까지 지우고, 허용하지 않은 일반 태그는 태그만 지우고 글자는 남긴다.
 /// 결과는 닫히지 않은 태그를 닫은 균형 잡힌 HTML이다. 링크는 http·https·mailto와 사이트 안 경로만 허용하고 새 창은 <c>rel="noopener noreferrer"</c>를 붙인다.
+/// 서식(글자 크기·색·정렬·사진 크기)은 CSP가 style 속성을 막으므로 <c>class</c>의 정해진 이름(<see cref="AllowedClasses"/>)으로만 남긴다.
+/// 사진(<c>img</c>)은 첨부 저장소의 사진 주소(<c>/File/Image/{id}</c>)만 허용하고 그 밖의 주소는 태그를 지운다.
 /// </summary>
 public static partial class HtmlSanitizer
 {
@@ -15,10 +17,20 @@ public static partial class HtmlSanitizer
     {
         "p", "br", "hr", "div", "span", "b", "strong", "i", "em", "u", "s", "strike", "sub", "sup", "small",
         "h1", "h2", "h3", "h4", "ul", "ol", "li", "blockquote", "pre", "code",
-        "a", "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption",
+        "a", "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "img",
     };
 
-    private static readonly HashSet<string> Void = new(StringComparer.Ordinal) { "br", "hr" };
+    private static readonly HashSet<string> Void = new(StringComparer.Ordinal) { "br", "hr", "img" };
+
+    /// <summary>편집기가 쓰는 서식 클래스 (portal.css의 게시글 서식과 같은 이름). 이 밖의 클래스는 지운다.</summary>
+    public static readonly IReadOnlySet<string> AllowedClasses = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "fs-xs", "fs-sm", "fs-lg", "fs-xl", "fs-xxl",
+        "fc-red", "fc-orange", "fc-green", "fc-blue", "fc-purple", "fc-gray",
+        "bg-yellow", "bg-green", "bg-blue", "bg-pink", "bg-gray",
+        "ta-left", "ta-center", "ta-right", "ta-justify",
+        "img-sm", "img-md", "img-lg", "img-full",
+    };
 
     /// <summary>태그와 안의 내용을 통째로 지우는 태그.</summary>
     private static readonly HashSet<string> DropWithContent = new(StringComparer.Ordinal)
@@ -33,6 +45,10 @@ public static partial class HtmlSanitizer
 
     [GeneratedRegex("""([a-zA-Z_:][-a-zA-Z0-9_:.]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?""", RegexOptions.CultureInvariant)]
     private static partial Regex AttrPattern();
+
+    /// <summary>사진 주소: 사이트 안의 <c>/File/Image/{id}</c> (가상 디렉터리 아래에 설치해도 된다).</summary>
+    [GeneratedRegex(@"^(?:/[A-Za-z0-9._~-]+)*/File/Image/[0-9]{1,19}$", RegexOptions.CultureInvariant)]
+    private static partial Regex ImageSrcPattern();
 
     [GeneratedRegex(@"\G&(?:#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[a-zA-Z][a-zA-Z0-9]{1,31});", RegexOptions.CultureInvariant)]
     private static partial Regex EntityPattern();
@@ -186,8 +202,7 @@ public static partial class HtmlSanitizer
 
     private static void WriteOpen(StringBuilder sb, Stack<string> open, string name, string rawAttrs)
     {
-        sb.Append('<').Append(name);
-        string? href = null;
+        string? href = null, src = null, alt = null, classes = null;
         string? colspan = null, rowspan = null;
         foreach (Match a in AttrPattern().Matches(rawAttrs))
         {
@@ -204,9 +219,34 @@ public static partial class HtmlSanitizer
                 case ("td" or "th", "rowspan"):
                     rowspan = SafeSpan(value);
                     break;
+                case ("img", "src"):
+                    src = ImageSrcPattern().IsMatch(value) ? value : null;
+                    break;
+                case ("img", "alt"):
+                    alt = value.Length > 200 ? value[..200] : value;
+                    break;
+                case (_, "class"):
+                    classes = SafeClasses(value);
+                    break;
                 default:
                     break;
             }
+        }
+
+        if (name == "img" && src is null)
+        {
+            return;
+        }
+
+        sb.Append('<').Append(name);
+        if (classes is not null)
+        {
+            sb.Append(" class=\"").Append(classes).Append('"');
+        }
+
+        if (src is not null)
+        {
+            sb.Append(" src=\"").Append(WebUtility.HtmlEncode(src)).Append("\" alt=\"").Append(WebUtility.HtmlEncode(alt ?? "")).Append('"');
         }
 
         if (name == "a" && href is not null)
@@ -232,6 +272,13 @@ public static partial class HtmlSanitizer
 
         sb.Append('>');
         open.Push(name);
+    }
+
+    /// <summary>허용한 서식 클래스만 남긴다. 하나도 없으면 null.</summary>
+    private static string? SafeClasses(string value)
+    {
+        var kept = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Where(AllowedClasses.Contains).Distinct(StringComparer.Ordinal).ToList();
+        return kept.Count == 0 ? null : string.Join(' ', kept);
     }
 
     private static string? SafeSpan(string value) =>

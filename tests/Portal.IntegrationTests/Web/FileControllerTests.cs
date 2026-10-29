@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using Portal.Core.Keys;
 using Portal.Infrastructure.Files;
 using static Portal.IntegrationTests.Web.WebTestHttp;
 
@@ -15,8 +16,11 @@ public sealed class FileControllerTests : IClassFixture<PortalWebFactory>
     private const string Home = "DSH_HOME:READ";
     private const long GroupId = 900;
     private const long FileId = 901;
+    private const long ImageId = 902;
     private const string StoredPath = "2026/10/0123456789abcdef0123456789abcdef";
+    private const string ImagePath = "2026/10/fedcba9876543210fedcba9876543210";
     private static readonly byte[] PdfBytes = [.. "%PDF-1.7\n"u8, .. new byte[50]];
+    private static readonly byte[] PngBytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, .. new byte[30]];
     private readonly PortalWebFactory _web;
 
     public FileControllerTests(PortalWebFactory web)
@@ -30,10 +34,14 @@ public sealed class FileControllerTests : IClassFixture<PortalWebFactory>
                 new List<FileItemDto> { new() { FileId = FileId, OrgFileNm = "견적서.pdf", FileExt = "pdf", FileSize = PdfBytes.Length } },
             }
             : new object[] { new List<FileGroupDto>(), new List<FileItemDto>() });
-        web.Sp.Returns("FW.USP_FILE_GET", p => (long)p["P_FILE_ID"]! == FileId
-            ? new StoredFileDto { FileId = FileId, FileGroupId = GroupId, ProgramId = Program, OrgFileNm = "견적서 최종.pdf", FileExt = "pdf", StoredPath = StoredPath }
-            : null);
+        web.Sp.Returns("FW.USP_FILE_GET", p => (long)p["P_FILE_ID"]! switch
+        {
+            FileId => new StoredFileDto { FileId = FileId, FileGroupId = GroupId, ProgramId = Program, OrgFileNm = "견적서 최종.pdf", FileExt = "pdf", StoredPath = StoredPath },
+            ImageId => new StoredFileDto { FileId = ImageId, FileGroupId = GroupId, ProgramId = Program, OrgFileNm = "현장.png", FileExt = "png", StoredPath = ImagePath },
+            _ => null,
+        });
         web.Files.Files[StoredPath] = PdfBytes;
+        web.Files.Files[ImagePath] = PngBytes;
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -161,6 +169,38 @@ public sealed class FileControllerTests : IClassFixture<PortalWebFactory>
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal(before, CallCount("FW.USP_FILE_DOWNLOAD_EXEC"));
+    }
+
+    [Fact]
+    public async Task 본문사진_조회권한이면_화면에보이고_다운로드횟수는_올리지않는다()
+    {
+        var token = _web.SignIn("file.reader.image", [Home, $"{Program}:READ"]);
+        var before = CallCount("FW.USP_FILE_DOWNLOAD_EXEC");
+
+        var response = await _web.NewClient(token).GetAsync($"/File/Image/{ImageId}", Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("image/png", response.Content.Headers.ContentType?.MediaType);
+        Assert.Null(response.Content.Headers.ContentDisposition);
+        Assert.Equal(PngBytes, await response.Content.ReadAsByteArrayAsync(Ct));
+        Assert.Equal(before, CallCount("FW.USP_FILE_DOWNLOAD_EXEC"));
+    }
+
+    [Fact]
+    public async Task 본문사진_사진이아닌파일은_없는것처럼_조회권한없으면403()
+    {
+        var reader = _web.SignIn("file.reader.image2", [Home, $"{Program}:READ"]);
+        var other = _web.SignIn("file.other.image", [Home, "SYS_CODE_MGT:READ"]);
+
+        var pdf = await _web.NewClient(reader).GetAsync($"/File/Image/{FileId}", Ct);
+        var denied = await _web.NewClient(other).GetAsync($"/File/Image/{ImageId}", Ct);
+
+        // 업무 오류는 공통 응답 형식(JSON, MSG.NOT_FOUND)으로 온다
+        Assert.Equal("application/json", pdf.Content.Headers.ContentType?.MediaType);
+        var body = await pdf.Content.ReadAsStringAsync(Ct);
+        Assert.Contains(MessageKeys.NotFound, body, StringComparison.Ordinal);
+        Assert.DoesNotContain("%PDF", body, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
     }
 
     [Fact]

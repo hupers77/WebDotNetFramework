@@ -6,6 +6,7 @@
 @inject Portal.Core.Config.IPortalConfig Config
 @inject MenuService Menus
 @inject Portal.Framework.Web.Authorization.CurrentPermissions Permissions
+@inject Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider FileVersions
 @{
     var user = Context.Features.Get<PortalUserFeature>()?.User;
     var notice = TempData[TempDataKeys.Notice] as string;
@@ -14,6 +15,8 @@
     var favorites = await Menus.GetFavoritesAsync(tree, Context.RequestAborted);
     ViewData["FavoriteIds"] = favorites.Select(f => f.MenuId).ToHashSet();
     var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
+    var siteName = L["SITE.NAME"];
+    var userName = user?.UserNm ?? "";
     var canNotify = user is not null && (await Permissions.GetAsync(Context.RequestAborted)).Can(NotificationController.ProgramId, FuncCodes.Read);
 }
 <!DOCTYPE html>
@@ -26,6 +29,7 @@
     <meta name="fw-file-max-mb" content="@Config.GetInt(ConfigKeys.FileMaxSizeMb)" />
     <meta name="fw-file-max-count" content="@Config.GetInt(ConfigKeys.FileMaxCount)" />
     <meta name="fw-user" content="@user?.UserId" />
+    <meta name="fw-icons" content="@Portal.Framework.Web.TagHelpers.FwIconTagHelper.SpriteUrl(FileVersions, Context)" />
     <title>@ViewData["Title"] - @L["SITE.NAME"]</title>
     <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/theme.css" />
@@ -36,13 +40,15 @@
 <body class="portal">
     <a class="skip-link" href="#main">@L["LBL.SKIP_TO_CONTENT"]</a>
     <header class="top">
-        <button type="button" class="menu-toggle" aria-controls="side" aria-expanded="true" aria-label="@L["BTN.MENU_TOGGLE"]" title="@L["BTN.MENU_TOGGLE"]">☰</button>
-        <a class="site-name" href="~/">@L["SITE.NAME"]</a>
+        <button type="button" class="menu-toggle" aria-controls="side" aria-expanded="true" aria-label="@L["BTN.MENU_TOGGLE"]" title="@L["BTN.MENU_TOGGLE"]"><fw-icon name="menu" /></button>
+        <a class="brand" href="~/"><span class="brand-mark" aria-hidden="true">@(siteName.Length > 0 ? siteName[..1] : "P")</span><span class="site-name">@siteName</span></a>
         <div class="menu-search" role="search">
+            <fw-icon name="search" class="search-ic" />
             <label for="menu-search" class="sr-only">@L["LBL.MENU_SEARCH"]</label>
             <input id="menu-search" type="search" placeholder="@L["LBL.MENU_SEARCH"]" autocomplete="off" maxlength="50" />
         </div>
         <div class="session" data-idle-minutes="@Config.GetInt(ConfigKeys.SessionIdleMinutes)">
+            <fw-icon name="clock" />
             <span>@L["LBL.SESSION_REMAIN"]</span>
             <time id="session-remain" aria-live="off">--:--</time>
             <button type="button" id="session-extend">@L["BTN.SESSION_EXTEND"]</button>
@@ -52,10 +58,11 @@
             @* 안 읽은 알림 배지: fw-shell.js가 NOTIFY.POLL_SECONDS마다 세션을 연장하지 않는 요청으로 센다 *@
             <a id="noti-bell" class="noti-bell" href="~/My/Notification" title="@L["LBL.NOTIFICATIONS"]" aria-label="@L["LBL.NOTIFICATIONS"]"
                data-url-unread="@Url.Content("~/My/Notification/Unread")" data-poll-seconds="@Config.GetInt(ConfigKeys.NotifyPollSeconds)">
-                <span aria-hidden="true">🔔</span><span class="noti-badge" aria-hidden="true" hidden></span>
+                <fw-icon name="bell" /><span class="noti-badge" aria-hidden="true" hidden></span>
             </a>
         }
         <form method="post" asp-controller="My" asp-action="Language" class="lang-form">
+            <fw-icon name="globe" />
             <input type="hidden" name="returnUrl" value="@returnUrl" />
             <label for="lang-select" class="sr-only">@L["LBL.LANGUAGE"]</label>
             <select id="lang-select" name="lang" data-autosubmit="Y">
@@ -67,12 +74,12 @@
             <noscript><button type="submit">@L["BTN.CONFIRM"]</button></noscript>
         </form>
         <details class="user-menu">
-            <summary aria-label="@L["LBL.USER_MENU"]">@user?.UserNm</summary>
+            <summary aria-label="@L["LBL.USER_MENU"]"><span class="avatar" aria-hidden="true">@(userName.Length > 0 ? userName[..1] : "?")</span><span class="user-name">@userName</span><fw-icon name="chevron-down" /></summary>
             <ul>
-                <li><a href="~/My/Password" data-tab="Y">@L["BTN.CHANGE_PASSWORD"]</a></li>
+                <li><a href="~/My/Password" data-tab="Y"><fw-icon name="key" />@L["BTN.CHANGE_PASSWORD"]</a></li>
                 <li>
                     <form method="post" asp-controller="Account" asp-action="Logout">
-                        <button type="submit">@L["BTN.LOGOUT"]</button>
+                        <button type="submit"><fw-icon name="logout" />@L["BTN.LOGOUT"]</button>
                     </form>
                 </li>
             </ul>
@@ -95,7 +102,7 @@
                 <ul class="menu-list" id="favorite-list" data-empty-text="@L["LBL.FAVORITES_EMPTY"]">
                     @foreach (var item in favorites)
                     {
-                        <li data-menu-id="@item.MenuId"><a class="menu-label" href="@(item.Url!.StartsWith('/') ? Url.Content("~" + item.Url) : item.Url)" data-menu-id="@item.MenuId" data-tab="@(item.NewWindow || item.MenuTypeCd == MenuTypes.Link ? "N" : "Y")">@item.Name</a></li>
+                        <li data-menu-id="@item.MenuId"><a class="menu-label" href="@(item.Url!.StartsWith('/') ? Url.Content("~" + item.Url) : item.Url)" data-menu-id="@item.MenuId" data-tab="@(item.NewWindow || item.MenuTypeCd == MenuTypes.Link ? "N" : "Y")"><fw-icon name="star" /><span class="menu-text">@item.Name</span></a></li>
                     }
                 </ul>
             </div>

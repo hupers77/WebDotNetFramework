@@ -1,7 +1,8 @@
 -- 게시글 등록·수정 (저장 SP 표준 템플릿). 프로그램: 게시판의 프로그램 (CREATE/UPDATE는 애플리케이션이 확인)
 -- @P_POST_ID가 NULL이면 등록(@P_PARENT_POST_ID가 있으면 답글), 있으면 수정(작성자 또는 관리자, @P_ROW_VER 필요).
 -- 게시판 설정이 꺼진 항목(비밀글·게시기간·상단 고정·첨부·답글)은 무시하거나 거절한다. 상단 고정·공개 대상 회사는 관리자(@P_MANAGER_YN)만 바꾼다.
--- @P_TARGETS는 회사 코드 JSON 배열(원글만). 첨부 묶음은 같은 트랜잭션에서 확정한다(다른 회사 사용자도 받을 수 있게 공유).
+-- @P_TARGETS는 회사 코드 JSON 배열(원글만). 첨부 묶음과 본문 사진 묶음은 같은 트랜잭션에서 확정한다(다른 회사 사용자도 받을 수 있게 공유).
+-- 본문 사진은 첨부 설정(ATTACH_YN)과 관계없이 쓸 수 있다.
 -- 답글을 달면 원 글 작성자(본인 제외)에게 포털 알림(TPL_BOARD_REPLY)을 쌓는다.
 -- 결과: AFFECTED_CNT, NEW_KEY(글 ID)
 CREATE PROCEDURE [FW].[USP_POST_SAVE]
@@ -16,6 +17,7 @@ CREATE PROCEDURE [FW].[USP_POST_SAVE]
   @P_START_DT        DATE          = NULL,
   @P_END_DT          DATE          = NULL,
   @P_FILE_GROUP_ID   BIGINT        = NULL,
+  @P_IMAGE_GROUP_ID  BIGINT        = NULL,
   @P_TARGETS         NVARCHAR(MAX) = NULL,
   @P_MANAGER_YN      CHAR(1)       = 'N',
   @P_USER_ID         VARCHAR(30),
@@ -84,11 +86,11 @@ BEGIN
 
       INSERT INTO [FW].[TB_POST]
         ([BOARD_CD], [ROOT_POST_ID], [PARENT_POST_ID], [DEPTH], [TITLE], [CONTENT], [COMPANY_CD], [WRITER_ID], [SECRET_YN], [PIN_YN],
-         [START_DT], [END_DT], [FILE_GROUP_ID], [REG_ID], [UPD_ID])
+         [START_DT], [END_DT], [FILE_GROUP_ID], [IMAGE_GROUP_ID], [REG_ID], [UPD_ID])
       VALUES
         (@P_BOARD_CD, @ROOT, @P_PARENT_POST_ID, @DEPTH, @P_TITLE, @P_CONTENT, @COMPANY, @P_USER_ID, @P_SECRET_YN,
          IIF(@PIN_OK = 'Y' AND @P_MANAGER_YN = 'Y' AND @P_PARENT_POST_ID IS NULL, @P_PIN_YN, 'N'),
-         @P_START_DT, @P_END_DT, @P_FILE_GROUP_ID, @P_USER_ID, @P_USER_ID);
+         @P_START_DT, @P_END_DT, @P_FILE_GROUP_ID, @P_IMAGE_GROUP_ID, @P_USER_ID, @P_USER_ID);
       SET @ID = SCOPE_IDENTITY();
 
       IF @ROOT IS NULL
@@ -119,6 +121,7 @@ BEGIN
              [PIN_YN] = IIF(@PIN_OK = 'Y' AND @P_MANAGER_YN = 'Y' AND @CUR_PARENT IS NULL, @P_PIN_YN, [PIN_YN]),
              [START_DT] = @P_START_DT, [END_DT] = @P_END_DT,
              [FILE_GROUP_ID] = IIF(@ATTACH_YN = 'Y', @P_FILE_GROUP_ID, [FILE_GROUP_ID]),
+             [IMAGE_GROUP_ID] = ISNULL(@P_IMAGE_GROUP_ID, [IMAGE_GROUP_ID]),
              [UPD_ID] = @P_USER_ID, [UPD_DT] = SYSUTCDATETIME()
        WHERE [POST_ID] = @P_POST_ID;
 
@@ -150,6 +153,15 @@ BEGIN
       INSERT INTO @CONFIRMED
       EXEC [FW].[USP_FILE_GROUP_CONFIRM_EXEC]
         @P_FILE_GROUP_ID = @P_FILE_GROUP_ID, @P_PROGRAM_ID = @PROGRAM_ID, @P_SHARE_YN = 'Y',
+        @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD, @P_CLIENT_IP = @P_CLIENT_IP;
+    END
+
+    IF @P_IMAGE_GROUP_ID IS NOT NULL
+    BEGIN
+      DECLARE @CONFIRMED_IMAGE TABLE ([AFFECTED_CNT] INT);
+      INSERT INTO @CONFIRMED_IMAGE
+      EXEC [FW].[USP_FILE_GROUP_CONFIRM_EXEC]
+        @P_FILE_GROUP_ID = @P_IMAGE_GROUP_ID, @P_PROGRAM_ID = @PROGRAM_ID, @P_SHARE_YN = 'Y',
         @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD, @P_CLIENT_IP = @P_CLIENT_IP;
     END
 

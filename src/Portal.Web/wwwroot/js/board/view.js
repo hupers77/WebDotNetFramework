@@ -92,7 +92,11 @@ function commentItem(c) {
     const text = document.createElement('p');
     text.className = 'comment-text';
     text.textContent = c.content;
-    li.append(meta, text);
+    const avatar = document.createElement('span');
+    avatar.className = 'avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    avatar.textContent = (c.writerNm ?? '?').slice(0, 1);
+    li.append(avatar, meta, text);
     return li;
 }
 

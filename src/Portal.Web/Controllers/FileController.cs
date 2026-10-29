@@ -99,6 +99,21 @@ public sealed class FileController(FileService files) : PortalController
         return File(content, "application/octet-stream", file.OrgFileNm);
     }
 
+    /// <summary>
+    /// 게시글 본문 사진 (편집기가 넣는 <c>/File/Image/{id}</c>). 사진 확장자(jpg·jpeg·png·gif)만 화면에 바로 보여 주고
+    /// 그 밖의 파일은 없는 것처럼 응답한다. 다운로드 횟수는 올리지 않는다. 권한은 다운로드와 같다(묶음 프로그램 READ).
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> Image(long id)
+    {
+        var file = await files.GetAsync(id, HttpContext.RequestAborted) ?? throw new BizException(MessageKeys.NotFound);
+        var contentType = FileService.ImageContentType(file.FileExt) ?? throw new BizException(MessageKeys.NotFound);
+        await DemandAnyFuncAsync(file.ProgramId, FuncCodes.Read);
+
+        Response.Headers.CacheControl = "private, max-age=86400";
+        return File(files.OpenInline(file), contentType);
+    }
+
     /// <summary>묶음의 파일을 ZIP 하나로 다운로드.</summary>
     [HttpGet]
     public async Task<IActionResult> DownloadZip(long id)

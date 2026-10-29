@@ -5,7 +5,9 @@
 // - fw.notify: 화면 아래 안내 문구 (스크린리더가 읽는 role=status).
 // - fw.dialog.confirm / alert / prompt: 확인·알림·입력 대화상자 (네이티브 <dialog>, Esc는 취소). 브라우저 confirm()·prompt()는 쓰지 않는다.
 // - fw.download: POST로 파일을 받아 저장 (개인정보 다운로드처럼 사유를 함께 보낼 때).
-// - fw.format.dateTime: 서버의 UTC 일시를 사용자 언어 형식·브라우저 시간대로 보여 준다. fw.format.fileSize: 파일 크기.
+// - fw.format.dateTime: 서버의 UTC 일시를 사용자 언어 형식·브라우저 시간대로 보여 준다. fw.format.shortDate: 목록용 짧은 일시
+//   (오늘이면 시:분, 아니면 연-월-일). fw.format.isRecent: 최근 글 표시(N)용. fw.format.fileSize: 파일 크기.
+// - fw.icon: 아이콘 모음(img/icons.svg)의 아이콘 SVG 요소. 서버 화면은 <fw-icon name="..." />을 쓴다.
 // - 편집 그리드는 fw-grid.js(Grid), 첨부는 fw-file.js(FileBox)를 불러 쓴다.
 
 const meta = (name) => document.querySelector(`meta[name="${name}"]`)?.content ?? '';
@@ -333,6 +335,18 @@ document.addEventListener('click', (e) => {
     }
 });
 
+/** UTC ISO 문자열 → Date. 시간대 표시가 없으면 UTC로 본다. 값이 없거나 잘못되면 null. */
+function parseUtc(value) {
+    if (!value) {
+        return null;
+    }
+
+    const date = new Date(/[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
 const format = {
     /** 바이트 → "1.2 MB" 같은 크기 표시. */
     fileSize(bytes) {
@@ -353,12 +367,45 @@ const format = {
             return '';
         }
 
-        const date = new Date(/[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`);
-        return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(document.documentElement.lang || undefined, {
+        const date = parseUtc(value);
+        return date === null ? '' : date.toLocaleString(document.documentElement.lang || undefined, {
             dateStyle: 'medium', timeStyle: 'short',
         });
     },
+
+    /** 목록용 짧은 일시: 오늘이면 "14:05", 아니면 "2026-10-22". 마우스를 올리면 볼 전체 일시는 dateTime을 쓴다. */
+    shortDate(value) {
+        const date = parseUtc(value);
+        if (date === null) {
+            return '';
+        }
+
+        const now = new Date();
+        return date.toDateString() === now.toDateString()
+            ? `${pad2(date.getHours())}:${pad2(date.getMinutes())}`
+            : `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+    },
+
+    /** 지금부터 hours 시간 안의 일시인지 (새 글 표시). */
+    isRecent(value, hours = 24) {
+        const date = parseUtc(value);
+        return date !== null && Date.now() - date.getTime() < hours * 3600 * 1000;
+    },
 };
 
-export const fw = { ajax, upload, download, meta, t, notify, ready, dialog, format };
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** 아이콘 SVG 요소 (장식용, 화면 낭독기는 읽지 않는다). 아이콘만 있는 버튼은 버튼에 aria-label을 붙인다. */
+function icon(name, className) {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', className ? `ic ${className}` : 'ic');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    const use = document.createElementNS(SVG_NS, 'use');
+    use.setAttribute('href', `${meta('fw-icons') || '/img/icons.svg'}#i-${name}`);
+    svg.append(use);
+    return svg;
+}
+
+export const fw = { ajax, upload, download, meta, t, notify, ready, dialog, format, icon };
 window.fw = fw;

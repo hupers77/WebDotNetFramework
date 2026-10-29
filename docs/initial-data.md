@@ -279,11 +279,16 @@ Oct 21, 2026 · @사랑나무아빠
 
 ## 10. 기본 대시보드 위젯
 
-홈 화면의 위젯은 `TB_WIDGET`에 등록하고(제목·칸 수·캐시·정렬·사용 여부는 위젯 관리 화면 `DSH_WIDGET_MGT`에서 바꾸며 위젯 추가와 데이터 SP는 개발 배포로 합니다)(`db/seed/FW/14_WIDGET.sql`), 제목은 `TB_WIDGET_LANG`에 언어별로 둡니다. 위젯의 데이터는 `USP_WIDGET_`로 시작하는 SP가 `LABEL, VALUE, TEXT, LINK, DT` 열로 돌려주고, 유형(`CARD` 숫자 카드, `LIST` 목록)이 표시 방법을 정합니다. `PROGRAM_ID`가 있으면 그 프로그램의 읽기(READ) 권한이 있는 사용자만 위젯을 보며, 데이터는 사용자별로 `CACHE_SEC`초 동안 서버 메모리에 둡니다. 시드는 이미 있는 위젯의 설정을 덮어쓰지 않습니다.
+홈 화면의 위젯은 `TB_WIDGET`에 등록하고(제목·칸 수·캐시·정렬·사용 여부는 위젯 관리 화면 `DSH_WIDGET_MGT`에서 바꾸며 위젯 추가와 데이터 SP는 개발 배포로 합니다)(`db/seed/FW/14_WIDGET.sql`), 제목은 `TB_WIDGET_LANG`에 언어별로 둡니다. 위젯의 데이터는 `USP_WIDGET_`로 시작하는 SP가 `LABEL, VALUE, TEXT, LINK, DT` 열로 돌려주고, 유형(`CARD` 숫자 카드, `LIST` 목록, `CHART` 막대 차트)이 표시 방법을 정하고, 아이콘(`ICON_CD`, 공통코드 `ICON` 값)이 제목·카드 옆에 붙습니다. `PROGRAM_ID`가 있으면 그 프로그램의 읽기(READ) 권한이 있는 사용자만 위젯을 보며, 데이터는 사용자별로 `CACHE_SEC`초 동안 서버 메모리에 둡니다. 시드는 이미 있는 위젯의 설정을 덮어쓰지 않습니다.
 
-| 위젯 코드 | 유형 | 데이터 SP | 권한 프로그램 | 칸 수 | 캐시(초) |
-| --- | --- | --- | --- | --- | --- |
-| `NOTICE_RECENT` | LIST | `FW.USP_WIDGET_NOTICE_RECENT` | `BRD_NOTICE` | 8 | 60 |
-| `NOTI_UNREAD` | CARD | `FW.USP_WIDGET_NOTI_UNREAD` | `MY_NOTIFICATION` | 4 | 30 |
+| 위젯 코드 | 유형 | 데이터 SP | 권한 프로그램 | 아이콘 | 칸 수 | 캐시(초) |
+|---|---|---|---|---|---|---|
+| `NOTI_UNREAD` | CARD | `FW.USP_WIDGET_NOTI_UNREAD` | `MY_NOTIFICATION` | bell | 4 | 30 |
+| `NOTICE_NEW` | CARD | `FW.USP_WIDGET_NOTICE_NEW` (최근 7일 공지 수) | `BRD_NOTICE` | megaphone | 4 | 300 |
+| `MY_POST` | CARD | `FW.USP_WIDGET_MY_POST` (내가 쓴 글 수) | (모두) | pencil | 4 | 300 |
+| `NOTICE_RECENT` | LIST | `FW.USP_WIDGET_NOTICE_RECENT` | `BRD_NOTICE` | board | 8 | 60 |
+| `BOARD_ACTIVITY` | CHART | `FW.USP_WIDGET_BOARD_ACTIVITY` (최근 30일 게시판별 새 글, 읽기 권한 있는 게시판만) | (모두) | chart | 4 | 300 |
+| `ARCHIVE_RECENT` | LIST | `FW.USP_WIDGET_ARCHIVE_RECENT` | `BRD_ARCHIVE` | folder | 6 | 300 |
+| `QNA_RECENT` | LIST | `FW.USP_WIDGET_QNA_RECENT` | `BRD_QNA` | comment | 6 | 300 |
 
 공지 팝업은 시드 없이 운영자가 공지 팝업 화면(`SYS_POPUP_MGT`)에서 등록합니다. 기간(시작일~종료일, 포함)과 공개 대상(모든 사용자/본사/협력사)이 맞는 팝업이 홈 화면에 뜨고, 사용자는 "오늘 하루 보지 않기"를 고를 수 있습니다(브라우저에만 기록, 내용이 바뀌면 다시 뜸).
