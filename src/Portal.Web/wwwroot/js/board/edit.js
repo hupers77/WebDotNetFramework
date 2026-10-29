@@ -1,14 +1,14 @@
-// 게시글 쓰기·수정·답글 (BRD_*): 경량 편집기(contenteditable)와 첨부. 편집기의 HTML은 서버가 화이트리스트로 다시 거른다.
-// 붙여넣기는 글자만 받는다(서식·스크립트가 섞여 들어오지 않게). 저장하면 글 보기로 이동한다.
+// 게시글 쓰기·수정·답글 (BRD_*): 표준 편집기(fw-editor.js: 서식·사진·표)와 첨부. 편집기의 HTML은 서버가 화이트리스트로 다시 거른다.
+// 편집기에 사진이 아닌 파일을 끌어 놓으면 첨부로 올린다. 저장하면 글 보기로 이동한다.
 import { fw } from '../fw.js';
 import { FileBox } from '../fw-file.js';
+import { RichEditor } from '../fw-editor.js';
 
 await fw.ready;
 
 const $ = (selector) => document.querySelector(selector);
 const root = $('#brd-edit');
 const d = root.dataset;
-const editor = $('#brd-content');
 const error = $('#brd-error');
 
 let files = null;
@@ -17,27 +17,10 @@ if (d.attach === 'Y') {
     await files.ready;
 }
 
-document.querySelectorAll('.editor-toolbar button[data-cmd]').forEach((button) => {
-    button.addEventListener('click', async () => {
-        editor.focus();
-        const cmd = button.dataset.cmd;
-        if (cmd === 'link') {
-            const url = await fw.dialog.prompt(fw.t('BRD.ED_LINK_PROMPT'), { label: 'URL', maxLength: 500 });
-            if (url) {
-                document.execCommand('createLink', false, url);
-            }
-
-            return;
-        }
-
-        document.execCommand(cmd, false);
-    });
-});
-
-editor.addEventListener('paste', (e) => {
-    e.preventDefault();
-    const text = e.clipboardData?.getData('text/plain') ?? '';
-    document.execCommand('insertText', false, text);
+const editor = new RichEditor($('#brd-content'), {
+    programId: d.program,
+    imageGroupId: d.imageGroupId ? Number(d.imageGroupId) : null,
+    onOtherFiles: files ? (list) => files.add(list) : undefined,
 });
 
 function showError(message) {
@@ -51,8 +34,8 @@ $('#brd-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     showError('');
     const title = $('#brd-title').value.trim();
-    const content = editor.innerHTML;
-    if (!title || !editor.textContent.trim()) {
+    const content = editor.getHtml();
+    if (!title || editor.isEmpty()) {
         showError(fw.t('MSG.INVALID_INPUT'));
         (title ? editor : $('#brd-title')).focus();
         return;
@@ -69,6 +52,7 @@ $('#brd-form').addEventListener('submit', async (e) => {
         startDt: $('#brd-start')?.value || null,
         endDt: $('#brd-end')?.value || null,
         fileGroupId: files?.getFileGroupId() ?? null,
+        imageGroupId: editor.getImageGroupId(),
         targets: $('#brd-targets') ? [...document.querySelectorAll('#brd-targets input[name="target"]:checked')].map((c) => c.value) : null,
     };
     const result = await fw.ajax(d.urlSave, { method: 'POST', body });

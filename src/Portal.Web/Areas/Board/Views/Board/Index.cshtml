@@ -1,4 +1,4 @@
-@* 게시판 목록 (표준 화면 1 조회): 검색(대상·검색어), 쪽 넘김, 글쓰기. 글 제목을 누르면 글 보기 화면으로 간다. *@
+@* 게시판 목록 (표준 화면 1 조회): 검색(대상·검색어), 쪽 번호, 글쓰기. 글 제목을 누르면 글 보기 화면으로 간다. *@
 @model BoardIndexModel
 @{
     var board = Model.Board;
@@ -23,13 +23,13 @@
         </select>
         <label for="brd-keyword">@L["LBL.KEYWORD"]</label>
         <input id="brd-keyword" maxlength="100" autocomplete="off" />
-        <button type="submit">@L["BTN.SEARCH"]</button>
+        <button type="submit" class="primary"><fw-icon name="search" />@L["BTN.SEARCH"]</button>
     </form>
     <div class="toolbar">
         <p id="brd-total" class="hint toolbar-spacer" aria-live="polite"></p>
         @if (Model.CanCreate)
         {
-            <a id="brd-write" class="button primary" href="@baseUrl/Edit">@L["BRD.WRITE"]</a>
+            <a id="brd-write" class="button primary" href="@baseUrl/Edit"><fw-icon name="pencil" />@L["BRD.WRITE"]</a>
         }
     </div>
     <div class="grid-wrap">
@@ -39,15 +39,11 @@
                     <th scope="col">@L["LBL.TITLE"]</th>
                     <th scope="col">@L["BRD.WRITER"]</th>
                     <th scope="col">@L["BRD.REG_DT"]</th>
-                    <th scope="col">@L["BRD.VIEW_CNT"]</th>
+                    <th scope="col" class="col-num">@L["BRD.VIEW_CNT"]</th>
                 </tr>
             </thead>
             <tbody id="brd-body"></tbody>
         </table>
     </div>
-    <div id="brd-pager" class="pager" hidden>
-        <button type="button" id="brd-prev">@L["BTN.PREV"]</button>
-        <span id="brd-page" aria-live="polite"></span>
-        <button type="button" id="brd-next">@L["BTN.NEXT"]</button>
-    </div>
+    <nav id="brd-pager" class="pager" aria-label="@L["LBL.PAGES"]" hidden></nav>
 </div>

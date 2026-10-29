@@ -62,6 +62,10 @@ public sealed class BoardService(ISpExecutor sp) : IBoardService
     /// <summary>Y/N 표시.</summary>
     internal static string YesNo(bool value) => value ? "Y" : "N";
 
+    /// <summary>거른 HTML에 사진·표·구분선이 있는지 (글자 없이 이것만 있어도 내용으로 본다).</summary>
+    internal static bool HasMedia(string sanitized) =>
+        sanitized.Contains("<img ", StringComparison.Ordinal) || sanitized.Contains("<table", StringComparison.Ordinal) || sanitized.Contains("<hr", StringComparison.Ordinal);
+
     /// <inheritdoc />
     public Task<BoardDto?> GetBoardAsync(string boardCd, CancellationToken cancellationToken = default) =>
         sp.QuerySingleAsync<BoardDto>(BoardSp, new { P_BOARD_CD = boardCd }, cancellationToken);
@@ -99,7 +103,8 @@ public sealed class BoardService(ISpExecutor sp) : IBoardService
     {
         var title = request.Title.Trim();
         var content = HtmlSanitizer.Sanitize(request.Content);
-        if (title.Length == 0 || HtmlSanitizer.ToPlainText(content).Length == 0)
+        // 사진·표·구분선만 있는 글도 내용이 있는 것으로 본다
+        if (title.Length == 0 || (HtmlSanitizer.ToPlainText(content).Length == 0 && !HasMedia(content)))
         {
             throw new BizException(MessageKeys.InvalidInput);
         }
@@ -135,6 +140,7 @@ public sealed class BoardService(ISpExecutor sp) : IBoardService
                 P_START_DT = request.StartDt,
                 P_END_DT = request.EndDt,
                 P_FILE_GROUP_ID = request.FileGroupId,
+                P_IMAGE_GROUP_ID = request.ImageGroupId,
                 P_TARGETS = targets is null ? null : System.Text.Json.JsonSerializer.Serialize(targets),
                 P_MANAGER_YN = YesNo(manager),
             },

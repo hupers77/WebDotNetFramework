@@ -129,10 +129,10 @@ export class FileBox {
         head.className = 'fw-file-head';
         const title = document.createElement('h3');
         title.id = `${id}-title`;
-        title.textContent = this.label ?? fw.t('LBL.ATTACH');
+        title.append(fw.icon('paperclip'), ' ', this.label ?? fw.t('LBL.ATTACH'));
         this.zip = document.createElement('a');
         this.zip.className = 'button';
-        this.zip.textContent = fw.t('BTN.ZIP_DOWNLOAD');
+        this.zip.append(fw.icon('download'), fw.t('BTN.ZIP_DOWNLOAD'));
         head.append(title, this.zip);
         box.append(head);
 
@@ -146,7 +146,7 @@ export class FileBox {
             input.className = 'sr-only';
             this.pick = document.createElement('button');
             this.pick.type = 'button';
-            this.pick.textContent = fw.t('BTN.FILE_SELECT');
+            this.pick.append(fw.icon('upload'), fw.t('BTN.FILE_SELECT'));
             this.pick.addEventListener('click', () => input.click());
             input.addEventListener('change', async () => {
                 await this.add(input.files);
@@ -185,6 +185,7 @@ export class FileBox {
             link.href = `/File/Download/${encodeURIComponent(file.fileId)}`;
             link.textContent = file.orgFileNm;
             link.setAttribute('download', '');
+            item.append(fw.icon('page', 'fw-file-ic'));
             const size = document.createElement('span');
             size.className = 'hint';
             size.textContent = fw.format.fileSize(file.fileSize);

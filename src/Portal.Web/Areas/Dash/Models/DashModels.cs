@@ -8,6 +8,9 @@ public static class WidgetTypes
 
     /// <summary>목록.</summary>
     public const string List = "LIST";
+
+    /// <summary>막대 차트 (LABEL·VALUE, LINK가 있으면 막대를 눌러 이동).</summary>
+    public const string Chart = "CHART";
 }
 
 /// <summary>위젯 정의 (<c>FW.USP_WIDGET_GET_LIST</c>).</summary>
@@ -32,6 +35,9 @@ public sealed class WidgetDto
 
     /// <summary>제목을 누르면 가는 화면.</summary>
     public string? LinkUrl { get; set; }
+
+    /// <summary>아이콘 (공통코드 ICON 값, img/icons.svg).</summary>
+    public string? IconCd { get; set; }
 
     /// <summary>12칸 그리드에서 차지하는 칸 수.</summary>
     public int SpanCols { get; set; } = 6;

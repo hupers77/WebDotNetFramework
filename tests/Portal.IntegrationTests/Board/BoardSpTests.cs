@@ -474,6 +474,26 @@ public sealed class BoardSpTests(DbFixture fixture)
     }
 
     [Fact]
+    public async Task 본문사진_묶음은_첨부를_막은_게시판에서도_확정하고_첨부표시는_하지않는다()
+    {
+        var (db, service) = await BeginAsync(fixture, "'Y','Y','N','N','Y','Y','Y','Y'");
+        await using var _ = db;
+        var groupId = await db.ScalarAsync<long>(
+            "INSERT INTO FW.TB_FILE_GROUP (PROGRAM_ID, COMPANY_CD) OUTPUT INSERTED.FILE_GROUP_ID VALUES ('IT_BRD', 'HQ')");
+        var request = Post();
+        request.ImageGroupId = groupId;
+
+        var id = await WriteAsync(db, service, request);
+        var row = Assert.Single(await ListAsync(db, service, Other, "HQ", "EMP"));
+
+        Assert.Equal("YY", await db.ScalarAsync<string>("SELECT CONFIRM_YN + SHARE_YN FROM FW.TB_FILE_GROUP WHERE FILE_GROUP_ID = @G", ("@G", groupId)));
+        Assert.Equal("N", row.HasFileYn);
+        var post = await ReadAsync(db, service, id, Writer, "HQ", "EMP");
+        Assert.Equal(groupId, post.ImageGroupId);
+        Assert.Null(post.FileGroupId);
+    }
+
+    [Fact]
     public async Task 검색은_제목_내용_작성자로_찾는다()
     {
         var (db, service) = await BeginAsync(fixture);

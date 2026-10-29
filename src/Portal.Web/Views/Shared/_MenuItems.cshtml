@@ -7,7 +7,7 @@
     if (item.Children.Count > 0)
     {
         <li role="treeitem" aria-expanded="false" class="menu-folder" data-menu-id="@item.MenuId">
-            <span class="menu-label icon-@(item.IconCd ?? "folder")" tabindex="-1">@item.Name</span>
+            <span class="menu-label" tabindex="-1">@if (item.IconCd is not null) {<fw-icon name="@item.IconCd" />}<span class="menu-text">@item.Name</span><fw-icon name="chevron-right" class="menu-caret" /></span>
             <ul role="group" hidden>
                 <partial name="_MenuItems" model="item.Children" view-data="ViewData" />
             </ul>
@@ -20,15 +20,15 @@
         <li role="treeitem" class="menu-page" data-menu-id="@item.MenuId">
             @if (item.NewWindow || item.MenuTypeCd == Portal.Framework.Web.Navigation.MenuTypes.Link)
             {
-                <a class="menu-label icon-@(item.IconCd ?? "page")" href="@url" target="_blank" rel="noopener noreferrer" tabindex="-1" data-menu-id="@item.MenuId">@item.Name</a>
+                <a class="menu-label" href="@url" target="_blank" rel="noopener noreferrer" tabindex="-1" data-menu-id="@item.MenuId">@if (item.IconCd is not null) {<fw-icon name="@item.IconCd" />}<span class="menu-text">@item.Name</span></a>
             }
             else
             {
-                <a class="menu-label icon-@(item.IconCd ?? "page")" href="@url" tabindex="-1" data-menu-id="@item.MenuId" data-tab="Y">@item.Name</a>
+                <a class="menu-label" href="@url" tabindex="-1" data-menu-id="@item.MenuId" data-tab="Y">@if (item.IconCd is not null) {<fw-icon name="@item.IconCd" />}<span class="menu-text">@item.Name</span></a>
             }
             <button type="button" class="fav" data-menu-id="@item.MenuId" aria-pressed="@(favorite ? "true" : "false")"
                     aria-label="@L[favorite ? "BTN.FAVORITE_REMOVE" : "BTN.FAVORITE_ADD"]"
-                    data-label-add="@L["BTN.FAVORITE_ADD"]" data-label-remove="@L["BTN.FAVORITE_REMOVE"]" tabindex="-1">@(favorite ? "★" : "☆")</button>
+                    data-label-add="@L["BTN.FAVORITE_ADD"]" data-label-remove="@L["BTN.FAVORITE_REMOVE"]" tabindex="-1"><fw-icon name="star" /></button>
         </li>
     }
 }

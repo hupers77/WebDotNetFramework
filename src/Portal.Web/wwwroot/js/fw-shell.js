@@ -276,7 +276,6 @@ function initFavorites() {
 
         button.setAttribute('aria-pressed', favorite ? 'true' : 'false');
         button.setAttribute('aria-label', favorite ? button.dataset.labelRemove : button.dataset.labelAdd);
-        button.textContent = favorite ? '★' : '☆';
         $(`:scope > li[data-menu-id="${menuId}"]`, list)?.remove();
         if (favorite) {
             const item = listItemFor(menuId);
@@ -391,7 +390,7 @@ class Tabs {
         close.className = 'tab-close';
         close.tabIndex = -1;
         close.setAttribute('aria-label', `${fw.t('BTN.CLOSE_TAB')} ${button.textContent}`);
-        close.textContent = '×';
+        close.append(fw.icon('x'));
         close.addEventListener('click', () => this.close(key));
         wrap.append(button, close);
         this.list.append(wrap);

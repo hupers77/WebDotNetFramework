@@ -86,6 +86,18 @@ public sealed class FileService(ISpExecutor sp, IFileStorage storage, IPortalCon
         return stream;
     }
 
+    /// <summary>화면에 바로 보여 줄 내용을 연다(다운로드 횟수를 올리지 않는다). 호출자가 READ 권한과 형식을 확인한 뒤 부른다.</summary>
+    public Stream OpenInline(StoredFileDto file) => storage.OpenRead(file.StoredPath);
+
+    /// <summary>본문 사진으로 보여 줄 수 있는 확장자의 Content-Type. 사진이 아니면 null (SVG는 스크립트를 담을 수 있어 넣지 않는다).</summary>
+    public static string? ImageContentType(string ext) => ext.ToLowerInvariant() switch
+    {
+        "jpg" or "jpeg" => "image/jpeg",
+        "png" => "image/png",
+        "gif" => "image/gif",
+        _ => null,
+    };
+
     /// <summary>
     /// 묶음의 파일을 ZIP 하나로 묶는다(파일마다 다운로드 횟수를 올린다). 호출자가 READ 권한을 확인한 뒤 부른다.
     /// 임시 파일에 만들고 스트림을 닫으면 지워진다. 같은 이름은 "이름 (2).확장자"로 바꾼다.

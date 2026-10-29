@@ -5,12 +5,13 @@
     var post = Model.Detail.Post;
     var baseUrl = Url.Content("~/Board/" + board.BoardCd);
     ViewData["Title"] = board.BoardNm;
+    var writer = post.WriterNm ?? L["BRD.ANONYMOUS"];
 }
 @section Scripts {
     <script type="module" src="~/js/board/view.js" asp-append-version="true"></script>
 }
 <h1>@board.BoardNm</h1>
-<article id="brd-view"
+<article id="brd-view" class="board-view"
          data-post-id="@post.PostId"
          data-row-ver="@Convert.ToBase64String(post.RowVer)"
          data-url-list="@baseUrl"
@@ -23,46 +24,46 @@
          data-program="@board.ProgramId"
          data-can-comment="@(Model.CanComment ? "Y" : "N")"
          data-can-delete-any="@(Model.CanDeleteAny ? "Y" : "N")">
-    <h2 id="brd-title">@post.Title</h2>
-    <dl class="detail-list">
-        <dt>@L["BRD.WRITER"]</dt><dd>@(post.WriterNm ?? L["BRD.ANONYMOUS"])</dd>
-        <dt>@L["BRD.REG_DT"]</dt><dd><time datetime="@post.RegDt.ToString("s")Z" data-fw-datetime>@post.RegDt.ToString("yyyy-MM-dd HH:mm") UTC</time></dd>
-        <dt>@L["BRD.VIEW_CNT"]</dt><dd>@post.ViewCnt</dd>
+    <h2 id="brd-title" class="board-view-title">@if (post.PinYn == "Y") {<span class="badge badge-pin"><fw-icon name="pin" />@L["BRD.PINNED"]</span>}@if (post.SecretYn == "Y") {<span class="badge"><fw-icon name="lock" />@L["BRD.SECRET"]</span>}@post.Title</h2>
+    <div class="board-meta">
+        <span><span class="avatar" aria-hidden="true">@(writer.Length > 0 ? writer[..1] : "?")</span><span class="sr-only">@L["BRD.WRITER"]</span><span class="writer">@writer</span></span>
+        <span><fw-icon name="calendar" /><span class="sr-only">@L["BRD.REG_DT"]</span><time datetime="@post.RegDt.ToString("s")Z" data-fw-datetime>@post.RegDt.ToString("yyyy-MM-dd HH:mm") UTC</time></span>
+        <span><fw-icon name="eye" /><span class="sr-only">@L["BRD.VIEW_CNT"]</span>@post.ViewCnt</span>
         @if (post.StartDt is not null || post.EndDt is not null)
         {
-            <dt>@L["BRD.PERIOD"]</dt><dd>@post.StartDt?.ToString("yyyy-MM-dd") ~ @post.EndDt?.ToString("yyyy-MM-dd")</dd>
+            <span><fw-icon name="clock" />@L["BRD.PERIOD"] @post.StartDt?.ToString("yyyy-MM-dd") ~ @post.EndDt?.ToString("yyyy-MM-dd")</span>
         }
         @if (Model.Detail.Targets.Count > 0)
         {
-            <dt>@L["BRD.TARGETS"]</dt><dd>@string.Join(", ", Model.Detail.Targets)</dd>
+            <span><fw-icon name="users" />@L["BRD.TARGETS"] @string.Join(", ", Model.Detail.Targets)</span>
         }
-    </dl>
+    </div>
     <fw-safe-html class="board-content" value="@post.Content" />
     @if (post.FileGroupId is not null)
     {
         <div id="brd-files"></div>
     }
     <div class="toolbar">
-        <a id="brd-list" class="button" href="@baseUrl">@L["BRD.LIST"]</a>
+        <a id="brd-list" class="button" href="@baseUrl"><fw-icon name="list" />@L["BRD.LIST"]</a>
         <span class="toolbar-spacer"></span>
         @if (Model.CanManage && board.ReaderYn == "Y")
         {
-            <button type="button" id="brd-readers">@L["BRD.READERS"]</button>
+            <button type="button" id="brd-readers"><fw-icon name="users" />@L["BRD.READERS"]</button>
         }
         @if (Model.CanReply)
         {
-            <a id="brd-reply" class="button" href="@baseUrl/Edit?parent=@post.PostId">@L["BRD.REPLY"]</a>
+            <a id="brd-reply" class="button" href="@baseUrl/Edit?parent=@post.PostId"><fw-icon name="reply" />@L["BRD.REPLY"]</a>
         }
         @if (Model.CanEdit)
         {
-            <a id="brd-edit" class="button" href="@baseUrl/Edit?id=@post.PostId">@L["BRD.EDIT"]</a>
+            <a id="brd-edit" class="button" href="@baseUrl/Edit?id=@post.PostId"><fw-icon name="pencil" />@L["BRD.EDIT"]</a>
         }
         @if (Model.CanDelete)
         {
-            <button type="button" id="brd-delete">@L["BTN.DELETE"]</button>
+            <button type="button" id="brd-delete" class="danger"><fw-icon name="trash" />@L["BTN.DELETE"]</button>
         }
     </div>
-    <section id="brd-readers-panel" aria-labelledby="brd-readers-heading" hidden>
+    <section id="brd-readers-panel" class="board-section" aria-labelledby="brd-readers-heading" hidden>
         <h3 id="brd-readers-heading" tabindex="-1">@L["BRD.READERS"]</h3>
         <div class="grid-wrap">
             <table class="fw-grid">
@@ -80,8 +81,8 @@
     </section>
     @if (board.CommentYn == "Y")
     {
-        <section id="brd-comments" aria-labelledby="brd-comments-heading">
-            <h3 id="brd-comments-heading">@L["BRD.COMMENTS"]</h3>
+        <section id="brd-comments" class="board-section" aria-labelledby="brd-comments-heading">
+            <h3 id="brd-comments-heading"><fw-icon name="comment" />@L["BRD.COMMENTS"]</h3>
             <ul id="brd-comment-list" class="comment-list"></ul>
             @if (Model.CanComment)
             {

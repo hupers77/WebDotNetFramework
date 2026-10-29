@@ -70,6 +70,29 @@ public sealed class BoardServiceTests
         Assert.Empty(_sp.Calls);
     }
 
+    [Theory]
+    [InlineData("<p><img src=\"/File/Image/5\" alt=\"사진\"></p>")]
+    [InlineData("<table><tr><td></td></tr></table>")]
+    [InlineData("<hr>")]
+    public async Task SaveAsync_글자없이_사진이나_표만_있어도_저장한다(string content)
+    {
+        var request = Request(content: content);
+        request.ImageGroupId = 9;
+
+        await _service.SaveAsync(_board, request, manager: false, Ct);
+
+        var call = _sp.LastCall(BoardService.SaveSp);
+        Assert.Equal(9L, call.Parameters["P_IMAGE_GROUP_ID"]);
+    }
+
+    [Fact]
+    public async Task SaveAsync_외부주소_사진만_있으면_필터가_지워_빈글로_거절()
+    {
+        var error = await Assert.ThrowsAsync<BizException>(() => _service.SaveAsync(_board, Request(content: "<img src=\"https://evil.example/x.png\">"), manager: false, Ct));
+
+        Assert.Equal(MessageKeys.InvalidInput, error.MessageKey);
+    }
+
     [Fact]
     public async Task SaveAsync_수정은_RowVer가_필요하다()
     {
