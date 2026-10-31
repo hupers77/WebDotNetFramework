@@ -171,7 +171,9 @@ public sealed class PermissionMatrixTests(DbFixture fixture, PortalWebFactory we
             SELECT CONCAT(R.ROLE_ID, ' ', M.PROGRAM_ID)
               FROM FW.TB_MENU M
              CROSS JOIN FW.TB_ROLE R
+             JOIN FW.TB_PROGRAM P ON P.PROGRAM_ID = M.PROGRAM_ID
              WHERE M.OPEN_SCOPE_CD = 'ALL' AND M.PROGRAM_ID IS NOT NULL AND M.USE_YN = 'Y'
+               AND P.MODULE_CD IN ('SYS', 'LOG', 'MY', 'PTN', 'RPT', 'BRD', 'DSH') -- 업무 화면은 업무 저장소의 협력사 역할로 연다
                AND R.ROLE_ID LIKE 'PARTNER[_]%' AND R.USE_YN = 'Y'
                AND NOT EXISTS (SELECT 1 FROM FW.TB_ROLE_PROGRAM_FUNC F WHERE F.ROLE_ID = R.ROLE_ID AND F.PROGRAM_ID = M.PROGRAM_ID AND F.FUNC_CD = 'READ')
             """);

@@ -26,10 +26,25 @@ public sealed class PopupSpTests(DbFixture fixture)
         var listed = (await db.Sp.QueryPageAsync<PopupDto>("FW.USP_POPUP_GET_LIST", new { P_PAGE_NO = 1, P_PAGE_SIZE = 20 }, Ct)).Items[0];
 
         Assert.Equal(2, listed.Langs.Count);
-        var ex = await Assert.ThrowsAsync<BizException>(() => db.Sp.ExecuteAsync("FW.USP_POPUP_DEL", new { P_POPUP_ID = listed.PopupId, P_ROW_VER = new byte[8] }, Ct));
-        Assert.Equal("MSG.CONCURRENCY", ex.MessageKey);
         await db.Sp.ExecuteAsync("FW.USP_POPUP_DEL", new { P_POPUP_ID = listed.PopupId, P_ROW_VER = listed.RowVer }, Ct);
         Assert.Empty((await db.Sp.QueryPageAsync<PopupDto>("FW.USP_POPUP_GET_LIST", new { P_PAGE_NO = 1, P_PAGE_SIZE = 20 }, Ct)).Items);
+    }
+
+    [Fact]
+    public async Task 이전_RowVer로_삭제하면_충돌()
+    {
+        // SP가 오류에서 트랜잭션을 롤백하면 테스트 트랜잭션도 끝나므로, 충돌 확인은 테스트의 마지막 호출로 둔다
+        await using var db = await fixture.BeginAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        await db.Sp.ExecuteAsync("FW.USP_POPUP_SAVE", new
+        {
+            P_OPEN_SCOPE_CD = "ALL", P_START_DT = today, P_END_DT = today, P_USE_YN = "Y",
+            P_LANGS_JSON = "[{\"langCd\":\"ko\",\"title\":\"점검\",\"content\":\"내용\"}]",
+        }, Ct);
+        var listed = (await db.Sp.QueryPageAsync<PopupDto>("FW.USP_POPUP_GET_LIST", new { P_PAGE_NO = 1, P_PAGE_SIZE = 20 }, Ct)).Items[0];
+
+        var ex = await Assert.ThrowsAsync<BizException>(() => db.Sp.ExecuteAsync("FW.USP_POPUP_DEL", new { P_POPUP_ID = listed.PopupId, P_ROW_VER = new byte[8] }, Ct));
+        Assert.Equal("MSG.CONCURRENCY", ex.MessageKey);
     }
 
     [Fact]

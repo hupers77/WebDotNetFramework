@@ -440,7 +440,31 @@ USING (VALUES
   (N'POST', N'/Ptn/User/Save', N'PTN_USER_MGT', N'UPDATE'),
   (N'POST', N'/Ptn/User/Unlock', N'PTN_USER_MGT', N'UPDATE'),
   (N'POST', N'/Ptn/User/ResetMfa', N'PTN_USER_MGT', N'UPDATE'),
-  (N'POST', N'/Ptn/User/Export', N'PTN_USER_MGT', N'EXPORT')
+  (N'POST', N'/Ptn/User/Export', N'PTN_USER_MGT', N'EXPORT'),
+  (N'GET', N'/Dash/Widgets', N'DSH_HOME', N'READ'),
+  (N'GET', N'/Dash/Data', N'DSH_HOME', N'READ'),
+  (N'GET', N'/Dash/Popups', N'DSH_HOME', N'READ'),
+  (N'GET', N'/Board/Admin', N'BRD_BOARD_MGT', N'READ'),
+  (N'GET', N'/Board/Admin/List', N'BRD_BOARD_MGT', N'READ'),
+  (N'POST', N'/Board/Admin/Save', N'BRD_BOARD_MGT', N'UPDATE'),
+  (N'GET', N'/Dash/Widget', N'DSH_WIDGET_MGT', N'READ'),
+  (N'GET', N'/Dash/Widget/List', N'DSH_WIDGET_MGT', N'READ'),
+  (N'POST', N'/Dash/Widget/Save', N'DSH_WIDGET_MGT', N'UPDATE'),
+  (N'GET', N'/Sys/Holiday', N'SYS_HOLIDAY_MGT', N'READ'),
+  (N'GET', N'/Sys/Holiday/List', N'SYS_HOLIDAY_MGT', N'READ'),
+  (N'POST', N'/Sys/Holiday/Save', N'SYS_HOLIDAY_MGT', N'UPDATE'),
+  (N'GET', N'/Sys/Popup', N'SYS_POPUP_MGT', N'READ'),
+  (N'GET', N'/Sys/Popup/List', N'SYS_POPUP_MGT', N'READ'),
+  (N'POST', N'/Sys/Popup/Create', N'SYS_POPUP_MGT', N'CREATE'),
+  (N'POST', N'/Sys/Popup/Save', N'SYS_POPUP_MGT', N'UPDATE'),
+  (N'POST', N'/Sys/Popup/Delete', N'SYS_POPUP_MGT', N'DELETE'),
+  (N'GET', N'/Sys/ApiClient', N'SYS_API_CLIENT_MGT', N'READ'),
+  (N'GET', N'/Sys/ApiClient/List', N'SYS_API_CLIENT_MGT', N'READ'),
+  (N'POST', N'/Sys/ApiClient/Save', N'SYS_API_CLIENT_MGT', N'UPDATE'),
+  (N'POST', N'/Sys/ApiClient/Secret', N'SYS_API_CLIENT_MGT', N'UPDATE'),
+  (N'GET', N'/Sys/ApiOutbound', N'SYS_API_OUTBOUND_MGT', N'READ'),
+  (N'GET', N'/Sys/ApiOutbound/List', N'SYS_API_OUTBOUND_MGT', N'READ'),
+  (N'POST', N'/Sys/ApiOutbound/Save', N'SYS_API_OUTBOUND_MGT', N'UPDATE')
 ) AS S ([HTTP_METHOD], [ROUTE_PATTERN], [PROGRAM_ID], [FUNC_CD])
    ON T.[HTTP_METHOD] = S.[HTTP_METHOD] AND T.[ROUTE_PATTERN] = S.[ROUTE_PATTERN]
 WHEN MATCHED THEN UPDATE SET T.[PROGRAM_ID] = S.[PROGRAM_ID], T.[FUNC_CD] = S.[FUNC_CD]
