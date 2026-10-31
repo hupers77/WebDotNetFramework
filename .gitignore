@@ -9,3 +9,6 @@ TestResults/
 appsettings.*.local.json
 .idea/
 App_Data/
+
+# 보안 점검 도구 원본 결과 (정리한 보고서만 docs/security에 올린다)
+security-scan/
