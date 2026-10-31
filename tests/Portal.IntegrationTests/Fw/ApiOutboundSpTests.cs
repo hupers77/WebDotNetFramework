@@ -40,9 +40,6 @@ public sealed class ApiOutboundSpTests(DbFixture fixture)
         var after = (await service.GetListAsync(Ct)).Items.Single(t => t.TargetKey == "T_ERP");
         Assert.Equal("enc:tok-1", await db.ScalarAsync<string>("SELECT AUTH_SECRET_ENC FROM FW.TB_API_OUTBOUND WHERE TARGET_KEY = 'T_ERP'"));
 
-        // 이전 RowVer로는 수정 불가 (동시성)
-        await Assert.ThrowsAsync<BizException>(() => service.SaveAsync(new ApiOutboundSaveRequest { Rows = [keep] }, Ct));
-
         // 인증 없음으로 바꾸면 비밀값이 지워진다
         var none = Row(stat: "U");
         none.AuthTypeCd = "NONE";
@@ -58,8 +55,23 @@ public sealed class ApiOutboundSpTests(DbFixture fixture)
         Assert.DoesNotContain((await service.GetListAsync(Ct)).Items, t => t.TargetKey == "T_ERP");
     }
 
+    // SP가 오류에서 ROLLBACK하면 테스트 트랜잭션까지 끝나므로, 오류를 기대하는 호출은 테스트마다 마지막에 하나만 둔다
     [Fact]
-    public async Task 중복키는_오류_비밀값_없는_인증전환은_거부()
+    public async Task 이전_RowVer로는_수정할_수_없다()
+    {
+        await using var db = await fixture.BeginAsync();
+        var service = new ApiOutboundAdminService(db.Sp, new Plain());
+        await service.SaveAsync(new ApiOutboundSaveRequest { Rows = [Row()] }, Ct);
+        var keep = Row(stat: "U");
+        keep.NewSecret = "";
+        keep.RowVer = (await service.GetListAsync(Ct)).Items.Single(t => t.TargetKey == "T_ERP").RowVer;
+        await service.SaveAsync(new ApiOutboundSaveRequest { Rows = [keep] }, Ct);
+
+        await Assert.ThrowsAsync<BizException>(() => service.SaveAsync(new ApiOutboundSaveRequest { Rows = [keep] }, Ct));
+    }
+
+    [Fact]
+    public async Task 중복키는_오류()
     {
         await using var db = await fixture.BeginAsync();
         var service = new ApiOutboundAdminService(db.Sp, new Plain());
@@ -69,6 +81,17 @@ public sealed class ApiOutboundSpTests(DbFixture fixture)
         await service.SaveAsync(new ApiOutboundSaveRequest { Rows = [none] }, Ct);
 
         await Assert.ThrowsAsync<BizException>(() => service.SaveAsync(new ApiOutboundSaveRequest { Rows = [none] }, Ct));
+    }
+
+    [Fact]
+    public async Task 비밀값_없는_인증전환은_거부()
+    {
+        await using var db = await fixture.BeginAsync();
+        var service = new ApiOutboundAdminService(db.Sp, new Plain());
+        var none = Row();
+        none.AuthTypeCd = "NONE";
+        none.NewSecret = null;
+        await service.SaveAsync(new ApiOutboundSaveRequest { Rows = [none] }, Ct);
 
         var target = (await service.GetListAsync(Ct)).Items.Single(t => t.TargetKey == "T_ERP");
         var bearer = Row(stat: "U");

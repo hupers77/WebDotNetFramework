@@ -90,7 +90,7 @@ public sealed class ConfigSpTests(DbFixture fixture)
         var secret = Assert.Single(mail.Items, r => r.ConfigKey == "MAIL.SMTP_PASSWORD");
         Assert.Null(secret.ConfigVal);
         Assert.Equal("Y", secret.SecretSetYn);
-        Assert.Equal("N", (await GetAsync(db, "AD.BIND_PASSWORD")).SecretSetYn);
+        Assert.Equal("N", (await GetAsync(db, "LDAP.BIND_PASSWORD")).SecretSetYn);
     }
 
     [Fact]

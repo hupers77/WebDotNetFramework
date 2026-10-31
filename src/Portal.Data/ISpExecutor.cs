@@ -22,6 +22,7 @@ public interface ISpExecutor
     /// <summary>
     /// 목록 SP(<c>_GET_LIST</c>)를 실행한다. 결과셋 1은 목록, 결과셋 2는 <c>TOTAL_CNT</c> 한 행이어야 한다.
     /// 페이지 번호·크기는 파라미터의 <c>P_PAGE_NO</c>, <c>P_PAGE_SIZE</c>에서 읽는다.
+    /// 쪽 나눔 없이 전체를 돌려주는 SP는 둘 다 빼고 부르며, 이때 결과는 1쪽·크기는 행 수로 채운다.
     /// </summary>
     Task<PageResult<T>> QueryPageAsync<T>(string spName, object? parameters = null, CancellationToken cancellationToken = default);
 
