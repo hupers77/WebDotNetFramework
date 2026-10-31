@@ -1,7 +1,9 @@
 -- 댓글 목록 (오래된 순). 프로그램: 게시판의 프로그램 (READ는 애플리케이션이 확인)
--- 글을 볼 수 없으면 NOT_FOUND. 댓글이 꺼진 게시판은 0행. 익명 게시판은 관리자와 본인 외에게 작성자를 주지 않는다.
+-- 글이 @P_BOARD_CD 게시판의 글이 아니거나 볼 수 없으면 NOT_FOUND(권한을 확인한 게시판 밖의 글 댓글을 읽지 못하게).
+-- 댓글이 꺼진 게시판은 0행. 익명 게시판은 관리자와 본인 외에게 작성자를 주지 않는다.
 -- 결과: COMMENT_ID, CONTENT, COMPANY_CD, WRITER_NM, MINE_YN, REG_DT, UPD_DT, ROW_VER
 CREATE PROCEDURE [FW].[USP_COMMENT_GET_LIST]
+  @P_BOARD_CD     VARCHAR(30),
   @P_POST_ID      BIGINT,
   @P_MANAGER_YN   CHAR(1)     = 'N',
   @P_USER_ID      VARCHAR(30),
@@ -13,7 +15,9 @@ BEGIN
 
   IF @P_MANAGER_YN NOT IN ('Y', 'N')
     THROW 50005, 'MSG.INVALID_INPUT', 1;
-  IF NOT EXISTS (SELECT 1 FROM [FW].[UFN_POST_VISIBLE](@P_USER_ID, @P_MANAGER_YN) V WHERE V.[POST_ID] = @P_POST_ID AND V.[SECRET_OK_YN] = 'Y')
+  IF NOT EXISTS (SELECT 1 FROM [FW].[TB_POST] P
+                   JOIN [FW].[UFN_POST_VISIBLE](@P_USER_ID, @P_MANAGER_YN) V ON V.[POST_ID] = P.[POST_ID] AND V.[SECRET_OK_YN] = 'Y'
+                  WHERE P.[POST_ID] = @P_POST_ID AND P.[BOARD_CD] = @P_BOARD_CD)
     THROW 50004, 'MSG.NOT_FOUND', 1;
 
   SELECT C.[COMMENT_ID], C.[CONTENT], C.[COMPANY_CD],

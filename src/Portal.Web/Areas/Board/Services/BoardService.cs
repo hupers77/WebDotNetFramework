@@ -35,14 +35,14 @@ public interface IBoardService
     /// <summary>글 공개 대상으로 고를 수 있는 협력사 (사용 중인 협력사 전부).</summary>
     Task<IReadOnlyList<TargetCompanyDto>> GetTargetCompaniesAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>댓글 목록.</summary>
-    Task<IReadOnlyList<CommentDto>> GetCommentsAsync(long postId, bool manager, CancellationToken cancellationToken = default);
+    /// <summary>댓글 목록. 글이 <paramref name="boardCd"/> 게시판의 글이 아니면 NOT_FOUND 오류(권한을 확인한 게시판 밖의 글은 다루지 않는다).</summary>
+    Task<IReadOnlyList<CommentDto>> GetCommentsAsync(string boardCd, long postId, bool manager, CancellationToken cancellationToken = default);
 
-    /// <summary>댓글을 등록하거나 고치고 댓글 ID를 돌려준다.</summary>
-    Task<long> SaveCommentAsync(CommentSaveRequest request, bool manager, CancellationToken cancellationToken = default);
+    /// <summary>댓글을 등록하거나 고치고 댓글 ID를 돌려준다. 글은 <paramref name="boardCd"/> 게시판의 글이어야 한다.</summary>
+    Task<long> SaveCommentAsync(string boardCd, CommentSaveRequest request, bool manager, CancellationToken cancellationToken = default);
 
-    /// <summary>댓글을 지운다.</summary>
-    Task DeleteCommentAsync(CommentDeleteRequest request, bool manager, CancellationToken cancellationToken = default);
+    /// <summary>댓글을 지운다. 글은 <paramref name="boardCd"/> 게시판의 글이어야 한다.</summary>
+    Task DeleteCommentAsync(string boardCd, CommentDeleteRequest request, bool manager, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
@@ -164,11 +164,11 @@ public sealed class BoardService(ISpExecutor sp) : IBoardService
         sp.QueryAsync<TargetCompanyDto>(TargetSp, null, cancellationToken);
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<CommentDto>> GetCommentsAsync(long postId, bool manager, CancellationToken cancellationToken = default) =>
-        sp.QueryAsync<CommentDto>(CommentListSp, new { P_POST_ID = postId, P_MANAGER_YN = YesNo(manager) }, cancellationToken);
+    public Task<IReadOnlyList<CommentDto>> GetCommentsAsync(string boardCd, long postId, bool manager, CancellationToken cancellationToken = default) =>
+        sp.QueryAsync<CommentDto>(CommentListSp, new { P_BOARD_CD = boardCd, P_POST_ID = postId, P_MANAGER_YN = YesNo(manager) }, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<long> SaveCommentAsync(CommentSaveRequest request, bool manager, CancellationToken cancellationToken = default)
+    public async Task<long> SaveCommentAsync(string boardCd, CommentSaveRequest request, bool manager, CancellationToken cancellationToken = default)
     {
         var content = request.Content.Trim();
         if (content.Length == 0 || (request.CommentId is not null && request.RowVer is null))
@@ -178,15 +178,15 @@ public sealed class BoardService(ISpExecutor sp) : IBoardService
 
         var result = await sp.ExecuteAsync(
             CommentSaveSp,
-            new { P_COMMENT_ID = request.CommentId, P_ROW_VER = request.RowVer, P_POST_ID = request.PostId, P_CONTENT = content, P_MANAGER_YN = YesNo(manager) },
+            new { P_COMMENT_ID = request.CommentId, P_ROW_VER = request.RowVer, P_BOARD_CD = boardCd, P_POST_ID = request.PostId, P_CONTENT = content, P_MANAGER_YN = YesNo(manager) },
             cancellationToken);
         return long.Parse(result.NewKey ?? "0", System.Globalization.CultureInfo.InvariantCulture);
     }
 
     /// <inheritdoc />
-    public Task DeleteCommentAsync(CommentDeleteRequest request, bool manager, CancellationToken cancellationToken = default) =>
+    public Task DeleteCommentAsync(string boardCd, CommentDeleteRequest request, bool manager, CancellationToken cancellationToken = default) =>
         sp.ExecuteAsync(
             CommentDeleteSp,
-            new { P_COMMENT_ID = request.CommentId, P_ROW_VER = request.RowVer, P_POST_ID = request.PostId, P_MANAGER_YN = YesNo(manager) },
+            new { P_COMMENT_ID = request.CommentId, P_ROW_VER = request.RowVer, P_BOARD_CD = boardCd, P_POST_ID = request.PostId, P_MANAGER_YN = YesNo(manager) },
             cancellationToken);
 }

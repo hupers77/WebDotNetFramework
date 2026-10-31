@@ -171,8 +171,8 @@ public sealed class BoardServiceTests
     {
         _sp.Returns(BoardService.CommentSaveSp, new SaveResult(1, "9"));
 
-        var id = await _service.SaveCommentAsync(new CommentSaveRequest { PostId = 1, Content = "  좋아요  " }, manager: false, Ct);
-        var error = await Assert.ThrowsAsync<BizException>(() => _service.SaveCommentAsync(new CommentSaveRequest { PostId = 1, Content = "   " }, manager: false, Ct));
+        var id = await _service.SaveCommentAsync("Test", new CommentSaveRequest { PostId = 1, Content = "  좋아요  " }, manager: false, Ct);
+        var error = await Assert.ThrowsAsync<BizException>(() => _service.SaveCommentAsync("Test", new CommentSaveRequest { PostId = 1, Content = "   " }, manager: false, Ct));
 
         Assert.Equal(9, id);
         Assert.Equal("좋아요", _sp.LastCall(BoardService.CommentSaveSp).Parameters["P_CONTENT"]);

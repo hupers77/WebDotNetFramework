@@ -40,7 +40,10 @@ public static partial class HtmlSanitizer
 
     private static readonly HashSet<string> AllowedSchemes = new(StringComparer.OrdinalIgnoreCase) { "http", "https", "mailto" };
 
-    [GeneratedRegex("""\G<(/?)([a-zA-Z][a-zA-Z0-9]*)((?:[^>"']|"[^"]*"|'[^']*')*)>""", RegexOptions.CultureInvariant)]
+    // 태그 안(따옴표 값 포함)에는 '<'가 올 수 없게 한다. 그래야 닫히지 않은 태그를 만나도 다음 '<'에서 바로 멈춰
+    // 입력 길이에 비례하는 시간 안에 끝난다('<a<a<a…' 같은 입력으로 서버를 오래 붙잡지 못하게: 서비스 거부 방지).
+    // '<'가 든 태그는 태그로 보지 않고 글자로 인코딩하므로 더 안전한 쪽으로만 달라진다.
+    [GeneratedRegex("""\G<(/?)([a-zA-Z][a-zA-Z0-9]*)((?:[^<>"']|"[^"<]*"|'[^'<]*')*)>""", RegexOptions.CultureInvariant)]
     private static partial Regex TagPattern();
 
     [GeneratedRegex("""([a-zA-Z_:][-a-zA-Z0-9_:.]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?""", RegexOptions.CultureInvariant)]
@@ -176,10 +179,31 @@ public static partial class HtmlSanitizer
         return Regex.Replace(WebUtility.HtmlDecode(text), @"\s+", " ", RegexOptions.CultureInvariant).Trim();
     }
 
+    /// <summary>
+    /// <paramref name="name"/>의 닫는 태그(<c>&lt;/name&gt;</c>, 이름 뒤 공백 허용) 바로 다음 위치. 없으면 끝.
+    /// 남은 문자열을 복사하지 않고 찾는다(닫는 태그가 많은 입력에서 시간·메모리가 제곱으로 늘지 않게).
+    /// </summary>
     private static int SkipTo(string html, int from, string name)
     {
-        var m = Regex.Match(html[from..], $@"</{name}\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-        return m.Success ? from + m.Index + m.Length : html.Length;
+        var marker = "</" + name;
+        var at = from;
+        while ((at = html.IndexOf(marker, at, StringComparison.OrdinalIgnoreCase)) >= 0)
+        {
+            var end = at + marker.Length;
+            while (end < html.Length && char.IsWhiteSpace(html[end]))
+            {
+                end++;
+            }
+
+            if (end < html.Length && html[end] == '>')
+            {
+                return end + 1;
+            }
+
+            at += marker.Length;
+        }
+
+        return html.Length;
     }
 
     private static void CloseTo(StringBuilder sb, Stack<string> open, string name)

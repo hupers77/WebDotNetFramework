@@ -30,7 +30,7 @@ Oct 21, 2026 · @사랑나무아빠
 
 | 도구 | 버전 | 라이선스 주의 |
 | --- | --- | --- |
-| .NET SDK | 10.0.x (레포지토리 `global.json`으로 고정) | 무료 |
+| .NET SDK | 10.0.114 이상(10.0.403 등 상위 기능 대역 포함, 레포지토리 `global.json`으로 하한 고정. 10.0.14 보안 업데이트 런타임을 담은 SDK) | 무료 |
 | IDE | Visual Studio 2022 이상 Professional, 또는 VS Code + C# 확장 | Visual Studio Community와 C# Dev Kit는 일정 규모 이상 기업의 업무 사용이 제한되므로, 회사 라이선스가 없으면 VS Code + C# 확장만 씁니다 |
 | DB | SQL Server 2022 Developer Edition | 개발·테스트 전용 무료 (운영 사용 금지) |
 | DB 도구 | SSMS, SqlPackage (dotnet tool) | 무료 |
@@ -171,6 +171,8 @@ Controller에는 업무 로직을 두지 않습니다. 사용자 ID·언어·IP�
    ```
 2. 업무 저장 SP가 업무 행에 `FILE_GROUP_ID`를 저장하고, 같은 트랜잭션에서 `EXEC [FW].[USP_FILE_GROUP_CONFIRM_EXEC] @P_FILE_GROUP_ID, @P_PROGRAM_ID = 'PUR_VENDOR_MGT', @P_SHARE_YN = NULL, @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD`를 부릅니다. 확정하지 않은 묶음은 정리 작업이 지웁니다.
 3. 권한은 묶음의 프로그램으로 확인합니다. 목록·다운로드(ZIP 포함)는 `READ`, 업로드·삭제는 `CREATE` 또는 `UPDATE`가 필요합니다. 협력사 사용자는 자기 회사 묶음만 보고, 본사가 협력사에게 보여 줄 첨부(공지 등)는 확정할 때 `@P_SHARE_YN = 'Y'`를 넘깁니다.
+4. 프로그램 권한 다음에 묶음의 기록 단위 권한(`FW.USP_FILE_GROUP_ACCESS_GET`)을 한 번 더 봅니다. 확정 전 임시 묶음은 올린 사람만 보고, 게시글의 첨부·본문 사진은 그 글을 볼 수 있어야 하며(비밀글·공개 대상·게시기간), 남이 만든 묶음에 파일을 더하거나 남이 올린 파일을 지우려면 `UPDATE`가 있어야 합니다(`CREATE`만 있으면 자기 것만). 업무 기록에도 "그 기록을 볼 수 있는 사람만" 규칙이 필요하면 업무 Controller가 다운로드 전에 업무 SP로 확인합니다.
+5. 업무 저장 SP는 화면이 넘긴 `FILE_GROUP_ID`가 그 업무 행이 이미 가진 묶음이거나 본인이 올린 확정 전 묶음인지 확인한 뒤 확정합니다(게시판 `USP_POST_SAVE` 참고). 확인하지 않으면 남의 묶음 ID를 자기 기록에 붙여 그 파일을 받아 갈 수 있습니다.
 
 허용 확장자는 공통코드 `FILE_EXT`, 크기·개수는 설정 `FILE.MAX_SIZE_MB`·`FILE.MAX_COUNT`가 정합니다. 실행·스크립트 형식(exe, js, html, svg 등)은 코드에 추가해도 `FileService`가 막고, 내용이 확장자와 맞는지(매직 넘버)도 확인합니다. 저장소 폴더는 `appsettings.json`의 `Portal:File:StorageRoot`(웹 루트 밖, 실행 권한 없음, 백업 대상)이고, 파일 이름은 GUID라 원래 이름은 DB에만 있습니다. IIS는 요청 본문 한도가 따로 있으므로 `FILE.MAX_SIZE_MB`를 30MB보다 크게 올리면 `web.config`의 `requestLimits maxAllowedContentLength`도 함께 올립니다.
 

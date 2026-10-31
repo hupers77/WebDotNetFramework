@@ -78,6 +78,13 @@ public sealed class FileService(ISpExecutor sp, IFileStorage storage, IPortalCon
     public Task<StoredFileDto?> GetAsync(long fileId, CancellationToken cancellationToken = default) =>
         sp.QuerySingleAsync<StoredFileDto>("FW.USP_FILE_GET", new { P_FILE_ID = fileId }, cancellationToken);
 
+    /// <summary>
+    /// 묶음의 기록 단위 권한(볼 수 있는지, 만든 사람인지). 없는 묶음이면 null.
+    /// 프로그램 권한을 확인한 뒤 부르고, <paramref name="manager"/>에는 묶음 프로그램의 UPDATE 권한 여부를 넘긴다.
+    /// </summary>
+    public Task<FileGroupAccessDto?> GetAccessAsync(long fileGroupId, bool manager, CancellationToken cancellationToken = default) =>
+        sp.QuerySingleAsync<FileGroupAccessDto>("FW.USP_FILE_GROUP_ACCESS_GET", new { P_FILE_GROUP_ID = fileGroupId, P_MANAGER_YN = manager ? "Y" : "N" }, cancellationToken);
+
     /// <summary>다운로드 횟수를 올리고 내용을 연다. 호출자가 READ 권한을 확인한 뒤 부른다.</summary>
     public async Task<Stream> OpenDownloadAsync(StoredFileDto file, CancellationToken cancellationToken = default)
     {

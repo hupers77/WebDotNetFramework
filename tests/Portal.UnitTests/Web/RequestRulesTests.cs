@@ -8,6 +8,16 @@ namespace Portal.UnitTests.Web;
 
 public sealed class RequestRulesTests
 {
+    [Theory]
+    [InlineData("MSG.INVALID_INPUT", true)]
+    [InlineData("VAL.REQUIRED", true)]
+    [InlineData("The JSON value could not be converted to System.Int64. Path: $.id | LineNumber: 0", false)]
+    [InlineData("The Code field is required.", false)]
+    [InlineData("MSG", false)]
+    [InlineData(".MSG.X", false)]
+    public void 검증메시지는_메시지키형식만_그대로돌려준다(string message, bool expected) =>
+        Assert.Equal(expected, Portal.Framework.Web.Mvc.ApiResultFilter.IsMessageKey(message));
+
     [Fact]
     public void PermissionResolve_Action특성이Controller특성보다우선_기능기본READ()
     {

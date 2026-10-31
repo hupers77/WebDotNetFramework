@@ -1,9 +1,10 @@
 -- 댓글 삭제 (표시만 한다). 프로그램: 게시판의 프로그램 (DELETE는 애플리케이션이 확인)
--- 작성자 본인 또는 관리자(@P_MANAGER_YN)만.
+-- 작성자 본인 또는 관리자(@P_MANAGER_YN)만. 글은 @P_BOARD_CD 게시판의 글이어야 한다(다른 게시판의 관리 권한으로 지우지 못하게).
 -- 결과: AFFECTED_CNT
 CREATE PROCEDURE [FW].[USP_COMMENT_DEL]
   @P_COMMENT_ID   BIGINT,
   @P_ROW_VER      BINARY(8),
+  @P_BOARD_CD     VARCHAR(30),
   @P_POST_ID      BIGINT,
   @P_MANAGER_YN   CHAR(1)     = 'N',
   @P_USER_ID      VARCHAR(30),
@@ -25,7 +26,9 @@ BEGIN
     SELECT @VER = C.[ROW_VER], @WRITER = C.[WRITER_ID]
       FROM [FW].[TB_POST_COMMENT] C WITH (UPDLOCK, HOLDLOCK)
      WHERE C.[COMMENT_ID] = @P_COMMENT_ID AND C.[POST_ID] = @P_POST_ID AND C.[DEL_YN] = 'N'
-       AND EXISTS (SELECT 1 FROM [FW].[UFN_POST_VISIBLE](@P_USER_ID, @P_MANAGER_YN) V WHERE V.[POST_ID] = C.[POST_ID]);
+       AND EXISTS (SELECT 1 FROM [FW].[TB_POST] P
+                     JOIN [FW].[UFN_POST_VISIBLE](@P_USER_ID, @P_MANAGER_YN) V ON V.[POST_ID] = P.[POST_ID]
+                    WHERE P.[POST_ID] = C.[POST_ID] AND P.[BOARD_CD] = @P_BOARD_CD);
 
     IF @WRITER IS NULL OR (@WRITER <> @P_USER_ID AND @P_MANAGER_YN = 'N')
       THROW 50004, 'MSG.NOT_FOUND', 1;

@@ -46,6 +46,21 @@ public sealed class BoardSpTests(DbFixture fixture)
         return (db, new BoardService(db.Sp));
     }
 
+    /// <summary>사용자가 올린 확정 전 첨부 묶음(시험 게시판 프로그램).</summary>
+    private static Task<long> NewGroupAsync(TestDb db, string regId) =>
+        db.ScalarAsync<long>(
+            "INSERT INTO FW.TB_FILE_GROUP (PROGRAM_ID, COMPANY_CD, REG_ID, UPD_ID) OUTPUT INSERTED.FILE_GROUP_ID VALUES ('IT_BRD', 'HQ', @U, @U)", ("@U", regId));
+
+    private static Task<FileAccessRow?> AccessAsync(TestDb db, long groupId, bool manager = false) =>
+        db.Sp.QuerySingleAsync<FileAccessRow>("FW.USP_FILE_GROUP_ACCESS_GET", new { P_FILE_GROUP_ID = groupId, P_MANAGER_YN = manager ? "Y" : "N" }, Ct);
+
+    private sealed class FileAccessRow
+    {
+        public string OwnerYn { get; set; } = "";
+
+        public string ViewYn { get; set; } = "";
+    }
+
     private static PostSaveRequest Post(string title = "제목", string content = "<p>본문</p>") => new() { Title = title, Content = content };
 
     private static async Task<long> WriteAsync(TestDb db, BoardService service, string user, string company, string type, PostSaveRequest request, bool manager = false)
@@ -374,15 +389,15 @@ public sealed class BoardSpTests(DbFixture fixture)
         await using var _ = db;
         var id = await WriteAsync(db, service, Post());
         db.AsUser(Other, "HQ", "EMP");
-        await service.SaveCommentAsync(new CommentSaveRequest { PostId = id, Content = "댓글" }, manager: false, Ct);
+        await service.SaveCommentAsync(Code, new CommentSaveRequest { PostId = id, Content = "댓글" }, manager: false, Ct);
 
         var asOther = Assert.Single(await ListAsync(db, service, Other, "HQ", "EMP"));
         var mine = Assert.Single(await ListAsync(db, service, Writer, "HQ", "EMP"));
         var asManager = Assert.Single(await ListAsync(db, service, Admin, "HQ", "EMP", manager: true));
         db.AsUser(Writer, "HQ", "EMP");
-        var comment = Assert.Single(await service.GetCommentsAsync(id, manager: false, Ct));
+        var comment = Assert.Single(await service.GetCommentsAsync(Code, id, manager: false, Ct));
         db.AsUser(Other, "HQ", "EMP");
-        var ownComment = Assert.Single(await service.GetCommentsAsync(id, manager: false, Ct));
+        var ownComment = Assert.Single(await service.GetCommentsAsync(Code, id, manager: false, Ct));
 
         Assert.Null(asOther.WriterNm);
         Assert.Equal(Writer, mine.WriterNm);
@@ -398,17 +413,17 @@ public sealed class BoardSpTests(DbFixture fixture)
         await using var _ = db;
         var id = await WriteAsync(db, service, Post());
         db.AsUser(Other, "HQ", "EMP");
-        var commentId = await service.SaveCommentAsync(new CommentSaveRequest { PostId = id, Content = "첫 댓글" }, manager: false, Ct);
-        var created = Assert.Single(await service.GetCommentsAsync(id, manager: false, Ct));
-        await service.SaveCommentAsync(new CommentSaveRequest { PostId = id, CommentId = commentId, RowVer = created.RowVer, Content = "고친 댓글" }, manager: false, Ct);
+        var commentId = await service.SaveCommentAsync(Code, new CommentSaveRequest { PostId = id, Content = "첫 댓글" }, manager: false, Ct);
+        var created = Assert.Single(await service.GetCommentsAsync(Code, id, manager: false, Ct));
+        await service.SaveCommentAsync(Code, new CommentSaveRequest { PostId = id, CommentId = commentId, RowVer = created.RowVer, Content = "고친 댓글" }, manager: false, Ct);
 
         db.AsUser(Writer, "HQ", "EMP");
-        var seen = Assert.Single(await service.GetCommentsAsync(id, manager: false, Ct));
+        var seen = Assert.Single(await service.GetCommentsAsync(Code, id, manager: false, Ct));
         Assert.Equal("고친 댓글", seen.Content);
 
         db.AsUser(Admin, "HQ", "EMP");
-        await service.DeleteCommentAsync(new CommentDeleteRequest { PostId = id, CommentId = commentId, RowVer = seen.RowVer }, manager: true, Ct);
-        Assert.Empty(await service.GetCommentsAsync(id, manager: true, Ct));
+        await service.DeleteCommentAsync(Code, new CommentDeleteRequest { PostId = id, CommentId = commentId, RowVer = seen.RowVer }, manager: true, Ct);
+        Assert.Empty(await service.GetCommentsAsync(Code, id, manager: true, Ct));
     }
 
     [Fact]
@@ -418,12 +433,63 @@ public sealed class BoardSpTests(DbFixture fixture)
         await using var _ = db;
         var id = await WriteAsync(db, service, Post());
         db.AsUser(Other, "HQ", "EMP");
-        var commentId = await service.SaveCommentAsync(new CommentSaveRequest { PostId = id, Content = "내 댓글" }, manager: false, Ct);
-        var created = Assert.Single(await service.GetCommentsAsync(id, manager: false, Ct));
+        var commentId = await service.SaveCommentAsync(Code, new CommentSaveRequest { PostId = id, Content = "내 댓글" }, manager: false, Ct);
+        var created = Assert.Single(await service.GetCommentsAsync(Code, id, manager: false, Ct));
 
         db.AsUser(Admin, "HQ", "EMP");
         var error = await Assert.ThrowsAsync<BizException>(() =>
-            service.SaveCommentAsync(new CommentSaveRequest { PostId = id, CommentId = commentId, RowVer = created.RowVer, Content = "관리자가 고침" }, manager: true, Ct));
+            service.SaveCommentAsync(Code, new CommentSaveRequest { PostId = id, CommentId = commentId, RowVer = created.RowVer, Content = "관리자가 고침" }, manager: true, Ct));
+
+        Assert.Equal(MessageKeys.NotFound, error.MessageKey);
+    }
+
+    [Fact]
+    public async Task 다른_게시판_코드로는_댓글을_읽을_수_없다()
+    {
+        var (db, service) = await BeginAsync(fixture);
+        await using var _ = db;
+        await db.ExecAsync("INSERT INTO FW.TB_PROGRAM (PROGRAM_ID, MODULE_CD, PROGRAM_NM, URL) VALUES ('IT_BRD2', 'BRD', N'다른 게시판', '/Board/ItBoard2')");
+        await db.ExecAsync(
+            "INSERT INTO FW.TB_BOARD (BOARD_CD, PROGRAM_ID, BOARD_TYPE_CD, REPLY_YN, COMMENT_YN, ATTACH_YN, ANON_YN, SECRET_YN, PERIOD_YN, PIN_YN, READER_YN) " +
+            "VALUES ('ItBoard2', 'IT_BRD2', 'NORMAL', 'Y','Y','Y','N','Y','Y','Y','Y')");
+        var secret = Post("비밀 질문");
+        secret.SecretYn = "Y";
+        var id = await WriteAsync(db, service, secret);
+        await service.SaveCommentAsync(Code, new CommentSaveRequest { PostId = id, Content = "비밀 댓글" }, manager: false, Ct);
+
+        // 다른 게시판(ItBoard2)의 관리 권한으로 이 게시판 글의 댓글을 읽으려 한다
+        db.AsUser(Other, "HQ", "EMP");
+        var error = await Assert.ThrowsAsync<BizException>(() => service.GetCommentsAsync("ItBoard2", id, manager: true, Ct));
+
+        Assert.Equal(MessageKeys.NotFound, error.MessageKey);
+    }
+
+    [Fact]
+    public async Task 다른_게시판_코드로는_댓글을_달_수_없다()
+    {
+        var (db, service) = await BeginAsync(fixture);
+        await using var _ = db;
+        var id = await WriteAsync(db, service, Post());
+
+        db.AsUser(Other, "HQ", "EMP");
+        var error = await Assert.ThrowsAsync<BizException>(() => service.SaveCommentAsync("Notice", new CommentSaveRequest { PostId = id, Content = "댓글" }, manager: false, Ct));
+
+        Assert.Equal(MessageKeys.NotFound, error.MessageKey);
+    }
+
+    [Fact]
+    public async Task 다른_게시판_코드로는_댓글을_지울_수_없다()
+    {
+        var (db, service) = await BeginAsync(fixture);
+        await using var _ = db;
+        var id = await WriteAsync(db, service, Post());
+        var commentId = await service.SaveCommentAsync(Code, new CommentSaveRequest { PostId = id, Content = "댓글" }, manager: false, Ct);
+        var created = Assert.Single(await service.GetCommentsAsync(Code, id, manager: false, Ct));
+
+        // 다른 게시판(Notice)의 삭제 권한으로 이 게시판 댓글을 지우려 한다
+        db.AsUser(Admin, "HQ", "EMP");
+        var error = await Assert.ThrowsAsync<BizException>(() =>
+            service.DeleteCommentAsync("Notice", new CommentDeleteRequest { PostId = id, CommentId = commentId, RowVer = created.RowVer }, manager: true, Ct));
 
         Assert.Equal(MessageKeys.NotFound, error.MessageKey);
     }
@@ -435,7 +501,7 @@ public sealed class BoardSpTests(DbFixture fixture)
         await using var _ = db;
         var id = await WriteAsync(db, service, Post());
 
-        var error = await Assert.ThrowsAsync<BizException>(() => service.SaveCommentAsync(new CommentSaveRequest { PostId = id, Content = "댓글" }, manager: false, Ct));
+        var error = await Assert.ThrowsAsync<BizException>(() => service.SaveCommentAsync(Code, new CommentSaveRequest { PostId = id, Content = "댓글" }, manager: false, Ct));
 
         Assert.Equal(MessageKeys.NotFound, error.MessageKey);
     }
@@ -445,8 +511,7 @@ public sealed class BoardSpTests(DbFixture fixture)
     {
         var (db, service) = await BeginAsync(fixture);
         await using var _ = db;
-        var groupId = await db.ScalarAsync<long>(
-            "INSERT INTO FW.TB_FILE_GROUP (PROGRAM_ID, COMPANY_CD) OUTPUT INSERTED.FILE_GROUP_ID VALUES ('IT_BRD', 'HQ')");
+        var groupId = await NewGroupAsync(db, Writer);
         var request = Post();
         request.FileGroupId = groupId;
 
@@ -459,12 +524,119 @@ public sealed class BoardSpTests(DbFixture fixture)
     }
 
     [Fact]
+    public async Task 다른_글의_첨부묶음은_내_글에_붙일_수_없다()
+    {
+        var (db, service) = await BeginAsync(fixture);
+        await using var _ = db;
+        var victim = Post("비밀 질문");
+        victim.SecretYn = "Y";
+        victim.FileGroupId = await NewGroupAsync(db, Writer);
+        await WriteAsync(db, service, victim);
+
+        var stolen = Post("가로채기");
+        stolen.FileGroupId = victim.FileGroupId;
+        db.AsUser(Other, "HQ", "EMP");
+        var fromPost = await Assert.ThrowsAsync<BizException>(() => service.SaveAsync(new BoardDto { BoardCd = Code }, stolen, manager: false, Ct));
+
+        Assert.Equal(MessageKeys.NotFound, fromPost.MessageKey);
+    }
+
+    [Fact]
+    public async Task 남이_올린_임시묶음은_본문사진으로도_붙일_수_없다()
+    {
+        var (db, service) = await BeginAsync(fixture);
+        await using var _ = db;
+        var request = Post();
+        request.ImageGroupId = await NewGroupAsync(db, Writer);
+
+        db.AsUser(Other, "HQ", "EMP");
+        var error = await Assert.ThrowsAsync<BizException>(() => service.SaveAsync(new BoardDto { BoardCd = Code }, request, manager: false, Ct));
+
+        Assert.Equal(MessageKeys.NotFound, error.MessageKey);
+    }
+
+    [Fact]
+    public async Task 글을_고칠_때는_그_글의_기존_묶음을_다시_넘겨도_된다()
+    {
+        var (db, service) = await BeginAsync(fixture);
+        await using var _ = db;
+        var request = Post();
+        request.FileGroupId = await NewGroupAsync(db, Writer);
+        var id = await WriteAsync(db, service, request);
+        var current = await ReadAsync(db, service, id, Writer, "HQ", "EMP");
+
+        // 관리자가 남의 글을 고치며 기존 첨부 묶음을 그대로 넘긴다
+        var edit = Post("고친 제목");
+        edit.PostId = id;
+        edit.RowVer = current.RowVer;
+        edit.FileGroupId = current.FileGroupId;
+        await WriteAsync(db, service, Admin, "HQ", "EMP", edit, manager: true);
+
+        Assert.Equal("고친 제목", (await ReadAsync(db, service, id, Writer, "HQ", "EMP")).Title);
+    }
+
+    [Fact]
+    public async Task 첨부권한_비밀글묶음은_작성자와_관리자만_임시묶음은_올린사람만()
+    {
+        var (db, service) = await BeginAsync(fixture);
+        await using var _ = db;
+        var secret = Post("비밀 질문");
+        secret.SecretYn = "Y";
+        secret.FileGroupId = await NewGroupAsync(db, Writer);
+        await WriteAsync(db, service, secret);
+        var open = Post("공개 글");
+        open.ImageGroupId = await NewGroupAsync(db, Writer);
+        await WriteAsync(db, service, open);
+        var temp = await NewGroupAsync(db, Writer);
+        var plain = await db.ScalarAsync<long>(
+            "INSERT INTO FW.TB_FILE_GROUP (PROGRAM_ID, COMPANY_CD, CONFIRM_YN, REG_ID, UPD_ID) OUTPUT INSERTED.FILE_GROUP_ID VALUES ('IT_BRD', 'HQ', 'Y', @U, @U)", ("@U", Writer));
+
+        db.AsUser(Writer, "HQ", "EMP");
+        var writerSecret = await AccessAsync(db, secret.FileGroupId!.Value);
+        var writerTemp = await AccessAsync(db, temp);
+        db.AsUser(Other, "HQ", "EMP");
+        var otherSecret = await AccessAsync(db, secret.FileGroupId.Value);
+        var otherOpen = await AccessAsync(db, open.ImageGroupId!.Value);
+        var otherTemp = await AccessAsync(db, temp);
+        var otherPlain = await AccessAsync(db, plain);
+        db.AsUser(P1User, Partner1, "PARTNER");
+        var partnerSecret = await AccessAsync(db, secret.FileGroupId.Value);
+        db.AsUser(Admin, "HQ", "EMP");
+        var managerSecret = await AccessAsync(db, secret.FileGroupId.Value, manager: true);
+
+        Assert.Equal(("Y", "Y"), (writerSecret!.OwnerYn, writerSecret.ViewYn));
+        Assert.Equal(("Y", "Y"), (writerTemp!.OwnerYn, writerTemp.ViewYn));
+        Assert.Equal(("N", "N"), (otherSecret!.OwnerYn, otherSecret.ViewYn));
+        Assert.Equal(("N", "Y"), (otherOpen!.OwnerYn, otherOpen.ViewYn));
+        Assert.Equal(("N", "N"), (otherTemp!.OwnerYn, otherTemp.ViewYn));
+        Assert.Equal(("N", "Y"), (otherPlain!.OwnerYn, otherPlain.ViewYn));
+        Assert.Equal("N", partnerSecret!.ViewYn);
+        Assert.Equal("Y", managerSecret!.ViewYn);
+        Assert.Null(await AccessAsync(db, -1));
+    }
+
+    [Fact]
+    public async Task 첨부권한_삭제된_글의_묶음은_볼_수_없다()
+    {
+        var (db, service) = await BeginAsync(fixture);
+        await using var _ = db;
+        var request = Post();
+        request.FileGroupId = await NewGroupAsync(db, Writer);
+        var id = await WriteAsync(db, service, request);
+        var rowVer = (await ReadAsync(db, service, id, Writer, "HQ", "EMP")).RowVer;
+        await service.DeleteAsync(Code, new PostDeleteRequest { PostId = id, RowVer = rowVer }, manager: false, Ct);
+
+        db.AsUser(Other, "HQ", "EMP");
+
+        Assert.Equal("N", (await AccessAsync(db, request.FileGroupId!.Value))!.ViewYn);
+    }
+
+    [Fact]
     public async Task 첨부를_막은_게시판은_첨부묶음을_저장하지_않는다()
     {
         var (db, service) = await BeginAsync(fixture, "'Y','Y','N','N','Y','Y','Y','Y'");
         await using var _ = db;
-        var groupId = await db.ScalarAsync<long>(
-            "INSERT INTO FW.TB_FILE_GROUP (PROGRAM_ID, COMPANY_CD) OUTPUT INSERTED.FILE_GROUP_ID VALUES ('IT_BRD', 'HQ')");
+        var groupId = await NewGroupAsync(db, Writer);
         var request = Post();
         request.FileGroupId = groupId;
 
@@ -478,8 +650,7 @@ public sealed class BoardSpTests(DbFixture fixture)
     {
         var (db, service) = await BeginAsync(fixture, "'Y','Y','N','N','Y','Y','Y','Y'");
         await using var _ = db;
-        var groupId = await db.ScalarAsync<long>(
-            "INSERT INTO FW.TB_FILE_GROUP (PROGRAM_ID, COMPANY_CD) OUTPUT INSERTED.FILE_GROUP_ID VALUES ('IT_BRD', 'HQ')");
+        var groupId = await NewGroupAsync(db, Writer);
         var request = Post();
         request.ImageGroupId = groupId;
 
@@ -541,9 +712,9 @@ public sealed class BoardSpTests(DbFixture fixture)
         reply.ParentPostId = root;
         await WriteAsync(db, service, Other, "HQ", "EMP", reply);
         db.AsUser(Other, "HQ", "EMP");
-        await service.SaveCommentAsync(new CommentSaveRequest { PostId = root, Content = "댓글" }, manager: false, Ct);
+        await service.SaveCommentAsync(Code, new CommentSaveRequest { PostId = root, Content = "댓글" }, manager: false, Ct);
         db.AsUser(Writer, "HQ", "EMP");
-        await service.SaveCommentAsync(new CommentSaveRequest { PostId = root, Content = "내 댓글" }, manager: false, Ct);
+        await service.SaveCommentAsync(Code, new CommentSaveRequest { PostId = root, Content = "내 댓글" }, manager: false, Ct);
 
         var templates = await db.ColumnAsync<string>("SELECT TEMPLATE_ID FROM FW.TB_NOTIFICATION WHERE USER_ID = @U ORDER BY NOTI_ID", ("@U", Writer));
         var title = await db.ScalarAsync<string>("SELECT JSON_VALUE(PARAMS_JSON, '$.POST_TITLE') FROM FW.TB_NOTIFICATION WHERE USER_ID = @U AND TEMPLATE_ID = 'TPL_BOARD_REPLY'", ("@U", Writer));

@@ -173,7 +173,7 @@ public sealed partial class BoardController(IBoardService boards, CurrentPermiss
     {
         var board = await RequireAsync(boardCd);
         var granted = await DemandAsync(board, FuncCodes.Read);
-        return Ok(await boards.GetCommentsAsync(id, granted.Can(board.ProgramId, FuncCodes.Update), HttpContext.RequestAborted));
+        return Ok(await boards.GetCommentsAsync(board.BoardCd, id, granted.Can(board.ProgramId, FuncCodes.Update), HttpContext.RequestAborted));
     }
 
     /// <summary>댓글 저장 (CREATE). 본인 댓글만 고칠 수 있다.</summary>
@@ -182,7 +182,7 @@ public sealed partial class BoardController(IBoardService boards, CurrentPermiss
     {
         var board = await RequireAsync(boardCd);
         var granted = await DemandAsync(board, FuncCodes.Create);
-        return Ok(await boards.SaveCommentAsync(request, granted.Can(board.ProgramId, FuncCodes.Update), HttpContext.RequestAborted));
+        return Ok(await boards.SaveCommentAsync(board.BoardCd, request, granted.Can(board.ProgramId, FuncCodes.Update), HttpContext.RequestAborted));
     }
 
     /// <summary>댓글 삭제. 본인 댓글은 CREATE, 남의 댓글은 DELETE.</summary>
@@ -191,7 +191,7 @@ public sealed partial class BoardController(IBoardService boards, CurrentPermiss
     {
         var board = await RequireAsync(boardCd);
         var granted = await DemandAsync(board, FuncCodes.Create, FuncCodes.Delete);
-        await boards.DeleteCommentAsync(request, granted.Can(board.ProgramId, FuncCodes.Delete), HttpContext.RequestAborted);
+        await boards.DeleteCommentAsync(board.BoardCd, request, granted.Can(board.ProgramId, FuncCodes.Delete), HttpContext.RequestAborted);
         return Ok();
     }
 

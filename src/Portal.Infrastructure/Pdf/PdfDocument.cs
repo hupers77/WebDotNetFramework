@@ -1,9 +1,10 @@
 using System.Net;
+using System.Text.RegularExpressions;
 
 namespace Portal.Infrastructure.Pdf;
 
 /// <summary>변환 전에 HTML을 다듬고 브라우저 인쇄 옵션을 만든다(브라우저 없이 단위 테스트한다).</summary>
-internal static class PdfDocument
+internal static partial class PdfDocument
 {
     /// <summary>
     /// 외부 자원 차단 정책. 문서 안의 스타일과 data: 그림·글꼴만 허용하고 스크립트는 막는다.
@@ -17,7 +18,8 @@ internal static class PdfDocument
     internal static string Prepare(string html)
     {
         ArgumentNullException.ThrowIfNull(html);
-        var head = html.IndexOf("<head", StringComparison.OrdinalIgnoreCase);
+        // <header> 같은 태그를 <head>로 잘못 보면 CSP가 본문에 들어가 무시되므로 이름이 정확히 head인 태그만 찾는다
+        var head = HeadTag().Match(html) is { Success: true } m ? m.Index : -1;
         if (head >= 0)
         {
             var close = html.IndexOf('>', head);
@@ -87,4 +89,7 @@ internal static class PdfDocument
         args.Add("about:blank");
         return args;
     }
+
+    [GeneratedRegex(@"<head(?=[\s>/])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex HeadTag();
 }

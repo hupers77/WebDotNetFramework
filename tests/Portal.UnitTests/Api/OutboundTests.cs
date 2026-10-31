@@ -18,6 +18,9 @@ public sealed class OutboundAddressPolicyTests
     [InlineData("::1")]
     [InlineData("fe80::1")]
     [InlineData("::ffff:127.0.0.1")]
+    [InlineData("64:ff9b::7f00:1")]
+    [InlineData("64:ff9b::a9fe:a9fe")]
+    [InlineData("2002:7f00:1::1")]
     public void 루프백_링크로컬_멀티캐스트는_사내망허용이어도_막는다(string ip)
     {
         Assert.False(OutboundAddressPolicy.IsAllowed(IPAddress.Parse(ip), allowPrivate: false));
@@ -32,6 +35,10 @@ public sealed class OutboundAddressPolicyTests
     [InlineData("100.64.0.1")]
     [InlineData("fd00::1")]
     [InlineData("::ffff:10.0.0.1")]
+    [InlineData("64:ff9b::a00:1")]
+    [InlineData("2002:c0a8:1::1")]
+    [InlineData("198.18.0.1")]
+    [InlineData("192.0.0.8")]
     public void 사설_대역은_사내망허용일때만(string ip)
     {
         Assert.False(OutboundAddressPolicy.IsAllowed(IPAddress.Parse(ip), allowPrivate: false));

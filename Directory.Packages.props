@@ -12,8 +12,8 @@
     <!-- 런타임 (Microsoft, MIT) -->
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.1" />
     <PackageVersion Include="DocumentFormat.OpenXml" Version="3.5.1" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.13" />
-    <PackageVersion Include="System.DirectoryServices.Protocols" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.14" />
+    <PackageVersion Include="System.DirectoryServices.Protocols" Version="10.0.14" />
   </ItemGroup>
   <ItemGroup>
     <!-- 런타임 (OSS, MIT). QRCoder는 1.7부터 net6+에 System.Drawing.Common이 따라오므로 의존성 없는 1.6에 둔다 -->
@@ -21,11 +21,11 @@
   </ItemGroup>
   <ItemGroup>
     <!-- 보안 패치 고정: 전이 의존성의 취약 버전 대체 (NU1902/NU1903) -->
-    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
   </ItemGroup>
   <ItemGroup>
     <!-- 테스트 전용 (배포물에 포함되지 않음) -->
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.14" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
