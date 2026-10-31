@@ -14,6 +14,16 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void header태그를_head로보지않는다()
+    {
+        // <header>를 head로 잘못 보면 정책 meta가 본문에 들어가 브라우저가 무시한다
+        var html = PdfDocument.Prepare("<header>머리</header><p>본문</p>");
+
+        Assert.StartsWith("<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\"", html, StringComparison.Ordinal);
+        Assert.Contains("<body><header>머리</header>", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void head가없는조각은_문서로감싼다()
     {
         var html = PdfDocument.Prepare("<p>본문</p>");

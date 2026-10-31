@@ -3,6 +3,7 @@
 -- 게시판 설정이 꺼진 항목(비밀글·게시기간·상단 고정·첨부·답글)은 무시하거나 거절한다. 상단 고정·공개 대상 회사는 관리자(@P_MANAGER_YN)만 바꾼다.
 -- @P_TARGETS는 회사 코드 JSON 배열(원글만). 첨부 묶음과 본문 사진 묶음은 같은 트랜잭션에서 확정한다(다른 회사 사용자도 받을 수 있게 공유).
 -- 본문 사진은 첨부 설정(ATTACH_YN)과 관계없이 쓸 수 있다.
+-- 첨부·본문 사진 묶음은 이 글이 이미 가진 묶음이거나 내가 올린 확정 전 임시 묶음이어야 한다(남의 글·남의 임시 묶음을 붙여 그 파일을 받아 가지 못하게).
 -- 답글을 달면 원 글 작성자(본인 제외)에게 포털 알림(TPL_BOARD_REPLY)을 쌓는다.
 -- 결과: AFFECTED_CNT, NEW_KEY(글 ID)
 CREATE PROCEDURE [FW].[USP_POST_SAVE]
@@ -51,6 +52,18 @@ BEGIN
     SELECT @P_START_DT = NULL, @P_END_DT = NULL;
   IF @ATTACH_YN = 'N'
     SET @P_FILE_GROUP_ID = NULL;
+
+  -- 묶음 가로채기 방지: 다른 글의 묶음이나 남이 올린 임시 묶음 ID를 넣으면 없는 것처럼 거절한다
+  IF (@P_FILE_GROUP_ID IS NOT NULL AND @P_FILE_GROUP_ID = @P_IMAGE_GROUP_ID)
+     OR EXISTS (SELECT 1
+                  FROM [FW].[TB_FILE_GROUP] G
+                 WHERE G.[FILE_GROUP_ID] IN (@P_FILE_GROUP_ID, @P_IMAGE_GROUP_ID)
+                   AND NOT (G.[CONFIRM_YN] = 'N' AND G.[REG_ID] = @P_USER_ID)
+                   AND NOT EXISTS (SELECT 1
+                                     FROM [FW].[TB_POST] P
+                                    WHERE P.[POST_ID] = @P_POST_ID AND P.[BOARD_CD] = @P_BOARD_CD
+                                      AND G.[FILE_GROUP_ID] IN (P.[FILE_GROUP_ID], P.[IMAGE_GROUP_ID])))
+    THROW 50004, 'MSG.NOT_FOUND', 1;
 
   DECLARE @TARGET TABLE ([COMPANY_CD] VARCHAR(10) NOT NULL PRIMARY KEY);
   IF @P_TARGETS IS NOT NULL

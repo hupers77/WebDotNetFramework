@@ -1,10 +1,12 @@
 -- 댓글 등록·수정. 프로그램: 게시판의 프로그램 (등록 CREATE, 수정 UPDATE는 애플리케이션이 확인; 수정은 본인 댓글만, 관리자도 남의 댓글은 지우기만 한다)
+-- 글은 @P_BOARD_CD 게시판의 글이어야 한다(권한을 확인한 게시판 밖의 글에 댓글을 달거나 고치지 못하게).
 -- @P_COMMENT_ID가 NULL이면 등록(글을 볼 수 있어야 하고 게시판 댓글 설정이 켜져 있어야 한다), 있으면 수정(@P_ROW_VER 필요).
 -- 댓글을 달면 글 작성자(본인 제외)에게 포털 알림(TPL_BOARD_COMMENT)을 쌓는다.
 -- 결과: AFFECTED_CNT, NEW_KEY(댓글 ID)
 CREATE PROCEDURE [FW].[USP_COMMENT_SAVE]
   @P_COMMENT_ID   BIGINT        = NULL,
   @P_ROW_VER      BINARY(8)     = NULL,
+  @P_BOARD_CD     VARCHAR(30),
   @P_POST_ID      BIGINT,
   @P_CONTENT      NVARCHAR(1000),
   @P_MANAGER_YN   CHAR(1)       = 'N',
@@ -22,7 +24,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM [FW].[TB_POST] P
                    JOIN [FW].[TB_BOARD] B ON B.[BOARD_CD] = P.[BOARD_CD] AND B.[COMMENT_YN] = 'Y'
                    JOIN [FW].[UFN_POST_VISIBLE](@P_USER_ID, @P_MANAGER_YN) V ON V.[POST_ID] = P.[POST_ID] AND V.[SECRET_OK_YN] = 'Y'
-                  WHERE P.[POST_ID] = @P_POST_ID)
+                  WHERE P.[POST_ID] = @P_POST_ID AND P.[BOARD_CD] = @P_BOARD_CD)
     THROW 50004, 'MSG.NOT_FOUND', 1;
 
   DECLARE @ID BIGINT = @P_COMMENT_ID;

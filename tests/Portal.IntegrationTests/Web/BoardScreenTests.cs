@@ -294,6 +294,19 @@ public sealed class BoardScreenTests : IClassFixture<PortalWebFactory>
     }
 
     [Fact]
+    public async Task 댓글_조회_등록_삭제는_권한을_확인한_게시판_코드를_SP에_넘긴다()
+    {
+        // 다른 게시판의 글 ID를 넣어도 SP가 게시판 코드로 걸러 내도록 (게시판 사이 권한 우회 방지)
+        await _web.NewClient(_web.SignIn("bd.cb.r", Reader)).SendAsync(Ajax(HttpMethod.Get, "/Board/Test/Comments?id=10"), Ct);
+        await PostAsync(_web.SignIn("bd.cb.w", Writer), "/Board/Test/CommentSave", new { postId = 10, content = "댓글" });
+        await PostAsync(_web.SignIn("bd.cb.d", Manager), "/Board/Test/CommentDelete", new { commentId = 9, postId = 10, rowVer = Convert.ToBase64String(RowVer) });
+
+        Assert.Equal("Test", (string?)_web.Sp.LastCall(BoardService.CommentListSp).Parameters["P_BOARD_CD"]);
+        Assert.Equal("Test", (string?)_web.Sp.LastCall(BoardService.CommentSaveSp).Parameters["P_BOARD_CD"]);
+        Assert.Equal("Test", (string?)_web.Sp.LastCall(BoardService.CommentDeleteSp).Parameters["P_BOARD_CD"]);
+    }
+
+    [Fact]
     public async Task 게시판관리_화면은_BOARD_MGT권한으로_열리고_저장버튼은_UPDATE권한이_있을때만()
     {
         _web.Sp.Returns(BoardAdminService.ListSp, new PageResult<BoardAdminDto> { Items = [], TotalCount = 0, PageNo = 1, PageSize = 500 });

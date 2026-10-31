@@ -37,7 +37,6 @@ public sealed class HtmlSanitizerTests
     [InlineData("<a href=\"JaVaScRiPt:alert(1)\">링크</a>")]
     [InlineData("<a href=\"java\tscript:alert(1)\">링크</a>")]
     [InlineData("<a href=\"&#106;avascript:alert(1)\">링크</a>")]
-    [InlineData("<a href=\"data:text/html,<script>alert(1)</script>\">링크</a>")]
     [InlineData("<a href=\"vbscript:msgbox(1)\">링크</a>")]
     [InlineData("<a href=\"//evil.example/x\">링크</a>")]
     public void 위험한링크는_주소를_뺀다(string input) =>
@@ -120,4 +119,30 @@ public sealed class HtmlSanitizerTests
     [InlineData("<img>글")]
     public void 그밖의_img는_태그를_지운다(string input) =>
         Assert.Equal("글", HtmlSanitizer.Sanitize(input));
+
+    [Theory]
+    [InlineData("<a")]
+    [InlineData("<a \"<a '")]
+    [InlineData("<script></script>")]
+    [InlineData("<a title=\"x")]
+    public void 닫히지않은_태그가_많아도_길이에_비례한_시간에_끝난다(string unit)
+    {
+        // 글 내용 한도(20만 자)를 채우는 입력. 예전 정규식은 '<a' 반복 8만 자에 수십 초가 걸렸다(서비스 거부).
+        var input = string.Concat(Enumerable.Repeat(unit, 200_000 / unit.Length));
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+        var output = HtmlSanitizer.Sanitize(input);
+
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(2), $"{watch.ElapsedMilliseconds}ms");
+        Assert.DoesNotContain("<a", output, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("<a title=\"x<b\" href=\"/x\">글</a>", "&lt;a title=&quot;x&lt;b&quot; href=&quot;/x&quot;&gt;글")]
+    [InlineData("<a href=\"data:text/html,<script>alert(1)</script>\">링크</a>", "&lt;a href=&quot;data:text/html,&quot;&gt;링크")]
+    [InlineData("<a href=\"/x\" title='1 > 0'>글</a>", "<a href=\"/x\" rel=\"noopener noreferrer\" target=\"_blank\">글</a>")]
+    [InlineData("<script >x</script >본문", "본문")]
+    [InlineData("<script>x</scriptx><b>남은 글</b>", "")]
+    public void 따옴표안에_꺾쇠가_있으면_태그로_보지않고_글자로_남긴다(string input, string expected) =>
+        Assert.Equal(expected, HtmlSanitizer.Sanitize(input));
 }

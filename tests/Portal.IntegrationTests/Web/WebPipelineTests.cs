@@ -137,6 +137,33 @@ public sealed class WebPipelineTests(PortalWebFactory web) : IClassFixture<Porta
     }
 
     [Fact]
+    public async Task 형식이틀린JSON_내부형식이름없이_입력오류로()
+    {
+        var token = web.SignIn("writer.badjson", [Read, Update, "DSH_HOME:READ"]);
+        var (csrf, cookie) = await GetCsrfAsync(web.NewClient(token), "/");
+
+        var request = Ajax(HttpMethod.Post, "/test-screen/save");
+        request.Content = new StringContent("{\"code\": 123", System.Text.Encoding.UTF8, "application/json");
+        request.Headers.Add("X-CSRF-TOKEN", csrf);
+        var response = await web.NewClient(token, cookie).SendAsync(request, Ct);
+        var body = await response.Content.ReadAsStringAsync(Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("MSG.INVALID_INPUT", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("System.", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("LineNumber", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task 상태확인은_외부에서_버전을_알려주지않는다()
+    {
+        var body = await (await web.NewClient().GetAsync("/health", Ct)).Content.ReadAsStringAsync(Ct);
+
+        Assert.Contains("Healthy", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("version", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task 처리되지않은예외_500_내부정보숨김()
     {
         var token = web.SignIn("boom", [Read]);

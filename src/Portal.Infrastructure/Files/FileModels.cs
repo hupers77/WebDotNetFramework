@@ -93,6 +93,22 @@ public sealed class StoredFileDto
     public string RegId { get; set; } = "";
 }
 
+/// <summary>
+/// 첨부 묶음의 기록 단위 권한 (<c>FW.USP_FILE_GROUP_ACCESS_GET</c>). 프로그램 권한을 확인한 뒤에 본다:
+/// 게시글 묶음은 글을 볼 수 있어야 하고, 임시 묶음은 올린 사람만 보며, 남의 묶음을 바꾸려면 UPDATE 권한이 있어야 한다.
+/// </summary>
+public sealed class FileGroupAccessDto
+{
+    /// <summary>묶음 ID.</summary>
+    public long FileGroupId { get; set; }
+
+    /// <summary>Y면 묶음을 만든 사람.</summary>
+    public string OwnerYn { get; set; } = "N";
+
+    /// <summary>Y면 볼 수 있다.</summary>
+    public string ViewYn { get; set; } = "N";
+}
+
 /// <summary>업로드 결과 (<c>FW.USP_FILE_SAVE</c>).</summary>
 public sealed class FileUploadResult
 {

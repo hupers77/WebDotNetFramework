@@ -55,12 +55,21 @@ public sealed partial class ApiExceptionFilter(ILogger<ApiExceptionFilter> logge
 /// </summary>
 public sealed class ApiResultFilter : IAsyncActionFilter, IResultFilter
 {
+    /// <summary>메시지 키 형식인지 (대문자 구역.이름, 예: <c>MSG.INVALID_INPUT</c>).</summary>
+    internal static bool IsMessageKey(string message) =>
+        message.Length is > 2 and <= 100
+        && message.Contains('.', StringComparison.Ordinal)
+        && message[0] != '.' && message[^1] != '.'
+        && message.All(c => char.IsAsciiLetterUpper(c) || char.IsAsciiDigit(c) || c is '_' or '.');
+
     /// <inheritdoc />
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         if (!context.ModelState.IsValid && RequestKind.WantsJson(context.HttpContext.Request))
         {
-            var key = context.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).FirstOrDefault(m => m.Length > 0)
+            // 검증 특성의 메시지 키(MSG.INVALID_INPUT 등)만 돌려준다. JSON 변환 오류 같은 프레임워크 문구는
+            // 내부 형식 이름·경로를 담고 있어(정보 노출) 일반 입력 오류로 바꾼다.
+            var key = context.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).FirstOrDefault(IsMessageKey)
                 ?? MessageKeys.InvalidInput;
             context.Result = new ObjectResult(ApiResults.Fail(context.HttpContext, key)) { StatusCode = StatusCodes.Status400BadRequest };
             return;

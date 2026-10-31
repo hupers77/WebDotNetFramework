@@ -58,6 +58,13 @@ public static class PortalWebExtensions
         services.AddAuthentication(PortalSessionHandler.SchemeName)
             .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, PortalSessionHandler>(PortalSessionHandler.SchemeName, null);
 
+        // HSTS 1년 + 하위 도메인 (설계서 9장 보안 헤더 기본값). 운영 환경에서만 UsePortalWeb이 붙인다.
+        services.AddHsts(o =>
+        {
+            o.MaxAge = TimeSpan.FromDays(365);
+            o.IncludeSubDomains = true;
+        });
+
         services.AddAntiforgery(o =>
         {
             o.HeaderName = CsrfHeader;

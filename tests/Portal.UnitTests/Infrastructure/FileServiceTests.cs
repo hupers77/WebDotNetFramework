@@ -52,6 +52,9 @@ public sealed class FileServiceTests
     [InlineData("page.HTML")]
     [InlineData("logo.svg")]
     [InlineData("run.js")]
+    [InlineData("page.mhtml")]
+    [InlineData("help.chm")]
+    [InlineData("disk.iso")]
     [InlineData("noext")]
     [InlineData(".pdf")]
     public async Task 실행스크립트형식과확장자없는파일_거부_저장하지않는다(string name)

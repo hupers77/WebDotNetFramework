@@ -59,7 +59,11 @@ var version = Assembly.GetExecutingAssembly()
 app.UsePortalWeb();
 
 // 운영 모니터링용 상태 확인. DB·파일 저장소·AD 점검은 각 모듈이 추가될 때 붙인다.
-app.MapGet("/health", () => Results.Ok(new { status = "Healthy", version }));
+// 로그인 없이 열리는 주소이므로 버전(정보 노출)은 서버 자신(루프백)에서 부를 때만 준다.
+app.MapGet("/health", (HttpContext http) =>
+    http.Connection.RemoteIpAddress is { } ip && System.Net.IPAddress.IsLoopback(ip)
+        ? Results.Ok(new { status = "Healthy", version })
+        : Results.Ok(new { status = "Healthy" }));
 
 await app.RunAsync();
 

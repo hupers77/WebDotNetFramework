@@ -16,6 +16,9 @@ internal static class FileSignatures
         "exe", "dll", "com", "scr", "msi", "msp", "cpl", "sys", "bat", "cmd", "ps1", "psm1", "vbs", "vbe", "js", "jse", "mjs",
         "wsf", "wsh", "hta", "jar", "sh", "lnk", "reg", "html", "htm", "xhtml", "shtml", "svg", "xml", "aspx", "asp", "ashx",
         "asmx", "cshtml", "config", "php", "jsp",
+        // 점검(2026-10) 추가: 브라우저가 문서로 여는 형식, 바로 실행되는 Windows 형식, 디스크 이미지(내려받기 표시 우회), 서버 스크립트
+        "mht", "mhtml", "xht", "xsl", "xslt", "svgz", "chm", "pif", "msc", "application", "gadget", "inf", "scf", "url", "ws", "vb",
+        "psd1", "ps1xml", "appx", "msix", "iso", "img", "vhd", "vhdx", "phtml", "php5", "jspx", "asa", "war", "swf", "jnlp",
     ], StringComparer.OrdinalIgnoreCase);
 
     private static readonly byte[] Pdf = "%PDF"u8.ToArray();
