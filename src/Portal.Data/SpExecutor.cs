@@ -35,8 +35,14 @@ public sealed class SpExecutor(
     public async Task<PageResult<T>> QueryPageAsync<T>(string spName, object? parameters = null, CancellationToken cancellationToken = default)
     {
         var built = SpParameterBuilder.Build(parameters, currentUser);
-        var pageNo = RequireInt(built, "P_PAGE_NO");
-        var pageSize = RequireInt(built, "P_PAGE_SIZE");
+        // 쪽 나눔 없이 전체를 돌려주는 목록 SP(휴일·게시판 관리 등)는 P_PAGE_NO/P_PAGE_SIZE를 받지 않는다.
+        // 둘 다 없으면 전체 목록 한 쪽으로 보고, 하나만 주면 호출 실수이므로 막는다.
+        var pageNo = FindInt(built, "P_PAGE_NO");
+        var pageSize = FindInt(built, "P_PAGE_SIZE");
+        if (pageNo.HasValue != pageSize.HasValue)
+        {
+            throw new ArgumentException("목록 조회의 P_PAGE_NO와 P_PAGE_SIZE는 함께 주거나 둘 다 빼야 합니다.", nameof(parameters));
+        }
 
         return await RunReaderAsync(spName, built, async (reader, ct) =>
         {
@@ -47,7 +53,7 @@ public sealed class SpExecutor(
             }
 
             var total = await ReadSingleAsync<int>(reader, ct).ConfigureAwait(false);
-            return new PageResult<T> { Items = items, TotalCount = total, PageNo = pageNo, PageSize = pageSize };
+            return new PageResult<T> { Items = items, TotalCount = total, PageNo = pageNo ?? 1, PageSize = pageSize ?? items.Count };
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -208,7 +214,7 @@ public sealed class SpExecutor(
         return item;
     }
 
-    private static int RequireInt(IReadOnlyList<KeyValuePair<string, object?>> parameters, string name)
+    private static int? FindInt(IReadOnlyList<KeyValuePair<string, object?>> parameters, string name)
     {
         foreach (var (key, value) in parameters)
         {
@@ -218,7 +224,7 @@ public sealed class SpExecutor(
             }
         }
 
-        throw new ArgumentException($"목록 조회에는 {name} 파라미터가 필요합니다.", nameof(parameters));
+        return null;
     }
 
     private sealed class ResultReader(DbDataReader reader) : ISpResultReader

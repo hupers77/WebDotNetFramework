@@ -295,7 +295,11 @@ public sealed class UserAdminSpTests(DbFixture fixture)
         await SaveAsync(db, PtnUser, ["PARTNER_ADMIN", "PARTNER_USER"], program: Ptn);
 
         Assert.Equal(("Y", "Y"), (roles["PARTNER_ADMIN"].AssignableYn, roles["PARTNER_USER"].AssignableYn));
-        Assert.Equal(["PARTNER_ADMIN", "PARTNER_USER"], roles.Keys.Order(StringComparer.Ordinal)); // 본사 역할은 목록에도 없다
+        // 본사 역할은 목록에도 없다 (업무 저장소가 더한 협력사 유형 역할은 보여도 된다)
+        var partnerRoles = await db.ColumnAsync<string>("SELECT ROLE_ID FROM FW.TB_ROLE WHERE COMPANY_TYPE_CD = 'PARTNER'");
+        Assert.All(roles.Keys, r => Assert.Contains(r, partnerRoles));
+        Assert.Contains("PARTNER_ADMIN", roles.Keys);
+        Assert.Contains("PARTNER_USER", roles.Keys);
         Assert.Equal("PARTNER_ADMIN,PARTNER_USER", (await GetAsync(db, PtnUser, Ptn)).RoleIds);
     }
 

@@ -75,18 +75,44 @@ public sealed class ApiClientSpTests(DbFixture fixture)
         Assert.NotNull(after.SecretIssuedDt);
         Assert.Equal(0, await db.ScalarAsync<int>("SELECT COUNT(*) FROM LOG.TB_AUDIT_LOG WHERE AFTER_JSON LIKE '%' + @S + '%'", ("@S", issued.ClientSecret)));
 
-        // 이전 RowVer로는 다시 발급할 수 없다 (동시성)
-        await Assert.ThrowsAsync<Portal.Core.Errors.BizException>(() =>
-            service.IssueSecretAsync(new Portal.Web.Areas.Sys.Models.ApiClientSecretRequest { ClientId = "t-new", RowVer = created.RowVer }, Ct));
-        await Assert.ThrowsAsync<Portal.Core.Errors.BizException>(() => service.SaveAsync(new Portal.Web.Areas.Sys.Models.ApiClientSaveRequest
-        {
-            Rows = [new() { RowStat = "I", ClientId = "t-new", ClientNm = "중복", UseYn = "Y" }],
-        }, Ct));
-
         await service.SaveAsync(new Portal.Web.Areas.Sys.Models.ApiClientSaveRequest
         {
             Rows = [new() { RowStat = "D", ClientId = "t-new", RowVer = after.RowVer }],
         }, Ct);
         Assert.DoesNotContain((await service.GetListAsync(Ct)).Items, c => c.ClientId == "t-new");
+    }
+
+    [Fact]
+    public async Task 관리화면_이전_RowVer로는_비밀값을_다시_발급할_수_없다()
+    {
+        // SP가 오류에서 ROLLBACK하면 테스트 트랜잭션까지 끝나므로, 오류를 기대하는 호출은 테스트의 마지막에 둔다
+        await using var db = await fixture.BeginAsync();
+        var service = new Portal.Web.Areas.Sys.Services.ApiClientAdminService(db.Sp, new Portal.Security.Passwords.Pbkdf2PasswordHasher());
+        await service.SaveAsync(new Portal.Web.Areas.Sys.Models.ApiClientSaveRequest
+        {
+            Rows = [new() { RowStat = "I", ClientId = "t-new", ClientNm = "신규", ApiCodes = "PING", UseYn = "Y" }],
+        }, Ct);
+        var created = (await service.GetListAsync(Ct)).Items.Single(c => c.ClientId == "t-new");
+        await service.IssueSecretAsync(new Portal.Web.Areas.Sys.Models.ApiClientSecretRequest { ClientId = "t-new", RowVer = created.RowVer }, Ct);
+
+        await Assert.ThrowsAsync<Portal.Core.Errors.BizException>(() =>
+            service.IssueSecretAsync(new Portal.Web.Areas.Sys.Models.ApiClientSecretRequest { ClientId = "t-new", RowVer = created.RowVer }, Ct));
+    }
+
+    [Fact]
+    public async Task 관리화면_같은_ID는_다시_등록할_수_없다()
+    {
+        // SP가 오류에서 ROLLBACK하면 테스트 트랜잭션까지 끝나므로, 오류를 기대하는 호출은 테스트의 마지막에 둔다
+        await using var db = await fixture.BeginAsync();
+        var service = new Portal.Web.Areas.Sys.Services.ApiClientAdminService(db.Sp, new Portal.Security.Passwords.Pbkdf2PasswordHasher());
+        await service.SaveAsync(new Portal.Web.Areas.Sys.Models.ApiClientSaveRequest
+        {
+            Rows = [new() { RowStat = "I", ClientId = "t-new", ClientNm = "신규", ApiCodes = "PING", UseYn = "Y" }],
+        }, Ct);
+
+        await Assert.ThrowsAsync<Portal.Core.Errors.BizException>(() => service.SaveAsync(new Portal.Web.Areas.Sys.Models.ApiClientSaveRequest
+        {
+            Rows = [new() { RowStat = "I", ClientId = "t-new", ClientNm = "중복", UseYn = "Y" }],
+        }, Ct));
     }
 }
