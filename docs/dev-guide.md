@@ -171,7 +171,7 @@ Controller에는 업무 로직을 두지 않습니다. 사용자 ID·언어·IP�
    ```
 2. 업무 저장 SP가 업무 행에 `FILE_GROUP_ID`를 저장하고, 같은 트랜잭션에서 `EXEC [FW].[USP_FILE_GROUP_CONFIRM_EXEC] @P_FILE_GROUP_ID, @P_PROGRAM_ID = 'PUR_VENDOR_MGT', @P_SHARE_YN = NULL, @P_USER_ID = @P_USER_ID, @P_LANG_CD = @P_LANG_CD`를 부릅니다. 확정하지 않은 묶음은 정리 작업이 지웁니다.
 3. 권한은 묶음의 프로그램으로 확인합니다. 목록·다운로드(ZIP 포함)는 `READ`, 업로드·삭제는 `CREATE` 또는 `UPDATE`가 필요합니다. 협력사 사용자는 자기 회사 묶음만 보고, 본사가 협력사에게 보여 줄 첨부(공지 등)는 확정할 때 `@P_SHARE_YN = 'Y'`를 넘깁니다.
-4. 프로그램 권한 다음에 묶음의 기록 단위 권한(`FW.USP_FILE_GROUP_ACCESS_GET`)을 한 번 더 봅니다. 확정 전 임시 묶음은 올린 사람만 보고, 게시글의 첨부·본문 사진은 그 글을 볼 수 있어야 하며(비밀글·공개 대상·게시기간), 남이 만든 묶음에 파일을 더하거나 남이 올린 파일을 지우려면 `UPDATE`가 있어야 합니다(`CREATE`만 있으면 자기 것만). 업무 기록에도 "그 기록을 볼 수 있는 사람만" 규칙이 필요하면 업무 Controller가 다운로드 전에 업무 SP로 확인합니다.
+4. 프로그램 권한 다음에 묶음의 기록 단위 권한(`FW.USP_FILE_GROUP_ACCESS_GET`)을 한 번 더 봅니다. 확정 전 임시 묶음은 올린 사람만 보고, 게시글의 첨부·본문 사진은 그 글을 볼 수 있어야 하며(비밀글·공개 대상·게시기간), 남이 만든 묶음에 파일을 더하거나 남이 올린 파일을 지우려면 `UPDATE`가 있어야 합니다(`CREATE`만 있으면 자기 것만). 업무 기록에 붙은 묶음은 묶음 프로그램 권한과 회사 격리까지만 확인합니다(`/File/Download`는 업무 Controller를 거치지 않습니다). 업무 기록 첨부에 "그 기록을 볼 수 있는 사람만" 규칙이 필요하면 프레임워크에 확장 지점을 먼저 요청하고, 그 전까지는 민감한 첨부를 별도 프로그램으로 나누어 권한으로 막습니다(`docs/security/apply-to-business-repos.md` 3-4).
 5. 업무 저장 SP는 화면이 넘긴 `FILE_GROUP_ID`가 그 업무 행이 이미 가진 묶음이거나 본인이 올린 확정 전 묶음인지 확인한 뒤 확정합니다(게시판 `USP_POST_SAVE` 참고). 확인하지 않으면 남의 묶음 ID를 자기 기록에 붙여 그 파일을 받아 갈 수 있습니다.
 
 허용 확장자는 공통코드 `FILE_EXT`, 크기·개수는 설정 `FILE.MAX_SIZE_MB`·`FILE.MAX_COUNT`가 정합니다. 실행·스크립트 형식(exe, js, html, svg 등)은 코드에 추가해도 `FileService`가 막고, 내용이 확장자와 맞는지(매직 넘버)도 확인합니다. 저장소 폴더는 `appsettings.json`의 `Portal:File:StorageRoot`(웹 루트 밖, 실행 권한 없음, 백업 대상)이고, 파일 이름은 GUID라 원래 이름은 DB에만 있습니다. IIS는 요청 본문 한도가 따로 있으므로 `FILE.MAX_SIZE_MB`를 30MB보다 크게 올리면 `web.config`의 `requestLimits maxAllowedContentLength`도 함께 올립니다.

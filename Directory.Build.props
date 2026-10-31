@@ -11,7 +11,7 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Deterministic>true</Deterministic>
-    <Version>0.1.0</Version>
+    <Version>1.2.0</Version>
     <Company>Portal</Company>
     <Product>Enterprise Web Portal Framework</Product>
   </PropertyGroup>

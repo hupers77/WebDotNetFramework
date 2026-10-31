@@ -30,6 +30,7 @@
 | [../framework-design.md](../framework-design.md) | 설계서: 아키텍처, 인증, 권한, DB(7장), SP 표준(8장), 보안, 모듈, UI, 테스트, 로드맵, 백업·복구, 배포 |
 | [../dev-guide.md](../dev-guide.md) | 개발 표준 가이드: 화면 추가 순서(3장), 코딩·화면·SP 규칙, 테스트, MR 체크리스트, 자주 하는 작업(11장) |
 | [../initial-data.md](../initial-data.md) | 초기 데이터: 역할, 프로그램·메뉴, 공통코드, 설정 키, 배치 작업, 레포트, 게시판, 위젯 |
+| [../security/](../security/) | 보안 점검 보고서(2026-10)와 업무 저장소 반영 방법(`apply-to-business-repos.md`). 점검 skill은 `.claude/skills/web-security-audit/` |
 
 ## 원본 자료가 있는 곳 (저장소 밖)
 

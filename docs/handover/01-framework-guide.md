@@ -80,6 +80,7 @@ tests/
 - 코드·메뉴·권한·다국어·설정을 바꾸는 SP는 마지막에 `FW.TB_CACHE_VERSION`을 올립니다.
 - 메일·포털 알림은 업무 SP 안에서 `FW.USP_MSG_QUEUE_SAVE … @P_RESULT_YN = 'N'`(같은 트랜잭션, 발송은 Worker).
 - 첨부는 업무 행에 `FILE_GROUP_ID BIGINT NULL` 하나만 두고, 저장 SP에서 `FW.USP_FILE_GROUP_CONFIRM_EXEC` 호출.
+- 저장 SP는 화면이 넘긴 `FILE_GROUP_ID`가 그 행이 이미 가진 묶음이거나 본인이 올린 확정 전 묶음인지 확인한 뒤 확정합니다. 자식 기록(상세 행·댓글)을 다루는 SP는 부모가 권한을 확인한 대상인지 SP 안에서 다시 확인합니다(2026-10 보안 점검, [../security/apply-to-business-repos.md](../security/apply-to-business-repos.md) 3장).
 - 테이블 변경은 호환성 유지(컬럼은 NULL 또는 기본값으로 추가, 삭제·이름 변경은 다음 릴리스).
 - 1초 넘는 SP는 느린 SP 로그에 남습니다.
 
