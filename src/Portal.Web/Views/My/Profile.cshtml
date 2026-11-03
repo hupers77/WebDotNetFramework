@@ -1,0 +1,53 @@
+@model ProfileViewModel
+@using Portal.Web.Controllers
+@inject Portal.Framework.Web.Navigation.MenuCatalog Menus
+@{
+    var title = Menus.ProgramTitle(MyController.ProfileProgram, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+    var p = Model.Profile;
+}
+@section Scripts {
+    <script type="module" src="~/js/my/profile.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<section aria-labelledby="profile-info">
+    <h2 id="profile-info">@L["MY.PROFILE.INFO"]</h2>
+    <dl class="detail-list">
+        <dt>@L["LBL.USER_ID"]</dt>
+        <dd>@p.UserId</dd>
+        <dt>@L["LBL.USER_NM"]</dt>
+        <dd>@p.UserNm</dd>
+        <dt>@L["LBL.COMPANY"]</dt>
+        <dd>@p.CompanyNm (@p.CompanyCd)</dd>
+        <dt>@L["LBL.DEPT"]</dt>
+        <dd>@(p.DeptNm ?? "-")</dd>
+        <dt>@L["MY.PROFILE.ROLES"]</dt>
+        <dd>@(Model.Roles.Count == 0 ? "-" : string.Join(", ", Model.Roles.Select(r => r.RoleNm)))</dd>
+        <dt>@L["MY.PROFILE.MFA"]</dt>
+        <dd>@(p.MfaYn == "Y" ? L["MY.PROFILE.MFA_ON"] : L["MY.PROFILE.MFA_OFF"])</dd>
+        <dt>@L["MY.PROFILE.LAST_LOGIN"]</dt>
+        <dd>@if (p.LastLoginDt is { } login) { <time datetime="@login.ToString("s")Z" data-fw-datetime>@login.ToString("yyyy-MM-dd HH:mm") UTC</time> } else { <text>-</text> }</dd>
+        <dt>@L["MY.PROFILE.PWD_CHG"]</dt>
+        <dd>@if (p.PwdChgDt is { } chg) { <time datetime="@chg.ToString("s")Z" data-fw-datetime>@chg.ToString("yyyy-MM-dd HH:mm") UTC</time> } else { <text>-</text> }</dd>
+        @if (p.AccountEndDt is { } end)
+        {
+            <dt>@L["MY.PROFILE.ACCOUNT_END"]</dt>
+            <dd>@end.ToString("yyyy-MM-dd")</dd>
+        }
+    </dl>
+    <p class="hint">@L["MY.PROFILE.HINT"]</p>
+</section>
+<section aria-labelledby="profile-lang">
+    <h2 id="profile-lang">@L["MY.PROFILE.LANG"]</h2>
+    <form method="post" asp-action="Profile" class="form">
+        <label for="profile-lang-select">@L["MY.PROFILE.LANG"]</label>
+        <select id="profile-lang-select" name="Lang">
+            @foreach (var lang in Model.Languages)
+            {
+                <option value="@lang.LangCd" selected="@(lang.LangCd == p.LangCd)">@lang.LangNm</option>
+            }
+        </select>
+        <fw-button func="UPDATE" text-key="BTN.SAVE" type="submit" class="primary" />
+    </form>
+    <p><a asp-controller="My" asp-action="Password">@L["BTN.CHANGE_PASSWORD"]</a></p>
+</section>

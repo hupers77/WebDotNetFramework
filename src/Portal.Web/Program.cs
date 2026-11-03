@@ -36,6 +36,13 @@ builder.Services.AddScoped<Portal.Web.Areas.Board.Services.IBoardAdminService, P
 builder.Services.AddScoped<Portal.Web.Areas.Dash.Services.IDashService, Portal.Web.Areas.Dash.Services.DashService>();
 builder.Services.AddScoped<Portal.Web.Areas.Dash.Services.IWidgetAdminService, Portal.Web.Areas.Dash.Services.WidgetAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IHolidayAdminService, Portal.Web.Areas.Sys.Services.HolidayAdminService>();
+builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IMenuAdminService, Portal.Web.Areas.Sys.Services.MenuAdminService>();
+builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IMonitorService, Portal.Web.Areas.Sys.Services.MonitorService>();
+builder.Services.AddScoped<Portal.Web.Areas.Rpt.Services.IReportAdminService, Portal.Web.Areas.Rpt.Services.ReportAdminService>();
+builder.Services.AddSingleton<Portal.Web.Areas.Rpt.Services.IReportTemplateCatalog, Portal.Web.Areas.Rpt.Services.ReportTemplateCatalog>();
+builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IMsgTemplateAdminService, Portal.Web.Areas.Sys.Services.MsgTemplateAdminService>();
+builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.ILangAdminService, Portal.Web.Areas.Sys.Services.LangAdminService>();
+builder.Services.AddScoped<Portal.Web.Services.IProfileService, Portal.Web.Services.ProfileService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IPopupAdminService, Portal.Web.Areas.Sys.Services.PopupAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IApiClientAdminService, Portal.Web.Areas.Sys.Services.ApiClientAdminService>();
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.IApiOutboundAdminService, Portal.Web.Areas.Sys.Services.ApiOutboundAdminService>();

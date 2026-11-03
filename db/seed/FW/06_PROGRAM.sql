@@ -464,7 +464,25 @@ USING (VALUES
   (N'POST', N'/Sys/ApiClient/Secret', N'SYS_API_CLIENT_MGT', N'UPDATE'),
   (N'GET', N'/Sys/ApiOutbound', N'SYS_API_OUTBOUND_MGT', N'READ'),
   (N'GET', N'/Sys/ApiOutbound/List', N'SYS_API_OUTBOUND_MGT', N'READ'),
-  (N'POST', N'/Sys/ApiOutbound/Save', N'SYS_API_OUTBOUND_MGT', N'UPDATE')
+  (N'POST', N'/Sys/ApiOutbound/Save', N'SYS_API_OUTBOUND_MGT', N'UPDATE'),
+  (N'GET', N'/My/Profile', N'MY_PROFILE', N'READ'),
+  (N'POST', N'/My/Profile', N'MY_PROFILE', N'UPDATE'),
+  (N'GET', N'/Sys/Menu', N'SYS_MENU_MGT', N'READ'),
+  (N'GET', N'/Sys/Menu/List', N'SYS_MENU_MGT', N'READ'),
+  (N'POST', N'/Sys/Menu/Save', N'SYS_MENU_MGT', N'UPDATE'),
+  (N'GET', N'/Sys/Lang', N'SYS_LANG_MGT', N'READ'),
+  (N'GET', N'/Sys/Lang/List', N'SYS_LANG_MGT', N'READ'),
+  (N'POST', N'/Sys/Lang/Save', N'SYS_LANG_MGT', N'UPDATE'),
+  (N'GET', N'/Sys/Lang/Export', N'SYS_LANG_MGT', N'EXPORT'),
+  (N'POST', N'/Sys/Lang/Upload', N'SYS_LANG_MGT', N'UPLOAD'),
+  (N'GET', N'/Sys/MsgTemplate', N'SYS_MSG_TEMPLATE_MGT', N'READ'),
+  (N'GET', N'/Sys/MsgTemplate/List', N'SYS_MSG_TEMPLATE_MGT', N'READ'),
+  (N'POST', N'/Sys/MsgTemplate/Save', N'SYS_MSG_TEMPLATE_MGT', N'UPDATE'),
+  (N'GET', N'/Rpt/Report', N'RPT_REPORT_MGT', N'READ'),
+  (N'GET', N'/Rpt/Report/List', N'RPT_REPORT_MGT', N'READ'),
+  (N'POST', N'/Rpt/Report/Save', N'RPT_REPORT_MGT', N'UPDATE'),
+  (N'GET', N'/Sys/Monitor', N'SYS_MONITOR_INQ', N'READ'),
+  (N'GET', N'/Sys/Monitor/Data', N'SYS_MONITOR_INQ', N'READ')
 ) AS S ([HTTP_METHOD], [ROUTE_PATTERN], [PROGRAM_ID], [FUNC_CD])
    ON T.[HTTP_METHOD] = S.[HTTP_METHOD] AND T.[ROUTE_PATTERN] = S.[ROUTE_PATTERN]
 WHEN MATCHED THEN UPDATE SET T.[PROGRAM_ID] = S.[PROGRAM_ID], T.[FUNC_CD] = S.[FUNC_CD]

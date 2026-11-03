@@ -1,0 +1,27 @@
+-- 내 정보 (본인 계정만). 프로그램: MY_PROFILE
+-- 개인정보는 돌려주지 않는다: 이메일·비밀번호 정보는 제외하고 이름·소속·역할·마지막 로그인만 읽는다.
+-- 결과셋 1: 계정 한 행(없으면 0행), 결과셋 2: 지금 유효한 역할 목록
+CREATE PROCEDURE [FW].[USP_MY_PROFILE_GET]
+  @P_USER_ID    VARCHAR(30),
+  @P_LANG_CD    VARCHAR(5),
+  @P_CLIENT_IP  VARCHAR(45) = NULL
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  SELECT U.[USER_ID], U.[USER_NM], U.[COMPANY_CD], C.[COMPANY_NM], U.[DEPT_ID], D.[DEPT_NM],
+         U.[USER_TYPE_CD], U.[LANG_CD], U.[LAST_LOGIN_DT], U.[PWD_CHG_DT], U.[ACCOUNT_END_DT],
+         IIF(U.[MFA_SECRET_ENC] IS NULL, 'N', 'Y') AS [MFA_YN]
+    FROM [FW].[TB_USER] U
+    JOIN [FW].[TB_COMPANY] C ON C.[COMPANY_CD] = U.[COMPANY_CD]
+    LEFT JOIN [FW].[TB_DEPT] D ON D.[DEPT_ID] = U.[DEPT_ID]
+   WHERE U.[USER_ID] = @P_USER_ID;
+
+  SELECT R.[ROLE_ID], R.[ROLE_NM]
+    FROM [FW].[TB_USER_ROLE] UR
+    JOIN [FW].[TB_ROLE] R ON R.[ROLE_ID] = UR.[ROLE_ID]
+   WHERE UR.[USER_ID] = @P_USER_ID
+     AND R.[USE_YN] = 'Y'
+     AND CONVERT(DATE, SYSUTCDATETIME()) BETWEEN UR.[START_DT] AND UR.[END_DT]
+   ORDER BY R.[SORT_NO], R.[ROLE_ID];
+END
