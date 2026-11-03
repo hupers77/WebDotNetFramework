@@ -10,13 +10,42 @@ using Portal.Framework.Web.Mvc;
 using Portal.Framework.Web.Navigation;
 using Portal.Security.Authentication;
 using Portal.Security.Passwords;
+using Portal.Infrastructure.Localization;
 using Portal.Web.Models;
+using Portal.Web.Services;
 
 namespace Portal.Web.Controllers;
 
-/// <summary>내 정보 화면. 이번 단계는 비밀번호 변경(<c>MY_PWD_CHG</c>)만 있다.</summary>
-public sealed class MyController(PasswordService passwords, IPortalConfig config, IPortalLocalizer localizer, UserLanguageService languages, MenuService menus) : PortalController
+/// <summary>내 정보 화면: 내 정보 조회와 화면 언어 변경(<c>MY_PROFILE</c>), 비밀번호 변경(<c>MY_PWD_CHG</c>).</summary>
+public sealed class MyController(
+    PasswordService passwords, IPortalConfig config, IPortalLocalizer localizer, UserLanguageService languages, MenuService menus,
+    IProfileService profiles, LangResources langs) : PortalController
 {
+    /// <summary>내 정보 프로그램 ID.</summary>
+    public const string ProfileProgram = "MY_PROFILE";
+
+    /// <summary>내 정보 화면. 이름·소속·역할·마지막 로그인을 보여 주고 화면 언어를 바꿀 수 있다.</summary>
+    [HttpGet, Program(ProfileProgram)]
+    public async Task<IActionResult> Profile(CancellationToken cancellationToken)
+    {
+        var found = await profiles.GetAsync(cancellationToken);
+        return found is var (profile, roles) ? View(new ProfileViewModel(profile, roles, langs.Languages)) : NotFound();
+    }
+
+    /// <summary>화면 언어 변경. 바꾼 뒤 내 정보로 돌아간다.</summary>
+    [HttpPost, Program(ProfileProgram), Func(FuncCodes.Update)]
+    public async Task<IActionResult> Profile([FromForm] ProfileForm form, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(form.Lang))
+        {
+            throw new BizException(MessageKeys.InvalidInput);
+        }
+
+        await languages.ChangeAsync(form.Lang, cancellationToken);
+        TempData[TempDataKeys.Notice] = MessageKeys.Saved;
+        return RedirectToAction(nameof(Profile));
+    }
+
     /// <summary>비밀번호 변경 화면.</summary>
     [HttpGet, Program(PermissionFilter.PasswordProgram)]
     public IActionResult Password() => View(Model(null));

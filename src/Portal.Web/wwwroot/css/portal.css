@@ -250,6 +250,9 @@ h3 { font-size: 1rem; font-weight: 600; }
 .detail-list { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0 0 1rem; }
 .detail-list dt { color: var(--fw-muted); }
 .detail-list dd { margin: 0; overflow-wrap: anywhere; }
+/* 운영 모니터링: 주의가 필요한 값은 색과 함께 굵은 글씨·표시로도 알린다 */
+.warn { color: var(--fw-error); font-weight: 600; }
+td.warn::before, dd.warn::before { content: "⚠ "; }
 .role-list { border: 1px solid var(--fw-border); border-radius: var(--fw-radius-sm); padding: .5rem .75rem; margin: .5rem 0 0; }
 .role-list legend { padding: 0 .25rem; }
 .role-list label { display: flex; gap: .4rem; align-items: baseline; padding: .15rem 0; }

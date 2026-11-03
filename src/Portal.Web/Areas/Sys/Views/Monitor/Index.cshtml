@@ -1,0 +1,41 @@
+@{
+    var title = Menus.ProgramTitle(MonitorController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/monitor.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="mon-screen" data-url-data="@Url.Action("Data")">
+    <div class="toolbar">
+        <p id="mon-updated" class="hint toolbar-spacer" aria-live="polite"></p>
+        <label><input id="mon-auto" type="checkbox" checked /> @L["SYS.MON.AUTO"]</label>
+        <button type="button" id="mon-refresh">@L["BTN.REFRESH"]</button>
+    </div>
+    <section aria-labelledby="mon-sum-h">
+        <h2 id="mon-sum-h">@L["SYS.MON.SUMMARY"]</h2>
+        <dl class="detail-list" id="mon-summary"></dl>
+    </section>
+    <section aria-labelledby="mon-srv-h">
+        <h2 id="mon-srv-h">@L["SYS.MON.SERVER"]</h2>
+        <dl class="detail-list" id="mon-server"></dl>
+    </section>
+    <section aria-labelledby="mon-job-h">
+        <h2 id="mon-job-h">@L["SYS.MON.JOBS"]</h2>
+        <div class="grid-wrap"><table class="fw-grid" id="mon-jobs" aria-labelledby="mon-job-h"></table></div>
+    </section>
+    <section aria-labelledby="mon-queue-h">
+        <h2 id="mon-queue-h">@L["SYS.MON.QUEUES"]</h2>
+        <div class="grid-wrap"><table class="fw-grid" id="mon-mails" aria-label="@L["SYS.MON.MAILS"]"></table></div>
+        <div class="grid-wrap"><table class="fw-grid" id="mon-reports" aria-label="@L["SYS.MON.REPORTS"]"></table></div>
+    </section>
+    <section aria-labelledby="mon-cache-h">
+        <h2 id="mon-cache-h">@L["SYS.MON.CACHES"]</h2>
+        <div class="grid-wrap"><table class="fw-grid" id="mon-caches" aria-labelledby="mon-cache-h"></table></div>
+    </section>
+    <section aria-labelledby="mon-err-h">
+        <h2 id="mon-err-h">@L["SYS.MON.ERRORS"]</h2>
+        <div class="grid-wrap"><table class="fw-grid" id="mon-errors" aria-labelledby="mon-err-h"></table></div>
+        <p class="hint">@L["SYS.MON.ERRORS_HINT"]</p>
+    </section>
+</div>

@@ -49,7 +49,7 @@ export class Grid {
      * @param {string} options.label 표 제목 (스크린리더용 caption)
      * @param {Array<object>} options.columns 컬럼: field, header, type(text|number|date|yn), required, maxLength,
      *   pattern(RegExp)+patternKey(메시지 키), readonly(true 또는 (row, state) => bool), check(row) => 메시지|null, width,
- *   format(value, row) 읽기 전용 칸 표시, placeholder.
+ *   format(value, row) 읽기 전용 칸 표시, placeholder, list(<datalist>의 id: 입력 후보).
  *   type·required·placeholder는 (row) => 값 함수도 된다. type 'password'는 값을 다시 보여 주지 않는 입력 칸이다.
  *   type 'button'은 행마다 버튼(text, onClick(row))을 그린다. 읽기 전용 그리드에서도 그리고, 검사하지 않는다.
      * @param {boolean} [options.editable=true] false면 읽기 전용
@@ -303,6 +303,10 @@ export class Grid {
 
             if (col.maxLength) {
                 input.maxLength = col.maxLength;
+            }
+
+            if (col.list) {
+                input.setAttribute('list', col.list);
             }
         }
 

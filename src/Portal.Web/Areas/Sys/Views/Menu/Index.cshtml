@@ -1,0 +1,32 @@
+@model MenuIndexModel
+@{
+    var title = Menus.ProgramTitle(MenuController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/menu.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="menu-screen"
+     data-langs="@Model.LanguagesJson"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")">
+    <form id="menu-search" class="search-bar" role="search">
+        <label for="menu-set">@L["SYS.MENU.SET"]</label>
+        <select id="menu-set">
+            <option value="PORTAL">@L["SYS.MENU.SET_PORTAL"]</option>
+            <option value="ADMIN">@L["SYS.MENU.SET_ADMIN"]</option>
+            <option value="MOBILE">@L["SYS.MENU.SET_MOBILE"]</option>
+        </select>
+        <button type="submit">@L["BTN.SEARCH"]</button>
+    </form>
+    <div class="toolbar">
+        <p id="menu-total" class="hint toolbar-spacer" aria-live="polite"></p>
+        <fw-button func="CREATE" text-key="BTN.ADD_ROW" id="menu-add" />
+        <fw-button func="DELETE" text-key="BTN.DEL_ROW" id="menu-delete" />
+        <fw-button func="UPDATE" text-key="BTN.SAVE" id="menu-save" class="primary" />
+    </div>
+    <p class="hint">@L["SYS.MENU.HINT"]</p>
+    <datalist id="menu-programs"></datalist>
+    <div id="menu-grid" class="grid-wrap"></div>
+</div>

@@ -1,0 +1,50 @@
+@model LangIndexModel
+@{
+    var title = Menus.ProgramTitle(LangController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/lang.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="lang-screen"
+     data-langs="@Model.LanguagesJson"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")"
+     data-url-export="@Url.Action("Export")"
+     data-url-upload="@Url.Action("Upload")">
+    <form id="lang-search" class="search-bar" role="search">
+        <label for="lang-keyword">@L["LBL.KEYWORD"]</label>
+        <input id="lang-keyword" type="search" maxlength="100" autocomplete="off" />
+        <label for="lang-type">@L["SYS.LANG.TYPE"]</label>
+        <select id="lang-type">
+            <option value="">@L["LBL.ALL"]</option>
+            <option value="LABEL">LABEL</option>
+            <option value="MSG">MSG</option>
+            <option value="BTN">BTN</option>
+            <option value="TOOLTIP">TOOLTIP</option>
+        </select>
+        <label><input id="lang-missing" type="checkbox" /> @L["SYS.LANG.MISSING_ONLY"]</label>
+        <button type="submit">@L["BTN.SEARCH"]</button>
+    </form>
+    <div class="toolbar">
+        <p id="lang-total" class="hint toolbar-spacer" aria-live="polite"></p>
+        <fw-button func="EXPORT" text-key="BTN.EXCEL" id="lang-export" />
+        <fw-button func="UPLOAD" text-key="BTN.UPLOAD" id="lang-upload" />
+        <fw-button func="CREATE" text-key="BTN.ADD_ROW" id="lang-add" />
+        <fw-button func="DELETE" text-key="BTN.DEL_ROW" id="lang-delete" />
+        <fw-button func="UPDATE" text-key="BTN.SAVE" id="lang-save" class="primary" />
+    </div>
+    <input id="lang-upload-file" type="file" accept=".xlsx" hidden />
+    <div id="lang-upload-errors" class="upload-errors" role="alert" hidden>
+        <h3>@L["LBL.EXCEL_ERRORS"]</h3>
+        <ul></ul>
+    </div>
+    <p class="hint">@L["SYS.LANG.HINT"]</p>
+    <div id="lang-grid" class="grid-wrap"></div>
+    <div id="lang-pager" class="pager" hidden>
+        <button type="button" id="lang-prev">@L["BTN.PREV"]</button>
+        <span id="lang-page" aria-live="polite"></span>
+        <button type="button" id="lang-next">@L["BTN.NEXT"]</button>
+    </div>
+</div>

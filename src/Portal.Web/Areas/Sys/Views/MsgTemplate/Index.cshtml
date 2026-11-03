@@ -1,0 +1,46 @@
+@model MsgTemplateIndexModel
+@{
+    var title = Menus.ProgramTitle(MsgTemplateController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/sys/msg-template.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="tpl-screen" class="md-layout"
+     data-langs="@Model.LanguagesJson"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")">
+    <section class="md-master" aria-labelledby="tpl-list-heading">
+        <h2 id="tpl-list-heading">@L["SYS.TPL.LIST"]</h2>
+        <form id="tpl-search" class="search-bar" role="search">
+            <label for="tpl-keyword">@L["LBL.KEYWORD"]</label>
+            <input id="tpl-keyword" type="search" maxlength="100" autocomplete="off" />
+            <button type="submit">@L["BTN.SEARCH"]</button>
+        </form>
+        <p id="tpl-total" class="hint" aria-live="polite"></p>
+        <ul id="tpl-list" class="pick-list" role="listbox" aria-labelledby="tpl-list-heading"></ul>
+    </section>
+    <section class="md-detail" aria-labelledby="tpl-heading">
+        <h2 id="tpl-heading">@L["SYS.TPL.DETAIL"]</h2>
+        <p id="tpl-hint" class="hint">@L["SYS.TPL.SELECT"]</p>
+        <div id="tpl-detail" hidden>
+            <dl class="detail-list">
+                <dt>@L["SYS.TPL.ID"]</dt><dd data-field="id"></dd>
+                <dt>@L["SYS.TPL.LINK_PROGRAM"]</dt><dd data-field="link"></dd>
+                <dt>@L["SYS.TPL.PENDING"]</dt><dd data-field="pending"></dd>
+                <dt>@L["LBL.UPD_DT"]</dt><dd data-field="upd"></dd>
+            </dl>
+            <form id="tpl-form" class="form" novalidate>
+                <label><input id="tpl-mail" type="checkbox" /> @L["SYS.TPL.MAIL"]</label>
+                <label><input id="tpl-portal" type="checkbox" /> @L["SYS.TPL.PORTAL"]</label>
+                <label><input id="tpl-use" type="checkbox" /> @L["LBL.USE_YN"]</label>
+                <p class="hint">@L["SYS.TPL.VAR_HINT"]</p>
+                <div id="tpl-langs"></div>
+            </form>
+            <div class="toolbar">
+                <fw-button func="UPDATE" text-key="BTN.SAVE" id="tpl-save" class="primary" />
+            </div>
+        </div>
+    </section>
+</div>

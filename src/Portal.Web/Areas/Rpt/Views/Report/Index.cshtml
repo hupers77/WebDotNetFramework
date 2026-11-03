@@ -1,0 +1,27 @@
+@{
+    var title = Menus.ProgramTitle(ReportController.ProgramId, CurrentUser.LangCd);
+    ViewData["Title"] = title;
+}
+@section Scripts {
+    <script type="module" src="~/js/rpt/report-admin.js" asp-append-version="true"></script>
+}
+<h1>@title</h1>
+<div id="rptadm-screen"
+     data-url-list="@Url.Action("List")"
+     data-url-save="@Url.Action("Save")"
+     data-url-viewer="@Url.Content("~/Rpt/Viewer/Index/")">
+    <form id="rptadm-search" class="search-bar" role="search">
+        <label for="rptadm-keyword">@L["LBL.KEYWORD"]</label>
+        <input id="rptadm-keyword" type="search" maxlength="100" autocomplete="off" />
+        <button type="submit">@L["BTN.SEARCH"]</button>
+    </form>
+    <div class="toolbar">
+        <p id="rptadm-total" class="hint toolbar-spacer" aria-live="polite"></p>
+        <fw-button func="CREATE" text-key="BTN.ADD_ROW" id="rptadm-add" />
+        <fw-button func="DELETE" text-key="BTN.DEL_ROW" id="rptadm-delete" />
+        <fw-button func="UPDATE" text-key="BTN.SAVE" id="rptadm-save" class="primary" />
+    </div>
+    <p class="hint">@L["RPT.ADMIN.HINT"]</p>
+    <datalist id="rptadm-programs"></datalist>
+    <div id="rptadm-grid" class="grid-wrap"></div>
+</div>

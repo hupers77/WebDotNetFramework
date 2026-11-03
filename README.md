@@ -1,6 +1,6 @@
 # WebDotNetFramework
 
-.NET 10 / Windows Server 2022 / MSSQL 2022 기반 엔터프라이즈 웹 포털 프레임워크입니다. 현재 버전 **`fw-v1.2.1`** ([기술 스펙](docs/tech-spec.md)).
+.NET 10 / Windows Server 2022 / MSSQL 2022 기반 엔터프라이즈 웹 포털 프레임워크입니다. 현재 버전 **`fw-v1.3.0`** ([기술 스펙](docs/tech-spec.md)).
 
 ## 문서
 
@@ -59,6 +59,7 @@ dotnet run --project src/Portal.Web                       # https://localhost:50
 
 | 날짜 | 버전 | 내용 | 업무 저장소가 할 일 |
 | --- | --- | --- | --- |
+| 2026-11-03 | `fw-v1.3.0` | 메뉴에 있었지만 주소가 404이던 표준 화면 6종 구현: 내 정보(`/My/Profile`, 화면 언어 변경), 메뉴 관리(`/Sys/Menu`, 트리·언어별 메뉴명), 다국어 문구 관리(`/Sys/Lang`, 키 단위 편집·엑셀 내보내기/업로드), 메시지 템플릿(`/Sys/MsgTemplate`), 레포트 관리(`/Rpt/Report`), 운영 모니터링(`/Sys/Monitor`). 새 SP 10개(`USP_MY_PROFILE_GET`, `USP_MENU_ADMIN_GET_LIST`·`USP_MENU_SAVE`, `USP_LANG_RESOURCE_ADMIN_GET_LIST`·`USP_LANG_RESOURCE_SAVE`, `USP_MSG_TEMPLATE_ADMIN_GET_LIST`·`USP_MSG_TEMPLATE_SAVE`, `USP_REPORT_ADMIN_GET_LIST`·`USP_REPORT_SAVE`, `USP_MONITOR_GET`), `TB_PROGRAM_API` 18행, 다국어 문구 약 120키(ko/en/zh-CN). 그리드 입력 칸에 `list`(입력 후보) 옵션 추가. 어셈블리 버전 1.3.0 | 병합 후 DB를 다시 배포(시드가 경로·문구를 채움)하고 `PORTAL_ADMIN`으로 6개 화면을 열어 확인. 업무 저장소가 같은 이름의 컨트롤러/뷰를 이미 만들었다면 프레임워크 것으로 교체. 메뉴·다국어 문구를 업무 저장소 시드에서 더하던 곳은 이제 화면으로도 관리 가능 |
 | 2026-10-31 | `fw-v1.2.1` | 업무 저장소 DB 통합 테스트에서 드러난 수정(PR #68): 쪽 나눔 없는 목록 SP를 `QueryPageAsync`로 부르면 `P_PAGE_NO`·`P_PAGE_SIZE`가 없어 오류가 나던 문제(휴일·게시판 관리·위젯 관리·API 클라이언트·송신 대상 관리 화면 목록), 레포트 요청 삭제 직후 최대 1초 다시 보이던 문제, `TB_PROGRAM_API` 시드의 화면 경로 24행 누락, 업무 저장소가 역할·프로그램·메뉴를 더해도 깨지지 않도록 통합 테스트 정리. 어셈블리 버전 1.2.1 | 병합 후 `db/ops/local-setup.ps1`로 새 DB를 만들어 통합 테스트 확인. 쪽 나눔 없는 목록 SP를 부르는 서비스가 있으면 `P_PAGE_NO`·`P_PAGE_SIZE` 없이 불러도 됨(둘 다 주는 기존 호출은 그대로). 기존 테스트 DB에 이전 실행이 남긴 테스트 데이터(`t-new`, `T_ERP`)가 있으면 지움 |
 | 2026-10-31 | `fw-v1.2.0` | 보안 점검(KISA·주통기반·OWASP)과 패치(PR #66): 게시판 댓글·첨부의 기록 단위 권한, 첨부 묶음 가로채기 차단, HTML 필터 서비스 거부 수정, .NET 10.0.14 보안 업데이트, IIS `web.config`, 오류·버전 노출 정리. 업무 저장소 반영 안내, 기술 스펙 문서, 보안 점검 skill 추가, 어셈블리 버전을 태그와 맞춤(1.2.0)(PR #67) | [보안 점검 반영 방법](docs/security/apply-to-business-repos.md) 1~5장. 댓글 SP·`IBoardService` 직접 호출, 첨부를 저장하는 업무 SP 확인. 서버에 Hosting Bundle 10.0.14 설치 |
 | 2026-10-30 | `fw-v1.1.0` | 화면 디자인 개편, 게시판 서식 편집기·본문 사진, 대시보드 차트 위젯(PR #65) | 병합 후 화면 확인 |
