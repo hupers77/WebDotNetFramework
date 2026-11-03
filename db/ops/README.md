@@ -4,7 +4,8 @@
 
 | 스크립트 | 용도 | 상태 |
 |---|---|---|
-| `local-setup.ps1` | 개발 PC 로컬 DB 생성·배포 | 사용 가능 |
+| `local-setup.ps1` | 개발 PC(Windows) 로컬 DB 생성·배포 | 사용 가능 |
+| `local-docker.sh` | 맥/리눅스 docker SQL Server에 `PORTAL_LOCAL` 생성·배포·관리자 생성·실행·통합 테스트 | 사용 가능 |
 | 백업·복원(`restore-plan.sql` 등), 마스킹, 파티션 관리 | 설계서 16장 절차 | 이후 단계에서 추가 |
 
 배포 옵션은 `db/Portal.Database/Portal.Database.publish.xml` 하나를 모든 환경에서 같이 씁니다.
