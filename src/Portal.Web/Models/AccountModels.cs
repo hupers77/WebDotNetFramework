@@ -9,6 +9,12 @@ public sealed class LoginForm
     /// <summary>비밀번호. 화면에 다시 채우지 않는다.</summary>
     public string? Password { get; set; }
 
+    /// <summary>
+    /// 브라우저가 ID·비밀번호를 암호화해 보낸 값(Base64). 있으면 <see cref="UserId"/>·<see cref="Password"/> 대신 이것을 쓴다.
+    /// 스크립트를 쓸 수 없는 환경은 ID·비밀번호를 그대로 보낸다.
+    /// </summary>
+    public string? Enc { get; set; }
+
     /// <summary>로그인 후 돌아갈 같은 사이트 경로.</summary>
     public string? ReturnUrl { get; set; }
 }

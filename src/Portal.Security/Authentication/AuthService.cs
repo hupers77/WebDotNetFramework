@@ -29,7 +29,8 @@ public sealed partial class AuthService(
     TimeProvider time,
     IMfaSecretProtector mfaSecrets,
     IMfaCodeMailer otpMailer,
-    ILogger<AuthService> logger)
+    ILogger<AuthService> logger,
+    IEnumerable<IExternalCredentialValidator>? externalValidators = null)
 {
     private const int MaxUserIdLength = 30;
     private const int MaxUserAgentLength = 300;
@@ -51,8 +52,36 @@ public sealed partial class AuthService(
         loginId = Truncate(loginId, MaxUserIdLength)!;
         var user = await sp.QuerySingleAsync<AuthUser>(AuthSp.GetUser, new { P_LOGIN_USER_ID = loginId }, cancellationToken);
 
+        // 외부 검증기(AD 등)가 맡는 사용자는 포털 비밀번호 해시 대신 검증기로 확인한다 (PWD_HASH가 NULL이어도 로그인 가능)
+        var external = user is not null && (!request.PartnerPage || user.UserTypeCd == "PARTNER")
+            ? await FindExternalValidatorAsync(user.UserId, cancellationToken)
+            : null;
+
         bool passwordOk;
-        if (user is { PwdHash: { } pwdHash, PwdSalt: { } pwdSalt } && (!request.PartnerPage || user.UserTypeCd == "PARTNER"))
+        if (external is not null)
+        {
+            ExternalCredentialResult checkedResult;
+            try
+            {
+                checkedResult = await external.ValidateAsync(user!.UserId, request.Password, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // 예외 내용에 비밀번호·DN이 섞일 수 있어 형식 이름만 남긴다
+                LogExternalFailed(logger, user!.UserId, ex.GetType().Name);
+                return LoginResult.Fail(AuthMessageKeys.ExternalUnavailable);
+            }
+
+            if (checkedResult.FailureCode == ExternalCredentialResult.Unavailable)
+            {
+                // 서버 장애는 틀린 비밀번호가 아니므로 실패 횟수에 넣지 않는다
+                LogExternalFailed(logger, user!.UserId, ExternalCredentialResult.Unavailable);
+                return LoginResult.Fail(AuthMessageKeys.ExternalUnavailable);
+            }
+
+            passwordOk = checkedResult.Success;
+        }
+        else if (user is { PwdHash: { } pwdHash, PwdSalt: { } pwdSalt } && (!request.PartnerPage || user.UserTypeCd == "PARTNER"))
         {
             passwordOk = hasher.Verify(request.Password, pwdHash, pwdSalt);
         }
@@ -76,12 +105,12 @@ public sealed partial class AuthService(
             return LoginResult.Fail(d.MessageKey);
         }
 
-        if (RequiresMfa(user))
+        if (RequiresMfa(user, external is not null))
         {
             return new LoginResult(false, null, UserId: user.UserId, MfaRequired: true, MfaEnrolled: user.MfaSecretEnc is not null);
         }
 
-        return await CreateSessionAsync(user, AuthMethods.Form, null, userAgent, cancellationToken);
+        return await CreateSessionAsync(user, external is not null ? AuthMethods.Ad : AuthMethods.Form, null, userAgent, cancellationToken);
     }
 
     /// <summary>
@@ -103,9 +132,10 @@ public sealed partial class AuthService(
             return LoginResult.Fail(denied.MessageKey);
         }
 
+        var mfaMethod = await FindExternalValidatorAsync(user.UserId, cancellationToken) is null ? AuthMethods.FormMfa : AuthMethods.AdMfa;
         if (request.Email)
         {
-            return await VerifyEmailOtpAsync(user, request.Code, userAgent, cancellationToken);
+            return await VerifyEmailOtpAsync(user, request.Code, userAgent, mfaMethod, cancellationToken);
         }
 
         var enrolling = user.MfaSecretEnc is null;
@@ -129,7 +159,7 @@ public sealed partial class AuthService(
         var step = Totp.Verify(secret, request.Code, time.GetUtcNow(), user.MfaLastStep);
         if (step is null)
         {
-            var failed = await FailAsync(user.UserId, LoginResultCodes.FailMfa, userAgent, cancellationToken, AuthMethods.FormMfa);
+            var failed = await FailAsync(user.UserId, LoginResultCodes.FailMfa, userAgent, cancellationToken, mfaMethod);
             return LoginResult.Fail(failed?.LockYn == "Y" ? AuthMessageKeys.Locked : AuthMessageKeys.MfaInvalid);
         }
 
@@ -149,7 +179,7 @@ public sealed partial class AuthService(
             }
         }
 
-        return await CreateSessionAsync(user, AuthMethods.FormMfa, enrolling ? null : step, userAgent, cancellationToken);
+        return await CreateSessionAsync(user, mfaMethod, enrolling ? null : step, userAgent, cancellationToken);
     }
 
     /// <summary>이메일 인증번호를 쓸 수 있는 사용자인지 (화면에 [이메일로 받기]를 보일지).</summary>
@@ -205,7 +235,7 @@ public sealed partial class AuthService(
         return new MfaEmailSendResult(true, AuthMessageKeys.OtpSent);
     }
 
-    private async Task<LoginResult> VerifyEmailOtpAsync(AuthUser user, string? code, string? userAgent, CancellationToken cancellationToken)
+    private async Task<LoginResult> VerifyEmailOtpAsync(AuthUser user, string? code, string? userAgent, string mfaMethod, CancellationToken cancellationToken)
     {
         if (!AllowsEmailOtp(user))
         {
@@ -219,12 +249,12 @@ public sealed partial class AuthService(
                 cancellationToken))?.MatchYn == "Y";
         if (!matched)
         {
-            var failed = await FailAsync(user.UserId, LoginResultCodes.FailMfa, userAgent, cancellationToken, AuthMethods.FormMfa);
+            var failed = await FailAsync(user.UserId, LoginResultCodes.FailMfa, userAgent, cancellationToken, mfaMethod);
             return LoginResult.Fail(failed?.LockYn == "Y" ? AuthMessageKeys.Locked : AuthMessageKeys.OtpInvalid);
         }
 
         // 인증 앱을 등록하지 않아도 되고, 등록된 TOTP 단계(MFA_LAST_STEP)는 건드리지 않는다
-        return await CreateSessionAsync(user, AuthMethods.FormMfa, null, userAgent, cancellationToken);
+        return await CreateSessionAsync(user, mfaMethod, null, userAgent, cancellationToken);
     }
 
     /// <summary>
@@ -237,9 +267,37 @@ public sealed partial class AuthService(
             || (user.AdminYn == "Y" && config.GetBool(ConfigKeys.AuthAdminMfa) && config.GetBool(ConfigKeys.AuthAdminEmailOtp)));
 
     /// <summary>2단계 인증 대상인지: 협력사(<c>AUTH.PARTNER_MFA</c>) 또는 관리자 역할(<c>AUTH.ADMIN_MFA</c>).</summary>
-    private bool RequiresMfa(AuthUser user) =>
-        (user.UserTypeCd == "PARTNER" && config.GetBool(ConfigKeys.AuthPartnerMfa))
+    /// <summary>
+    /// 외부 검증기(AD)로 확인한 사용자는 <c>AUTH.AD_MFA</c>를 따르고, 협력사 설정은 적용하지 않는다.
+    /// 관리자 역할(<c>AUTH.ADMIN_MFA</c>)은 어느 방식으로 로그인하든 따로 적용한다(AD_MFA를 꺼도 관리자는 유지).
+    /// </summary>
+    private bool RequiresMfa(AuthUser user, bool viaExternal) =>
+        (viaExternal
+            ? config.GetBool(ConfigKeys.AuthAdMfa)
+            : user.UserTypeCd == "PARTNER" && config.GetBool(ConfigKeys.AuthPartnerMfa))
         || (user.AdminYn == "Y" && config.GetBool(ConfigKeys.AuthAdminMfa));
+
+    /// <summary>
+    /// 이 사용자를 맡을 외부 검증기. 설정 <c>AUTH.MODE</c>가 FORM이면 검증기를 쓰지 않고 항상 포털 비밀번호로 확인한다.
+    /// 검증기가 등록되지 않았으면 null(기존 동작 그대로).
+    /// </summary>
+    private async Task<IExternalCredentialValidator?> FindExternalValidatorAsync(string userId, CancellationToken cancellationToken)
+    {
+        if (externalValidators is null || config.GetString(ConfigKeys.AuthMode) == "FORM")
+        {
+            return null;
+        }
+
+        foreach (var validator in externalValidators)
+        {
+            if (await validator.CanHandleAsync(userId, cancellationToken))
+            {
+                return validator;
+            }
+        }
+
+        return null;
+    }
 
     private async Task<LoginResult> CreateSessionAsync(AuthUser user, string authMethod, long? mfaStep, string? userAgent, CancellationToken cancellationToken)
     {
@@ -269,7 +327,7 @@ public sealed partial class AuthService(
             null,
             token,
             user.UserId,
-            IsPasswordChangeRequired(user.PwdChgReqYn, user.PwdChgDt),
+            IsPasswordChangeRequired(user.PwdChgReqYn, user.PwdChgDt, authMethod),
             session!.ExpireDt);
     }
 
@@ -315,8 +373,14 @@ public sealed partial class AuthService(
     }
 
     /// <summary>비밀번호 변경이 필요한지: 강제 표시, 변경 이력 없음, 변경 주기(<c>PWD.EXPIRE_DAYS</c>, 0이면 만료 없음) 경과.</summary>
-    public bool IsPasswordChangeRequired(string pwdChgReqYn, DateTime? pwdChgDt)
+    public bool IsPasswordChangeRequired(string pwdChgReqYn, DateTime? pwdChgDt, string? authMethodCd = null)
     {
+        // AD로 로그인한 세션은 포털 비밀번호를 쓰지 않으므로 변경을 강제하지 않는다
+        if (authMethodCd is AuthMethods.Ad or AuthMethods.AdMfa)
+        {
+            return false;
+        }
+
         if (pwdChgReqYn == "Y" || pwdChgDt is null)
         {
             return true;
@@ -363,6 +427,9 @@ public sealed partial class AuthService(
 
     [LoggerMessage(Level = LogLevel.Error, Message = "회사 {CompanyCd}의 허용 IP 목록 형식이 잘못되어 로그인을 막았습니다")]
     private static partial void LogBadAllowList(ILogger logger, string companyCd, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "사용자 {UserId}의 외부 인증(AD) 확인에 실패했습니다: {Error}")]
+    private static partial void LogExternalFailed(ILogger logger, string userId, string error);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "사용자 {UserId}에게 이메일 인증번호를 보내지 못했습니다: {Error}")]
     private static partial void LogOtpMailFailed(ILogger logger, string userId, string error);

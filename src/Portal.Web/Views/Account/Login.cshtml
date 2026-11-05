@@ -1,5 +1,6 @@
 @model LoginViewModel
 @inject Portal.Infrastructure.Localization.LangResources Lang
+@inject Portal.Web.Infrastructure.LoginCrypto LoginKey
 @{
     ViewData["Title"] = L["BTN.LOGIN"];
 }
@@ -12,8 +13,9 @@
 {
     <p class="error" role="alert">@L[Model.MessageKey]</p>
 }
-<form method="post" asp-action="@(Model.PartnerPage ? "PartnerLogin" : "Login")" class="form">
+<form method="post" asp-action="@(Model.PartnerPage ? "PartnerLogin" : "Login")" class="form" data-login-key="@LoginKey.PublicKey">
     <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+    <input type="hidden" name="Enc" value="" />
     <label for="UserId">@L["LBL.USER_ID"]</label>
     <input id="UserId" name="UserId" value="@Model.UserId" autocomplete="username" maxlength="50" required autofocus />
     <label for="Password">@L["LBL.PASSWORD"]</label>
@@ -42,3 +44,4 @@
     </select>
     <noscript><button type="submit">@L["BTN.CONFIRM"]</button></noscript>
 </form>
+<script type="module" src="~/js/login-encrypt.js" asp-append-version="true"></script>

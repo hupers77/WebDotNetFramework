@@ -150,6 +150,7 @@ Oct 21, 2026 · @사랑나무아빠
 | `AUTH.AD_AUTO_PROVISION` | Y | BOOL | N | AD 로그인 시 포털 계정 자동 생성 |
 | `AUTH.PARTNER_MFA` | Y | BOOL | N | 협력사 2단계 인증 |
 | `AUTH.ADMIN_MFA` | Y | BOOL | N | 관리자 역할 2단계 인증 |
+| `AUTH.AD_MFA` | Y | BOOL | N | AD(외부 검증기)로 로그인한 사용자의 2단계 인증 (관리자 역할은 `AUTH.ADMIN_MFA`가 따로 적용) |
 | `AUTH.PARTNER_EMAIL_OTP` | Y | BOOL | N | 협력사 2단계 인증에 이메일 인증번호 허용 |
 | `AUTH.ADMIN_EMAIL_OTP` | N | BOOL | N | 관리자 역할 2단계 인증에 이메일 인증번호 허용 |
 | `AUTH.LOGIN_RATE_PER_MIN` | 10 | INT | N | IP당 분당 로그인 시도 한도 |

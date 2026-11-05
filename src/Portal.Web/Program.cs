@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 builder.Services.AddPortalWeb(builder.Configuration);
 builder.Services.AddSingleton<Portal.Security.Mfa.IMfaCodeMailer, Portal.Web.Infrastructure.MfaCodeMailer>();
+builder.Services.AddSingleton<Portal.Web.Infrastructure.LoginCrypto>();
 
 // 화면 Service (Area별)
 builder.Services.AddScoped<Portal.Web.Areas.Sys.Services.ICodeAdminService, Portal.Web.Areas.Sys.Services.CodeAdminService>();
