@@ -11,7 +11,10 @@ namespace Portal.Infrastructure.Messaging;
 /// <param name="To">받는 주소 (한 명).</param>
 /// <param name="Subject">제목.</param>
 /// <param name="HtmlBody">본문 (HTML).</param>
-public sealed record MailMessageData(string To, string Subject, string HtmlBody);
+/// <param name="FromAddress">보내는 주소. 없으면 설정 <c>MAIL.FROM</c>.</param>
+/// <param name="FromName">보내는 사람 표시 이름. 없으면 설정 <c>MAIL.FROM_NAME</c>, 그것도 없으면 주소만.</param>
+/// <param name="ReplyTo">회신 주소 (선택).</param>
+public sealed record MailMessageData(string To, string Subject, string HtmlBody, string? FromAddress = null, string? FromName = null, string? ReplyTo = null);
 
 /// <summary>메일 전송. 실패하면 예외를 던진다(호출하는 쪽이 재시도를 정한다).</summary>
 public interface IMailTransport
@@ -33,7 +36,8 @@ internal sealed class SmtpMailTransport(IPortalConfig config, ISecretProtector s
     public async Task SendAsync(MailMessageData message, CancellationToken cancellationToken = default)
     {
         var host = config.GetString(ConfigKeys.MailSmtpHost) ?? throw new MailNotConfiguredException(ConfigKeys.MailSmtpHost);
-        var from = config.GetString(ConfigKeys.MailFrom) ?? throw new MailNotConfiguredException(ConfigKeys.MailFrom);
+        var from = message.FromAddress ?? config.GetString(ConfigKeys.MailFrom) ?? throw new MailNotConfiguredException(ConfigKeys.MailFrom);
+        var fromName = message.FromName ?? config.GetString(ConfigKeys.MailFromName);
 
         using var client = new SmtpClient(host, config.GetInt(ConfigKeys.MailSmtpPort))
         {
@@ -47,14 +51,21 @@ internal sealed class SmtpMailTransport(IPortalConfig config, ISecretProtector s
             client.Credentials = new NetworkCredential(user, password);
         }
 
-        using var mail = new MailMessage(from, message.To)
+        using var mail = new MailMessage
         {
+            From = fromName is { Length: > 0 } ? new MailAddress(from, fromName, Encoding.UTF8) : new MailAddress(from),
             Subject = message.Subject,
             Body = message.HtmlBody,
             IsBodyHtml = true,
             SubjectEncoding = Encoding.UTF8,
             BodyEncoding = Encoding.UTF8,
         };
+        mail.To.Add(message.To);
+        if (message.ReplyTo is { Length: > 0 } replyTo)
+        {
+            mail.ReplyToList.Add(replyTo);
+        }
+
         await client.SendMailAsync(mail, cancellationToken);
     }
 }

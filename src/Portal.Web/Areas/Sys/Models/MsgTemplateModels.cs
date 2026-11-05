@@ -30,6 +30,9 @@ public sealed class MsgTemplateDto
     /// <summary>사용 여부 (N이면 보낼 메시지를 쌓지 않는다).</summary>
     public string UseYn { get; set; } = "Y";
 
+    /// <summary>메일의 보내는 사람 표시 이름 (없으면 설정 <c>MAIL.FROM_NAME</c>).</summary>
+    public string? FromName { get; set; }
+
     /// <summary>포털 알림을 누르면 여는 화면.</summary>
     public string? LinkProgramId { get; set; }
 
@@ -88,6 +91,10 @@ public sealed class MsgTemplateSaveRequest
 
     /// <summary>사용 여부.</summary>
     public string UseYn { get; set; } = "Y";
+
+    /// <summary>보내는 사람 표시 이름 (빈 값이면 지움, 줄바꿈 불가).</summary>
+    [StringLength(100, ErrorMessage = "MSG.INVALID_INPUT")]
+    public string? FromName { get; set; }
 
     /// <summary>언어별 제목·본문.</summary>
     [MaxLength(10, ErrorMessage = "MSG.INVALID_INPUT")]

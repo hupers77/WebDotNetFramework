@@ -80,6 +80,7 @@ function show(template) {
     $('#tpl-mail').checked = template.mailYn === 'Y';
     $('#tpl-portal').checked = template.portalYn === 'Y';
     $('#tpl-use').checked = template.useYn === 'Y';
+    $('#tpl-from-name').value = template.fromName ?? '';
 
     const byLang = new Map(template.langs.map((l) => [l.langCd, l]));
     $('#tpl-langs').replaceChildren(...langs.map((l) => {
@@ -173,6 +174,7 @@ async function submit() {
                 mailYn: $('#tpl-mail').checked ? 'Y' : 'N',
                 portalYn: $('#tpl-portal').checked ? 'Y' : 'N',
                 useYn: $('#tpl-use').checked ? 'Y' : 'N',
+                fromName: $('#tpl-from-name').value,
                 langs: items,
             },
         });

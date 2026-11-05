@@ -1,5 +1,5 @@
 -- 메시지 템플릿 수정 (한 건). 프로그램: SYS_MSG_TEMPLATE_MGT (등록·삭제는 없다: 템플릿 ID는 코드가 정한다)
--- 바꿀 수 있는 것: 메일·포털 알림 사용, 사용 여부, 언어별 제목·본문. 이름·연결 화면은 초기 데이터가 정한다.
+-- 바꿀 수 있는 것: 메일·포털 알림 사용, 사용 여부, 보내는 사람 표시 이름(@P_FROM_NAME: NULL이면 그대로, 빈 문자열이면 지움, 줄바꿈 불가), 언어별 제목·본문. 이름·연결 화면은 초기 데이터가 정한다.
 -- @P_LANGS_JSON: [{langCd, subject, body}] 기본 언어는 꼭 있어야 하고, 보내지 않은 언어는 지운다(받는 사람 언어가 없으면 기본 언어로 보낸다).
 -- 규칙: 메일·포털 중 하나는 켜져 있어야 한다. 제목에는 줄바꿈을 넣을 수 없다. 본문에는 스크립트·이벤트 속성·javascript: 주소를 넣을 수 없다.
 -- @P_ROW_VER는 조회 때의 값과 같아야 한다. 변경 내용은 감사 로그에 남긴다.
@@ -10,6 +10,7 @@ CREATE PROCEDURE [FW].[USP_MSG_TEMPLATE_SAVE]
   @P_MAIL_YN      CHAR(1),
   @P_PORTAL_YN    CHAR(1),
   @P_USE_YN       CHAR(1),
+  @P_FROM_NAME    NVARCHAR(100) = NULL,
   @P_LANGS_JSON   NVARCHAR(MAX),
   @P_USER_ID      VARCHAR(30),
   @P_LANG_CD      VARCHAR(5),
@@ -20,7 +21,8 @@ BEGIN
   SET XACT_ABORT ON;
 
   IF @P_TEMPLATE_ID IS NULL OR @P_ROW_VER IS NULL OR @P_MAIL_YN NOT IN ('Y', 'N') OR @P_PORTAL_YN NOT IN ('Y', 'N') OR @P_USE_YN NOT IN ('Y', 'N')
-     OR @P_LANGS_JSON IS NULL OR ISJSON(@P_LANGS_JSON) <> 1 OR (@P_MAIL_YN = 'N' AND @P_PORTAL_YN = 'N')
+     OR @P_LANGS_JSON IS NULL OR ISJSON(@P_LANGS_JSON) <> 1
+     OR @P_FROM_NAME LIKE N'%' + CHAR(13) + N'%' OR @P_FROM_NAME LIKE N'%' + CHAR(10) + N'%' OR (@P_MAIL_YN = 'N' AND @P_PORTAL_YN = 'N')
     THROW 50005, 'MSG.INVALID_INPUT', 1;
 
   DECLARE @DEFAULT_LANG VARCHAR(5) = (SELECT TOP (1) [LANG_CD] FROM [FW].[TB_LANG] WHERE [DEFAULT_YN] = 'Y');
@@ -54,12 +56,13 @@ BEGIN
     IF @VER <> @P_ROW_VER
       THROW 50002, 'MSG.CONCURRENCY', 1;
 
-    SET @BEFORE = (SELECT T.[TEMPLATE_ID], T.[MAIL_YN], T.[PORTAL_YN], T.[USE_YN],
+    SET @BEFORE = (SELECT T.[TEMPLATE_ID], T.[MAIL_YN], T.[PORTAL_YN], T.[USE_YN], T.[FROM_NAME],
                           JSON_QUERY((SELECT X.[LANG_CD], X.[SUBJECT], X.[BODY] FROM [FW].[TB_MSG_TEMPLATE_LANG] X WHERE X.[TEMPLATE_ID] = T.[TEMPLATE_ID] FOR JSON PATH)) AS [LANGS]
                      FROM [FW].[TB_MSG_TEMPLATE] T WHERE T.[TEMPLATE_ID] = @P_TEMPLATE_ID FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
 
     UPDATE [FW].[TB_MSG_TEMPLATE]
-       SET [MAIL_YN] = @P_MAIL_YN, [PORTAL_YN] = @P_PORTAL_YN, [USE_YN] = @P_USE_YN, [UPD_ID] = @P_USER_ID, [UPD_DT] = SYSUTCDATETIME()
+       SET [MAIL_YN] = @P_MAIL_YN, [PORTAL_YN] = @P_PORTAL_YN, [USE_YN] = @P_USE_YN,
+           [FROM_NAME] = CASE WHEN @P_FROM_NAME IS NULL THEN [FROM_NAME] WHEN LTRIM(RTRIM(@P_FROM_NAME)) = N'' THEN NULL ELSE LTRIM(RTRIM(@P_FROM_NAME)) END, [UPD_ID] = @P_USER_ID, [UPD_DT] = SYSUTCDATETIME()
      WHERE [TEMPLATE_ID] = @P_TEMPLATE_ID;
 
     DELETE X FROM [FW].[TB_MSG_TEMPLATE_LANG] X
@@ -72,6 +75,7 @@ BEGIN
       FROM @L L WHERE NOT EXISTS (SELECT 1 FROM [FW].[TB_MSG_TEMPLATE_LANG] X WHERE X.[TEMPLATE_ID] = @P_TEMPLATE_ID AND X.[LANG_CD] = L.[LANG_CD]);
 
     SET @AFTER = (SELECT @P_TEMPLATE_ID AS [TEMPLATE_ID], @P_MAIL_YN AS [MAIL_YN], @P_PORTAL_YN AS [PORTAL_YN], @P_USE_YN AS [USE_YN],
+                         (SELECT [FROM_NAME] FROM [FW].[TB_MSG_TEMPLATE] WHERE [TEMPLATE_ID] = @P_TEMPLATE_ID) AS [FROM_NAME],
                          JSON_QUERY((SELECT L.[LANG_CD], L.[SUBJECT], L.[BODY] FROM @L L FOR JSON PATH)) AS [LANGS]
                   FOR JSON PATH, WITHOUT_ARRAY_WRAPPER);
     EXEC [LOG].[USP_AUDIT_WRITE]

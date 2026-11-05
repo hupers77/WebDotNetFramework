@@ -3,6 +3,7 @@
 -- 받는 사람: @P_TO_USER_ID를 주면 사용자의 업무 이메일·언어를 쓰고, 계정이 없는 사람은 @P_TO_EMAIL_ENC·@P_TO_LANG_CD로 준다.
 -- 메일: 템플릿의 메일 채널(MAIL_YN = 'Y')이 켜져 있고 받는 주소가 있을 때. 포털 알림: 포털 채널(PORTAL_YN = 'Y')이 켜져 있고 받는 사람이 사용 중인 포털 사용자일 때.
 -- 템플릿을 쓰지 않거나(USE_YN = 'N') 보낼 채널이 없으면 쌓지 않고 0건으로 끝낸다(업무는 계속 진행).
+-- 보내는 사람: @P_FROM_USER_ID(선택)를 주면 발송 때 그 사용자의 업무 이메일을 보내는 주소로 쓴다(설정 MAIL.ALLOW_USER_FROM = Y일 때. 아니면 보내는 주소는 MAIL.FROM이고 그 주소는 회신 주소로 들어간다). 안 주면 MAIL.FROM.
 -- 다른 SP에서 부를 때는 @P_RESULT_YN = 'N'으로 결과 행을 내지 않는다(부른 SP의 결과 행과 섞이지 않게).
 -- 결과(@P_RESULT_YN = 'Y'): AFFECTED_CNT(쌓은 메일 + 알림 수), NEW_KEY(MSG_ID, 메일을 쌓지 않았으면 NULL)
 CREATE PROCEDURE [FW].[USP_MSG_QUEUE_SAVE]
@@ -12,6 +13,7 @@ CREATE PROCEDURE [FW].[USP_MSG_QUEUE_SAVE]
   @P_TO_LANG_CD    VARCHAR(5)     = NULL,
   @P_PARAMS_JSON   NVARCHAR(4000) = NULL,
   @P_RESULT_YN     CHAR(1)        = 'Y',
+  @P_FROM_USER_ID  VARCHAR(30)    = NULL,
   @P_USER_ID       VARCHAR(30)    = NULL,
   @P_LANG_CD       VARCHAR(5),
   @P_CLIENT_IP     VARCHAR(45)    = NULL
@@ -37,8 +39,8 @@ BEGIN
   IF @EMAIL_ENC IS NOT NULL
      AND EXISTS (SELECT 1 FROM [FW].[TB_MSG_TEMPLATE] WHERE [TEMPLATE_ID] = @P_TEMPLATE_ID AND [USE_YN] = 'Y' AND [MAIL_YN] = 'Y')
   BEGIN
-    INSERT INTO [FW].[TB_MSG_QUEUE] ([TEMPLATE_ID], [CHANNEL_CD], [TO_USER_ID], [TO_EMAIL_ENC], [LANG_CD], [PARAMS_JSON], [REG_ID])
-    VALUES (@P_TEMPLATE_ID, 'MAIL', @P_TO_USER_ID, @EMAIL_ENC, @TO_LANG, @P_PARAMS_JSON, ISNULL(@P_USER_ID, 'SYSTEM'));
+    INSERT INTO [FW].[TB_MSG_QUEUE] ([TEMPLATE_ID], [CHANNEL_CD], [TO_USER_ID], [TO_EMAIL_ENC], [FROM_USER_ID], [LANG_CD], [PARAMS_JSON], [REG_ID])
+    VALUES (@P_TEMPLATE_ID, 'MAIL', @P_TO_USER_ID, @EMAIL_ENC, @P_FROM_USER_ID, @TO_LANG, @P_PARAMS_JSON, ISNULL(@P_USER_ID, 'SYSTEM'));
 
     SET @MSG_ID = SCOPE_IDENTITY();
   END

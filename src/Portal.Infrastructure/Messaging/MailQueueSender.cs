@@ -96,11 +96,18 @@ public sealed partial class MailQueueSender(
             return "ADDRESS_INVALID";
         }
 
+        var (fromAddress, replyTo) = Sender(row);
         var values = Values(row);
         try
         {
             await transport.SendAsync(
-                new MailMessageData(to, MessageRenderer.RenderSubject(row.Subject, values), MessageRenderer.RenderBody(row.Body, values)),
+                new MailMessageData(
+                    to,
+                    MessageRenderer.RenderSubject(row.Subject, values),
+                    MessageRenderer.RenderBody(row.Body, values),
+                    fromAddress,
+                    row.FromName,
+                    replyTo),
                 cancellationToken);
             return null;
         }
@@ -117,6 +124,36 @@ public sealed partial class MailQueueSender(
         {
             return ex.GetType().Name;
         }
+    }
+
+    /// <summary>
+    /// 보내는 사용자(업무 SP가 <c>@P_FROM_USER_ID</c>로 넘긴 사람)의 주소 처리: <c>MAIL.ALLOW_USER_FROM</c>이 Y면 보내는 주소로 쓰고,
+    /// 아니면 보내는 주소는 <c>MAIL.FROM</c> 그대로 두고 그 주소를 회신 주소로 넣는다(메일 서버가 남의 주소로 보내기를 막는 환경 대비).
+    /// 주소를 못 읽거나 형식이 틀리면 둘 다 쓰지 않는다.
+    /// </summary>
+    private (string? FromAddress, string? ReplyTo) Sender(QueuedMail row)
+    {
+        if (row.FromEmailEnc is null)
+        {
+            return (null, null);
+        }
+
+        string address;
+        try
+        {
+            address = personalData.Unprotect(row.FromEmailEnc);
+        }
+        catch (CryptographicException)
+        {
+            return (null, null);
+        }
+
+        if (!MailAddress.TryCreate(address, out _))
+        {
+            return (null, null);
+        }
+
+        return config.GetBool(ConfigKeys.MailAllowUserFrom) ? (address, null) : (null, address);
     }
 
     /// <summary>치환값: 업무 SP가 넘긴 값 + 사이트명(받는 사람 언어) + 포털 주소.</summary>
@@ -140,6 +177,10 @@ public sealed partial class MailQueueSender(
         public string TemplateId { get; set; } = "";
 
         public byte[]? ToEmailEnc { get; set; }
+
+        public byte[]? FromEmailEnc { get; set; }
+
+        public string? FromName { get; set; }
 
         public string LangCd { get; set; } = "";
 

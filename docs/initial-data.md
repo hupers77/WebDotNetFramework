@@ -182,6 +182,8 @@ Oct 21, 2026 · @사랑나무아빠
 | `MAIL.SMTP_SSL` | Y | BOOL | N | SMTP 암호화(STARTTLS) 사용 |
 | `MAIL.SMTP_PASSWORD` | (입력) | SECRET | N | SMTP 계정 비밀번호 |
 | `MAIL.FROM` | (입력) | STRING | N | 보내는 주소 |
+| `MAIL.FROM_NAME` | (입력) | STRING | N | 보내는 사람 표시 이름 (템플릿에 따로 정하지 않았을 때) |
+| `MAIL.ALLOW_USER_FROM` | N | BOOL | N | 보내는 사용자의 이메일을 보내는 주소로 사용 (메일 서버가 허용해야 함. N이면 `MAIL.FROM`으로 보내고 그 사용자 주소는 회신 주소) |
 | `MSG.KEEP_DAYS` | 90 | INT | N | 발송을 마친 메일 대기열 보관 기간(일) |
 | `PARTNER.JOIN_KEEP_DAYS` | 30 | INT | N | 처리한 가입 신청의 이메일 보관 기간(일) |
 | `PARTNER.EXPIRE_NOTICE_DAYS` | 7 | INT | N | 협력사 계정 만료 사전 안내 (기한 며칠 전, 0이면 안내 안 함) |

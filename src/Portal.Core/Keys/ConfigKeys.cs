@@ -117,6 +117,12 @@ public static class ConfigKeys
     /// <summary>보내는 주소.</summary>
     public const string MailFrom = "MAIL.FROM";
 
+    /// <summary>보내는 사람 표시 이름 (템플릿에 따로 정하지 않았을 때).</summary>
+    public const string MailFromName = "MAIL.FROM_NAME";
+
+    /// <summary>메시지의 보내는 사용자 주소를 메일의 보내는 주소로 쓸지 (N이면 MAIL.FROM으로 보내고 그 주소는 회신 주소에 넣는다).</summary>
+    public const string MailAllowUserFrom = "MAIL.ALLOW_USER_FROM";
+
     /// <summary>발송을 마친 메일 대기열 보관 기간(일). 데이터 정리 작업(SP)이 읽는다.</summary>
     public const string MsgKeepDays = "MSG.KEEP_DAYS";
 

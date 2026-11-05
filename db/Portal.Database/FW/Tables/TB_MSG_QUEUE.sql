@@ -9,6 +9,7 @@ CREATE TABLE [FW].[TB_MSG_QUEUE] (
   [CHANNEL_CD]     VARCHAR(10)    NOT NULL CONSTRAINT [DF_TB_MSG_QUEUE_CHANNEL_CD] DEFAULT ('MAIL'), -- 공통코드 MSG_CHANNEL
   [TO_USER_ID]     VARCHAR(30)    NULL,                 -- 포털 사용자면 ID (반려된 가입 신청자처럼 계정이 없으면 NULL)
   [TO_EMAIL_ENC]   VARBINARY(512) NULL,                 -- 받는 주소 (애플리케이션 암호화). 발송을 마치면 NULL
+  [FROM_USER_ID]   VARCHAR(30)    NULL,                 -- 보내는 사람(포털 사용자). 발송 때 이 사용자의 업무 이메일을 보내는 주소로 쓴다(MAIL.ALLOW_USER_FROM = Y일 때). 없으면 MAIL.FROM
   [LANG_CD]        VARCHAR(5)     NOT NULL,             -- 받는 사람 언어
   [PARAMS_JSON]    NVARCHAR(4000) NULL,                 -- 치환값 {"USER_NM":"..."}. 비밀번호·인증 번호는 넣지 않는다. 발송을 마치면 NULL
   [STAT_CD]        VARCHAR(10)    NOT NULL CONSTRAINT [DF_TB_MSG_QUEUE_STAT_CD] DEFAULT ('READY'),   -- READY/SENDING/SENT/FAILED

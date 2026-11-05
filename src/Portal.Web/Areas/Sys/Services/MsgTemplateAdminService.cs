@@ -53,6 +53,7 @@ public sealed partial class MsgTemplateAdminService(ISpExecutor sp, LangResource
         var ok = request.RowVer is { Length: 8 }
             && request.MailYn is "Y" or "N" && request.PortalYn is "Y" or "N" && request.UseYn is "Y" or "N"
             && (request.MailYn == "Y" || request.PortalYn == "Y")
+            && (request.FromName is null || request.FromName.Trim().Length <= 100 && !request.FromName.Any(char.IsControl))
             && request.Langs.Count > 0
             && request.Langs.All(l => known.Contains(l.LangCd) && seen.Add(l.LangCd) && IsSafeSubject(l.Subject) && IsSafeBody(l.Body))
             && seen.Contains(defaultLang);
@@ -70,6 +71,7 @@ public sealed partial class MsgTemplateAdminService(ISpExecutor sp, LangResource
                 P_MAIL_YN = request.MailYn,
                 P_PORTAL_YN = request.PortalYn,
                 P_USE_YN = request.UseYn,
+                P_FROM_NAME = request.FromName?.Trim(),
                 P_LANGS_JSON = JsonSerializer.Serialize(request.Langs.Select(l => new { l.LangCd, Subject = l.Subject.Trim(), Body = l.Body.Trim() }), Json),
             },
             cancellationToken);
