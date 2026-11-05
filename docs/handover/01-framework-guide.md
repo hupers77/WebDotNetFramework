@@ -151,7 +151,7 @@ tests/
 | `FW.TB_USER_LOGIN_MAP`(외부 계정 ↔ 포털 사용자, `PROVIDER_CD`=AD, `EXTERNAL_ID`=objectSid, `EXTERNAL_LOGIN`=sAMAccountName) | 테이블만 있음, 쓰는 코드 없음 | AD master 연동이 채우고, SSO가 Windows 계정으로 포털 사용자를 찾을 때 씀 |
 | `FW.TB_USER_AD_GROUP` + `FW.TB_AD_GROUP_ROLE`, `FW.UFN_USER_ROLES` | 유효 역할 계산에 이미 포함(AD 그룹 → 역할) | 동기화가 `TB_USER_AD_GROUP`을 채우고, 그룹-역할 매핑은 업무 시드로 |
 | `FW.TB_DEPT.AD_OU_PATH`, 부서 관리 화면의 "AD 동기화 부서는 역할·정렬만 수정" 규칙 | 동작함(값이 있으면 AD 부서로 봄) | 동기화가 채움 |
-| `FW.TB_USER.PWD_HASH` NULL 허용(AD 전용 계정) | ID/PW 로그인은 비밀번호 없는 계정을 거부 | SSO 전용 계정 생성 시 사용 |
+| `FW.TB_USER.PWD_HASH` NULL 허용(AD 전용 계정) | 외부 검증기(`IExternalCredentialValidator`, fw-v1.4.0)가 맡는 사용자는 해시 없이 로그인 가능, 그 밖에는 비밀번호 없는 계정을 거부 | AD 비밀번호 로그인(검증기 구현·등록)과 SSO 전용 계정 생성 시 사용. 검증기가 맡는 사용자는 `AUTH.AD_MFA`(기본 Y)·관리자 역할은 `AUTH.ADMIN_MFA`를 따르고, AD 세션은 비밀번호 변경을 강제하지 않음. `AUTH.MODE = FORM`이면 검증기를 쓰지 않음 |
 | 설정 `AUTH.MODE`(시드 `BOTH`), `AUTH.AD_AUTO_PROVISION`, `AD.SYNC_VIEW` | 키만 있고 프레임워크 코드는 읽지 않음(프레임워크는 항상 ID/PW) | 업무 저장소의 SSO·동기화가 이 키를 읽어 씀. 의미를 바꾸면 업무 문서에 적음 |
 | 협력사 전용 로그인 `/Account/PartnerLogin` | 동작함 | SSO 적용 후 본사 로그인 화면을 SSO 진입으로 바꿔도 협력사는 이 주소 유지 |
 

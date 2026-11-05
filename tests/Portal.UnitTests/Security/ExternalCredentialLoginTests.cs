@@ -30,7 +30,7 @@ public sealed class ExternalCredentialLoginTests
     private AuthService Service(bool withValidator = true) =>
         new(_sp, _hasher, _config, _user, _time, _mfa, _mailer,
             Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance,
-            withValidator ? [_validator] : null);
+            withValidator ? new[] { _validator } : null);
 
     // AD 전용 계정: 포털 비밀번호 해시와 변경 이력이 없다
     private void GivenAdUser(string type = "PARTNER", string adminYn = "N") =>

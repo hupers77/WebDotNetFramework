@@ -26,7 +26,9 @@ public sealed class LoginCryptoTests
 
         Assert.DoesNotContain("p@ss", enc);
         var plain = crypto.TryDecrypt(enc);
-        Assert.Equal(("iv0106533", "p@ss"), plain);
+        Assert.NotNull(plain);
+        Assert.Equal("iv0106533", plain.Value.UserId);
+        Assert.Equal("p@ss", plain.Value.Password);
     }
 
     [Fact]
