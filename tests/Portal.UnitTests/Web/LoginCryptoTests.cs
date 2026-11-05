@@ -10,7 +10,7 @@ public sealed class LoginCryptoTests
 {
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 11, 5, 0, 0, 0, TimeSpan.Zero));
 
-    private string Encrypt(LoginCrypto crypto, string userId, string password, DateTimeOffset at)
+    private static string Encrypt(LoginCrypto crypto, string userId, string password, DateTimeOffset at)
     {
         using var rsa = RSA.Create();
         rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(crypto.PublicKey), out _);
