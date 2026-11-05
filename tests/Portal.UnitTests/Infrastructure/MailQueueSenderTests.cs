@@ -125,6 +125,51 @@ public sealed class MailQueueSenderTests
         Assert.Equal("<p>  <a href=\"\">x</a></p>", _transport.Sent[0].HtmlBody);
     }
 
+    [Fact]
+    public async Task 보내는사용자_허용이면_그_주소로_표시이름과_함께_보낸다()
+    {
+        _config.Set("MAIL.ALLOW_USER_FROM", "Y");
+        var row = Row(1);
+        row.FromEmailEnc = _protector.Protect("guard@corp.example.com");
+        row.FromName = "통합반출시스템";
+        _sp.Returns(MailQueueSender.ClaimSp, new List<MailQueueSender.QueuedMail> { row });
+
+        await Sender.RunOnceAsync();
+
+        var sent = Assert.Single(_transport.Sent);
+        Assert.Equal("guard@corp.example.com", sent.FromAddress);
+        Assert.Equal("통합반출시스템", sent.FromName);
+        Assert.Null(sent.ReplyTo);
+    }
+
+    [Fact]
+    public async Task 보내는사용자_불허면_MAIL_FROM으로_보내고_사용자주소는_회신주소()
+    {
+        var row = Row(1);
+        row.FromEmailEnc = _protector.Protect("guard@corp.example.com");
+        _sp.Returns(MailQueueSender.ClaimSp, new List<MailQueueSender.QueuedMail> { row });
+
+        await Sender.RunOnceAsync();
+
+        var sent = Assert.Single(_transport.Sent);
+        Assert.Null(sent.FromAddress);
+        Assert.Equal("guard@corp.example.com", sent.ReplyTo);
+    }
+
+    [Fact]
+    public async Task 보내는사용자가_없거나_주소가_틀리면_기존처럼_보낸다()
+    {
+        _config.Set("MAIL.ALLOW_USER_FROM", "Y");
+        var bad = Row(2);
+        bad.FromEmailEnc = _protector.Protect("not-an-address");
+        _sp.Returns(MailQueueSender.ClaimSp, new List<MailQueueSender.QueuedMail> { Row(1), bad });
+
+        await Sender.RunOnceAsync();
+
+        Assert.All(_transport.Sent, m => Assert.Equal((null, null, null), (m.FromAddress, m.FromName, m.ReplyTo)));
+        Assert.Equal(2, _transport.Sent.Count);
+    }
+
     private sealed class FakeTransport : IMailTransport
     {
         public List<MailMessageData> Sent { get; } = [];

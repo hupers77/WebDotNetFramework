@@ -6,6 +6,7 @@ CREATE TABLE [FW].[TB_MSG_TEMPLATE] (
   [MAIL_YN]        CHAR(1)        NOT NULL CONSTRAINT [DF_TB_MSG_TEMPLATE_MAIL_YN] DEFAULT ('Y'),   -- 메일로 보내는지
   [PORTAL_YN]      CHAR(1)        NOT NULL CONSTRAINT [DF_TB_MSG_TEMPLATE_PORTAL_YN] DEFAULT ('N'), -- 포털 알림으로 보내는지
   [USE_YN]         CHAR(1)        NOT NULL CONSTRAINT [DF_TB_MSG_TEMPLATE_USE_YN] DEFAULT ('Y'),    -- N이면 쌓지 않는다
+  [FROM_NAME]      NVARCHAR(100)  NULL,                 -- 메일의 보내는 사람 표시 이름. 없으면 설정 MAIL.FROM_NAME
   [LINK_PROGRAM_ID] VARCHAR(30)   NULL,                 -- 포털 알림을 누르면 여는 화면 (없으면 알림만 읽음 처리)
   [REG_ID]         VARCHAR(30)    NOT NULL CONSTRAINT [DF_TB_MSG_TEMPLATE_REG_ID] DEFAULT ('SYSTEM'),
   [REG_DT]         DATETIME2(0)   NOT NULL CONSTRAINT [DF_TB_MSG_TEMPLATE_REG_DT] DEFAULT (SYSUTCDATETIME()),

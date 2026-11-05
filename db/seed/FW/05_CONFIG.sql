@@ -43,6 +43,8 @@ USING (VALUES
   (N'MAIL.SMTP_SSL', N'Y', N'BOOL', N'N', N'MAIL', N'SMTP 암호화(STARTTLS) 사용', N'N'),
   (N'MAIL.SMTP_PASSWORD', NULL, N'SECRET', N'Y', N'MAIL', N'SMTP 계정 비밀번호', N'N'),
   (N'MAIL.FROM', NULL, N'STRING', N'N', N'MAIL', N'보내는 주소', N'N'),
+  (N'MAIL.FROM_NAME', NULL, N'STRING', N'N', N'MAIL', N'보내는 사람 표시 이름 (템플릿에 따로 정하지 않았을 때)', N'N'),
+  (N'MAIL.ALLOW_USER_FROM', N'N', N'BOOL', N'N', N'MAIL', N'보내는 사용자의 이메일을 보내는 주소로 사용 (메일 서버가 허용해야 함. N이면 MAIL.FROM으로 보내고 그 사용자 주소는 회신 주소)', N'N'),
   (N'MSG.KEEP_DAYS', N'90', N'INT', N'N', N'MSG', N'발송을 마친 메일 대기열 보관 기간(일)', N'N'),
   (N'PARTNER.JOIN_KEEP_DAYS', N'30', N'INT', N'N', N'PARTNER', N'처리한 가입 신청의 이메일 보관 기간(일)', N'N'),
   (N'PARTNER.EXPIRE_NOTICE_DAYS', N'7', N'INT', N'N', N'PARTNER', N'협력사 계정 만료 사전 안내(기한 며칠 전, 0 = 안내 안 함)', N'N'),

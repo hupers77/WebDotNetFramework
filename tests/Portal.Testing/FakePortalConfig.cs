@@ -27,6 +27,7 @@ public sealed class FakePortalConfig : IPortalConfig
         ["AUTH.ADMIN_MFA"] = "Y",
         ["AUTH.AD_MFA"] = "Y",
         ["MAIL.ENABLED"] = "N",
+        ["MAIL.ALLOW_USER_FROM"] = "N",
         ["MAIL.SMTP_PORT"] = "587",
         ["MAIL.SMTP_SSL"] = "Y",
         ["NOTIFY.POLL_SECONDS"] = "60",
