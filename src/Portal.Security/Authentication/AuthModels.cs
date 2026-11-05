@@ -91,6 +91,9 @@ public sealed class SessionUser
 
     /// <summary>종료 사유 (살아 있는 세션이면 null).</summary>
     public string? EndReasonCd { get; set; }
+
+    /// <summary>로그인 방식 (FORM/FORM_MFA/AD/AD_MFA).</summary>
+    public string? AuthMethodCd { get; set; }
 }
 
 /// <summary><c>USP_AUTH_GET_USER</c> 결과.</summary>

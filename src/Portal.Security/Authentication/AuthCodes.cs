@@ -27,6 +27,9 @@ public static class AuthMessageKeys
     /// <summary>비밀번호 변경 완료.</summary>
     public const string PasswordChanged = "AUTH.PWD_CHANGED";
 
+    /// <summary>외부 인증 서버(AD)에 연결하지 못해 확인할 수 없음 (비밀번호 오류가 아님).</summary>
+    public const string ExternalUnavailable = "AUTH.EXTERNAL_UNAVAILABLE";
+
     /// <summary>2단계 인증 코드가 틀렸거나 이미 쓴 코드.</summary>
     public const string MfaInvalid = "AUTH.MFA_INVALID";
 
@@ -94,6 +97,12 @@ public static class AuthMethods
 
     /// <summary>포털 ID/PW + 2단계 인증(TOTP 또는 이메일 인증번호).</summary>
     public const string FormMfa = "FORM_MFA";
+
+    /// <summary>외부 검증기(AD)로 확인한 로그인.</summary>
+    public const string Ad = "AD";
+
+    /// <summary>외부 검증기(AD) + 2단계 인증.</summary>
+    public const string AdMfa = "AD_MFA";
 }
 
 /// <summary>인증 SP 이름.</summary>

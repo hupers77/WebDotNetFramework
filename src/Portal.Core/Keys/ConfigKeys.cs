@@ -15,6 +15,9 @@ public static class ConfigKeys
     /// <summary>협력사 2단계 인증.</summary>
     public const string AuthPartnerMfa = "AUTH.PARTNER_MFA";
 
+    /// <summary>AD(외부 검증기)로 로그인한 사용자의 2단계 인증 (관리자 역할은 <c>AUTH.ADMIN_MFA</c>가 따로 적용).</summary>
+    public const string AuthAdMfa = "AUTH.AD_MFA";
+
     /// <summary>관리자 역할 2단계 인증.</summary>
     public const string AuthAdminMfa = "AUTH.ADMIN_MFA";
 

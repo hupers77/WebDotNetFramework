@@ -30,7 +30,8 @@ public sealed class AccountController(
     PartnerJoinService joins,
     MfaTicketProtector tickets,
     IPortalConfig config,
-    IPortalLocalizer localizer) : PortalController
+    IPortalLocalizer localizer,
+    LoginCrypto loginCrypto) : PortalController
 {
     // 주소창으로 넘어온 reason은 이 키만 보여 준다 (임의 문구 주입 방지)
     private static readonly string[] ReasonKeys =
@@ -73,6 +74,23 @@ public sealed class AccountController(
 
     private async Task<IActionResult> SignInAsync(LoginForm form, bool partnerPage)
     {
+        // 브라우저가 암호화해 보낸 값이 있으면 풀어서 쓴다 (개발자도구에 평문이 보이지 않게). 풀지 못하면 로그인 실패와 같이 처리한다
+        if (!string.IsNullOrEmpty(form.Enc))
+        {
+            if (loginCrypto.TryDecrypt(form.Enc) is { } plain)
+            {
+                form.UserId = plain.UserId;
+                form.Password = plain.Password;
+            }
+            else
+            {
+                form.UserId = null;
+                form.Password = null;
+            }
+
+            form.Enc = null;
+        }
+
         var result = string.IsNullOrWhiteSpace(form.UserId) || string.IsNullOrEmpty(form.Password)
             ? new LoginResult(false, MessageKeys.LoginFailed)
             : await auth.LoginAsync(

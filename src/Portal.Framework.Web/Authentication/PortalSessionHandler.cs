@@ -48,7 +48,7 @@ public sealed class PortalSessionHandler(
             return AuthenticateResult.NoResult();
         }
 
-        Context.Features.Set(new PortalUserFeature(user, auth.IsPasswordChangeRequired(user.PwdChgReqYn, user.PwdChgDt)));
+        Context.Features.Set(new PortalUserFeature(user, auth.IsPasswordChangeRequired(user.PwdChgReqYn, user.PwdChgDt, user.AuthMethodCd)));
         var identity = new ClaimsIdentity(
             [
                 new Claim(ClaimTypes.NameIdentifier, user.UserId),
