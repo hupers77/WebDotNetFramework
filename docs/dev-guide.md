@@ -507,4 +507,3 @@ MR을 올릴 때 아래 체크리스트를 MR 본문에 붙이고 해당 항목�
 5. 설정 `SITE.THEME_COLOR`(설정 관리)는 비워 둡니다. 값을 넣으면 프로필의 `--fw-brand`보다 우선합니다(급할 때 색만 바꾸는 용도).
 6. 메일 레이아웃을 쓰면 Portal.Worker의 `appsettings.Production.json`에도 같은 `Portal:Ui:Profile`과 웹의 `Profiles` 폴더를 `ProfileRoot`로 지정합니다(비우면 Worker 메일은 레이아웃 없이 나감).
 7. 파일을 바꾸면 주소의 `?v=`(내용 해시)가 바뀌어 브라우저가 새 파일을 받습니다. 앱 풀을 재시작해야 프로필을 다시 읽습니다.
-
