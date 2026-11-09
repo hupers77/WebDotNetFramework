@@ -1,0 +1,2 @@
+/* 샘플 프로필 sample-dense: 레포트·PDF는 흰 종이에 회색 선, 머리글은 옅은 회색(서버 글꼴 그대로). */
+:root { --rpt-line: #c6c6c6; --rpt-head: #f4f4f4; --rpt-muted: #6f6f6f; }

@@ -1,5 +1,6 @@
 // 샘플 디자인 프로필: Apple Human Interface Guidelines의 원칙(시스템 글꼴, 넓은 여백, 큰 모서리, 은은한 그림자,
 // 반투명 상단 바, 단순한 가운데 로그인 카드)을 따른다. 상표·전용 글꼴·아이콘은 쓰지 않고 색은 명도 대비 4.5:1을 지킨다.
+// 글꼴은 Noto Sans KR(OFL, wwwroot/fonts/noto-sans-kr).
 // 설치할 때 appsettings.json의 "Portal:Ui:Profile"을 "sample-hig"로 바꾸면 적용된다.
 {
   "schemaVersion": 1,

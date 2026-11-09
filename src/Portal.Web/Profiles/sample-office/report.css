@@ -1,0 +1,2 @@
+/* 샘플 프로필 sample-office: 레포트·PDF는 흰 종이에 옅은 선과 회색 머리글(서버 글꼴 그대로). */
+:root { --rpt-line: #d1d1d1; --rpt-head: #f5f5f5; --rpt-muted: #616161; }

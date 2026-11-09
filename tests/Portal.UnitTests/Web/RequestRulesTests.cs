@@ -77,6 +77,7 @@ public sealed class RequestRulesTests
     [InlineData("/health", true)]
     [InlineData("/favicon.ico", true)]
     [InlineData("/profile/logo.svg", true)]
+    [InlineData("/fonts/noto-sans-kr/noto-sans-kr.css", true)]
     [InlineData("/profiles", false)]
     [InlineData("/cssx", false)]
     [InlineData("/Fw/Code", false)]

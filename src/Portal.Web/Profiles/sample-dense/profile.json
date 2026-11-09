@@ -1,0 +1,11 @@
+// 샘플 디자인 프로필: IBM Carbon Design System의 원칙(역할 이름 색, 작은 모서리, 촘촘한 표·입력, 4px 간격, 회색 계열 다크)을 따른
+// 고밀도 업무형. 표·조회가 많은 업무 시스템용. 상표·로고·전용 아이콘은 쓰지 않고 색은 명도 대비 4.5:1을 지킨다.
+// 설치할 때 appsettings.json의 "Portal:Ui:Profile"을 "sample-dense"로 바꾸면 적용된다.
+{
+  "schemaVersion": 1,
+  "favicon": "favicon.png",
+  "logo": { "light": "logo.svg", "onBrand": "logo-on-brand.svg", "showSiteName": true },
+  "login": { "layout": "split" },
+  "report": { "logo": true },
+  "mail": { "layout": "mail-layout.html" }
+}

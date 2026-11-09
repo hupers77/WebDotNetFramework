@@ -1,0 +1,2 @@
+/* 샘플 프로필 sample-krds: 레포트·PDF는 흰 종이에 또렷한 선(서버 글꼴 그대로, 웹 글꼴은 PDF에 반영되지 않음). */
+:root { --rpt-line: #8a949e; --rpt-head: #eef2f7; --rpt-muted: #464c53; }
