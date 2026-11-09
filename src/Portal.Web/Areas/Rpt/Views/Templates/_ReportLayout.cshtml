@@ -1,5 +1,6 @@
-@* 레포트 공통 문서: 제목, 조건, 출력자·일시, 결재란(APPROVAL_YN), 본문(템플릿). 미리보기는 /css/report.css를 연결하고 PDF는 같은 CSS를 문서에 넣는다. *@
+@* 레포트 공통 문서: 프로필 로고, 제목, 조건, 출력자·일시, 결재란(APPROVAL_YN), 본문(템플릿). 미리보기는 /css/report.css를 연결하고 PDF는 같은 CSS를 문서에 넣는다. *@
 @model ReportDocumentModel
+@inject Portal.Infrastructure.Ui.UiProfile DesignProfile
 @{
     var report = Model.Report;
 }
@@ -11,15 +12,25 @@
     @if (Model.InlineStyle is { } style)
     {
         @style
+        @Portal.Web.Areas.Rpt.Services.ReportStyle.ProfileInline(DesignProfile)
     }
     else
     {
         <link rel="stylesheet" href="~/css/report.css" asp-append-version="true" />
+        @if (DesignProfile.PathOf(Portal.Infrastructure.Ui.UiProfileLoader.ReportCssFile) is { } profileCss)
+        {
+            <link rel="stylesheet" href="@Url.Content("~" + profileCss)" />
+        }
     }
 </head>
 <body class="@(report.Definition.Landscape ? "rpt-landscape" : "rpt-portrait")">
     <header class="rpt-header">
         <div class="rpt-heading">
+            @if (DesignProfile.ReportLogoData is { } logo)
+            {
+                @* 디자인 프로필 로고. PDF는 외부 그림을 막으므로 data: 형식으로 넣는다 *@
+                <img class="rpt-logo" src="@logo" alt="" />
+            }
             <h1>@report.Title</h1>
             @if (report.Conditions.Count > 0)
             {

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Html;
+using Portal.Infrastructure.Ui;
 
 namespace Portal.Web.Areas.Rpt.Services;
 
@@ -22,4 +23,10 @@ internal static class ReportStyle
         var css = await reader.ReadToEndAsync(cancellationToken);
         return new HtmlString("<style>" + css.Replace("</", "<\\/", StringComparison.Ordinal) + "</style>");
     }
+
+    /// <summary>디자인 프로필의 <c>report.css</c>(배포 파일, 사용자 입력 아님)를 넣는 <c>&lt;style&gt;</c>. 없으면 빈 내용.</summary>
+    public static IHtmlContent ProfileInline(UiProfile profile) =>
+        profile.ReportCss is { } css
+            ? new HtmlString("<style>" + css.Replace("</", "<\\/", StringComparison.Ordinal) + "</style>")
+            : HtmlString.Empty;
 }

@@ -4,6 +4,7 @@ using Portal.Core.Keys;
 using Portal.Core.Security;
 using Portal.Infrastructure.Localization;
 using Portal.Infrastructure.Messaging;
+using Portal.Infrastructure.Ui;
 using Portal.Security.Mfa;
 
 namespace Portal.Web.Infrastructure;
@@ -11,9 +12,10 @@ namespace Portal.Web.Infrastructure;
 /// <summary>
 /// 2단계 인증 이메일 인증번호 발송. 번호를 메일 대기열(<c>TB_MSG_QUEUE</c>)에 남기지 않으려고 로그인 도중 바로 보낸다.
 /// 제목·본문은 받는 사람 언어의 리소스 <c>MAIL.OTP_SUBJECT</c>({0} = 사이트명)·<c>MAIL.OTP_BODY</c>({0} = 번호)를 쓴다.
+/// 디자인 프로필에 메일 레이아웃이 있으면 대기열 메일과 같은 머리말·꼬리말로 감싼다.
 /// 메일 발송을 끈 환경(<c>MAIL.ENABLED = N</c>)에서는 보내지 않고 예외를 던져 화면에 실패로 보인다.
 /// </summary>
-internal sealed class MfaCodeMailer(IMailTransport transport, IPersonalDataProtector personalData, IPortalConfig config, LangResources langs) : IMfaCodeMailer
+internal sealed class MfaCodeMailer(IMailTransport transport, IPersonalDataProtector personalData, IPortalConfig config, LangResources langs, UiProfile profile) : IMfaCodeMailer
 {
     /// <inheritdoc />
     public async Task SendAsync(byte[] toEmailEnc, string langCd, string code, CancellationToken cancellationToken = default)
@@ -35,9 +37,15 @@ internal sealed class MfaCodeMailer(IMailTransport transport, IPersonalDataProte
             siteName = config.GetString(ConfigKeys.SiteName) ?? "";
         }
 
-        // 사이트명은 HTML이 아닌 제목에만 들어간다. 본문에는 숫자로만 된 번호만 넣는다
+        // 사이트명은 제목과 레이아웃(치환할 때 HTML 인코딩)에만 들어간다. 본문에는 숫자로만 된 번호만 넣는다
+        var layoutValues = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["SITE_NM"] = siteName,
+            ["LINK"] = config.GetString(ConfigKeys.SiteBaseUrl) is { } baseUrl ? baseUrl.TrimEnd('/') + "/" : "",
+        };
+        var body = profile.WrapMailBody(langs.Get(langCd, "MAIL.OTP_BODY", [code]), layoutValues);
         await transport.SendAsync(
-            new MailMessageData(to, langs.Get(langCd, "MAIL.OTP_SUBJECT", [siteName]), langs.Get(langCd, "MAIL.OTP_BODY", [code])),
+            new MailMessageData(to, langs.Get(langCd, "MAIL.OTP_SUBJECT", [siteName]), body),
             cancellationToken);
     }
 }

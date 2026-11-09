@@ -1,4 +1,5 @@
 @inject Portal.Infrastructure.Localization.LangResources Lang
+@inject Portal.Infrastructure.Ui.UiProfile DesignProfile
 <!DOCTYPE html>
 <html lang="@CurrentUser.LangCd">
 <head>
@@ -6,14 +7,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="fw-i18n" content="@Url.Content($"~/i18n/{CurrentUser.LangCd}.json?v={Lang.Version}")" />
     <title>@ViewData["Title"] - @L["SITE.NAME"]</title>
-    <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/theme.css" />
+    <partial name="_ProfileHead" />
     <script type="module" src="~/js/fw.js" asp-append-version="true"></script>
 </head>
-<body class="auth">
+@* 로그인 화면 배치는 디자인 프로필(login.layout)이 정한다: split = 왼쪽 브랜드 + 오른쪽 입력, center = 가운데 카드 *@
+@{
+    var center = DesignProfile.LoginLayout == Portal.Infrastructure.Ui.UiProfile.LoginCenter;
+}
+<body class="@(center ? "auth auth-center" : "auth")">
     <div class="auth-wrap">
         <aside class="auth-brand">
-            <span class="brand-mark" aria-hidden="true">@(L["SITE.NAME"].Length > 0 ? L["SITE.NAME"][..1] : "P")</span>
+            @* split은 브랜드 색 배경이라 onBrand 로고, center는 카드 배경이라 밝은 배경용 로고를 쓴다 *@
+            @if (DesignProfile.PathOf(center ? DesignProfile.Files.LogoLight : DesignProfile.Files.LogoOnBrand) is { } logo)
+            {
+                <img class="auth-logo" src="@Url.Content("~" + logo)" alt="" />
+            }
+            else
+            {
+                <span class="brand-mark" aria-hidden="true">@(L["SITE.NAME"].Length > 0 ? L["SITE.NAME"][..1] : "P")</span>
+            }
             <p class="auth-brand-name">@L["SITE.NAME"]</p>
             <p class="auth-brand-tag">@L["LOGIN.TAGLINE"]</p>
         </aside>

@@ -24,6 +24,7 @@ using Portal.Framework.Web.Navigation;
 using Portal.Framework.Web.Security;
 using Portal.Infrastructure;
 using Portal.Infrastructure.Caching;
+using Portal.Infrastructure.Ui;
 using Portal.Security;
 
 namespace Portal.Framework.Web;
@@ -116,7 +117,7 @@ public static class PortalWebExtensions
     }
 
     /// <summary>
-    /// 미들웨어 순서: 오류 화면 → HSTS(운영) → 보안 헤더 → 정적 파일 → 라우팅 → 접근 기록 → 인증 → Rate Limit → 권한(필터) → Controller.
+    /// 미들웨어 순서: 오류 화면 → HSTS(운영) → 보안 헤더 → 정적 파일(wwwroot, 디자인 프로필 /profile) → 라우팅 → 접근 기록 → 인증 → Rate Limit → 권한(필터) → Controller.
     /// </summary>
     public static WebApplication UsePortalWeb(this WebApplication app)
     {
@@ -130,6 +131,14 @@ public static class PortalWebExtensions
         app.UseHttpsRedirection();
         app.UseMiddleware<SecurityHeadersMiddleware>();
         app.UseStaticFiles();
+
+        // 디자인 프로필(Portal:Ui:Profile): 여기서 읽으므로 이름·폴더·profile.json이 잘못되면 기동이 멈춘다
+        var profile = app.Services.GetRequiredService<UiProfile>();
+        if (profile.RootPath is { } profileRoot)
+        {
+            app.UseStaticFiles(ProfileFiles.Options(profileRoot));
+        }
+
         app.UseRouting();
         app.UseMiddleware<AccessLogMiddleware>();
         app.UseAuthentication();

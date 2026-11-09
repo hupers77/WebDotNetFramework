@@ -6,6 +6,7 @@ using Portal.Core.Keys;
 using Portal.Core.Security;
 using Portal.Data;
 using Portal.Infrastructure.Localization;
+using Portal.Infrastructure.Ui;
 
 namespace Portal.Infrastructure.Messaging;
 
@@ -18,6 +19,7 @@ public sealed record MailSendSummary(bool Enabled, int Sent, int Failed);
 /// <summary>
 /// 메일 대기열 발송 (배치 작업 <c>JOB_MAIL_SEND</c>, Portal.Worker가 1분마다 부른다). 한 번에 <see cref="BatchSize"/>통까지 가져가
 /// 받는 사람 언어의 템플릿으로 본문을 만들어 보낸다. 실패하면 <see cref="MaxTry"/>회까지 시간을 두고 다시 보낸다.
+/// 디자인 프로필에 메일 레이아웃(<c>mail-layout.html</c>)이 있으면 본문을 그 머리말·꼬리말로 감싼다.
 /// 개발계처럼 <c>MAIL.ENABLED = N</c>이면 보내지 않고 쌓아 둔다. 로그·오류 기록에는 받는 주소를 남기지 않는다.
 /// </summary>
 public sealed partial class MailQueueSender(
@@ -26,7 +28,8 @@ public sealed partial class MailQueueSender(
     IPersonalDataProtector personalData,
     IPortalConfig config,
     LangResources langs,
-    ILogger<MailQueueSender> logger)
+    ILogger<MailQueueSender> logger,
+    UiProfile? profile = null)
 {
     /// <summary>한 번에 가져가는 수.</summary>
     public const int BatchSize = 20;
@@ -104,7 +107,7 @@ public sealed partial class MailQueueSender(
                 new MailMessageData(
                     to,
                     MessageRenderer.RenderSubject(row.Subject, values),
-                    MessageRenderer.RenderBody(row.Body, values),
+                    (profile ?? UiProfile.None).WrapMailBody(MessageRenderer.RenderBody(row.Body, values), values),
                     fromAddress,
                     row.FromName,
                     replyTo),

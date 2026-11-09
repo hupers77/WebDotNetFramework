@@ -30,7 +30,7 @@ public sealed partial class AssetsController(LangResources resources, IPortalCon
         return Json(resources.GetAll(lang));
     }
 
-    /// <summary>브랜드 색상 (<c>SITE.THEME_COLOR</c>). 형식이 잘못된 값은 기본 색을 쓴다.</summary>
+    /// <summary>브랜드 색상 덮어쓰기 (<c>SITE.THEME_COLOR</c>). 비었거나 형식이 잘못되면 빈 CSS(디자인 프로필 색 그대로).</summary>
     [HttpGet("theme.css")]
     public ContentResult Theme()
     {

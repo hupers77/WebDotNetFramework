@@ -174,7 +174,7 @@ Oct 21, 2026 · @사랑나무아빠
 | `UI.PAGE_SIZE` | 50 | INT | N | 그리드 기본 행 수 |
 | `UI.DEFAULT_LANG` | ko | STRING | N | 기본 언어 |
 | `SITE.NAME` | (설치 시 입력) | STRING | N | 사이트명 (다국어 키 `SITE.NAME`을 우선 사용) |
-| `SITE.THEME_COLOR` | #1F5FBF | STRING | N | 브랜드 색상 |
+| `SITE.THEME_COLOR` | (없음) | STRING | N | 브랜드 색상 덮어쓰기 (#RRGGBB). 비우면 디자인 프로필(`Portal:Ui:Profile`) 색을 쓰고, 값이 있으면 프로필 색보다 우선 |
 | `SITE.BASE_URL` | (설치 시 입력) | STRING | N | 포털 주소 (메일 링크, 예: https://portal.example.com) |
 | `MAIL.ENABLED` | N | BOOL | N | 실제 발송 여부 |
 | `MAIL.SMTP_HOST` / `MAIL.SMTP_PORT` | (입력) / 587 | STRING / INT | N | SMTP 서버 |
