@@ -12,6 +12,7 @@ Oct 21, 2026 · @사랑나무아빠
 2. 3장을 따라 표준 화면 예제 하나를 복사해 연습용 화면을 만들어 봅니다.
 3. 실제 작업 전에 4\~9장의 규칙을, MR 올리기 전에 10장 체크리스트를 봅니다.
 4. 흔한 운영 요청(코드 추가, 설정 변경 등)은 11장에서 찾습니다.
+5. 회사·시스템별 디자인(색, 로고, 로그인 화면)은 12장의 디자인 프로필로 바꿉니다.
 
 **관련 문서**
 
@@ -232,7 +233,7 @@ Microsoft .NET 기본 명명 규칙을 따르고, 여기서 정한 규칙은 `.e
 | 적절한 대체 텍스트 | 의미 있는 이미지·아이콘 버튼에 `alt` 또는 `aria-label`(다국어 키) |
 | 레이블 제공 | 모든 입력에 `<label for>` 연결. `fw-form` 필드 사용 시 자동 |
 | 키보드 사용 | 모든 기능을 Tab/Enter/Space/방향키로 사용 가능, 포커스 표시 제거 금지 |
-| 명도 대비 | 텍스트와 배경 4.5:1 이상 (테마 색상 변수만 사용) |
+| 명도 대비 | 텍스트와 배경 4.5:1 이상 (테마 색상 변수만 사용, 디자인 프로필은 단위 테스트가 검사) |
 | 색에 무관한 인식 | 오류·상태를 색만으로 표시하지 않고 문구·아이콘을 함께 표시 |
 | 오류 정정 | 입력 오류는 해당 필드 옆에 표시하고 포커스를 이동 |
 | 페이지 제목 | 탭 제목·`<title>`에 화면명(메뉴명) 표시. 화면당 `<h1>` 하나 |
@@ -448,3 +449,61 @@ MR을 올릴 때 아래 체크리스트를 MR 본문에 붙이고 해당 항목�
 | 화면 변경이 반영 안 됨 | 운영 모니터링 > 캐시 강제 갱신. 자주 발생하면 해당 SP의 `TB_CACHE_VERSION` 누락 확인 | 경우에 따라 |
 
 관리 화면에서 바꾼 값은 설정 이력·감사 로그에 남으므로 누가 언제 바꿨는지 나중에 확인할 수 있습니다.
+
+## 12. 디자인 프로필 (회사·시스템별 디자인)
+
+화면 디자인은 **설치할 때 고르는 프로필**로 바꿉니다. 사용자가 고르는 테마가 아니고, 운영 중 관리 화면에서 바꾸지도 않습니다(바꾸려면 배포). 프로필은 `src/Portal.Web/Profiles/<이름>/` 폴더 하나이고, `appsettings.json`(서버별로는 `appsettings.Production.json`)의 `Portal:Ui:Profile`로 고릅니다.
+
+```json
+"Portal": { "Ui": { "Profile": "default", "ProfileRoot": "" } }
+```
+
+- `Profile`: 폴더 이름(영문 소문자·숫자·`-`, 40자 이내). 프레임워크는 `default`(지금 화면 + 정보광장 파비콘)와 샘플 `sample-hig`(Apple Human Interface Guidelines 원칙)를 줍니다.
+- `ProfileRoot`: 비우면 실행 폴더의 `Profiles`. 프로필을 저장소 밖(배포 서버 폴더)에 두려면 그 상위 폴더를 적습니다.
+- 이름·폴더·`profile.json`·가리킨 파일이 잘못되면 **기동이 멈추고** 원인이 로그에 남습니다(운영 중에 깨진 화면을 보지 않게).
+
+**폴더 구성** (모두 선택, `profile.json`만 필수)
+
+| 파일 | 쓰는 곳 |
+| --- | --- |
+| `profile.json` | 설정. 아래 형식 |
+| `tokens.css` | `portal.css` 다음에 연결. `:root`와 `@media (prefers-color-scheme: dark)`에서 `--fw-*` 변수만 덮어씁니다 |
+| 로고(`.svg`/`.png`/`.webp`) | 상단 바(밝은·다크), 로그인 화면(`split`은 브랜드 색 배경용, `center`는 밝은 로고), 레포트·PDF 머리말(밝은 로고) |
+| 파비콘(`.ico`/`.png`/`.svg`) | 브라우저 탭 아이콘 |
+| `report.css` | 레포트 미리보기·PDF에 `report.css` 다음으로 넣습니다(`--rpt-line`, `--rpt-head`, `--rpt-muted` 등) |
+| 메일 레이아웃(`.html`) | 대기열 메일과 인증번호 메일의 공통 머리말·꼬리말. `{{BODY}}`가 정확히 한 번 있어야 하고 `{{SITE_NM}}`·`{{LINK}}`를 쓸 수 있습니다. 메일 프로그램 때문에 `style` 속성만 쓰고 그림은 넣지 않습니다 |
+| 그 밖의 `.css`/`.svg`/`.png`/`.webp`/`.jpg`/`.ico`/`.woff2` | `tokens.css`가 `url(...)`로 쓰는 배경 그림·글꼴(무료 라이선스만) |
+
+```jsonc
+{
+  "schemaVersion": 1,                       // 형식 번호(지금 1)
+  "favicon": "favicon.png",
+  "logo": { "light": "logo.svg", "dark": "logo-dark.svg", "onBrand": "logo-white.svg", "showSiteName": true },
+  "login": { "layout": "split" },          // split = 왼쪽 브랜드 + 오른쪽 입력, center = 가운데 카드
+  "report": { "logo": true },              // 레포트·PDF 머리말에 밝은 로고(기본 true)
+  "mail": { "layout": "mail-layout.html" }
+}
+```
+
+`showSiteName`이 false면 로고가 사이트명을 대신합니다(로고 그림의 대체 텍스트가 사이트명). 사이트명·로그인 문구는 프로필이 아니라 다국어 문구 `SITE.NAME`·`LOGIN.TAGLINE`(다국어 관리 화면)입니다.
+
+**변수(`tokens.css`에서 바꾸는 값, 이름은 공개 계약이라 프레임워크가 바꾸지 않음)**
+
+| 분류 | 변수 |
+| --- | --- |
+| 브랜드 | `--fw-brand`, `--fw-on-brand`(브랜드 색 위 글자), `--fw-brand-dark`(다크 모드 강조색), `--fw-on-primary` |
+| 글자·바탕 | `--fw-text`, `--fw-muted`, `--fw-subtle`, `--fw-bg`, `--fw-surface`, `--fw-surface-2`, `--fw-border`, `--fw-border-strong`, `--fw-hover`, `--fw-current` |
+| 상태 | `--fw-error`, `--fw-notice`, `--fw-warn`, `--fw-success`, `--fw-favorite`, `--fw-badge`, `--fw-badge-new`, `--fw-on-badge`, `--fw-toast-bg`, `--fw-toast-text`, `--fw-backdrop` |
+| 모양 | `--fw-radius`, `--fw-radius-sm`, `--fw-radius-lg`, `--fw-radius-xl`, `--fw-radius-mark`, `--fw-shadow`, `--fw-shadow-lg`, `--fw-control-h`(버튼·입력 높이) |
+| 글꼴 | `--fw-font`, `--fw-font-size` |
+| 틀 | `--fw-header-h`, `--fw-header-bg`, `--fw-header-filter`(예: 반투명 흐림), `--fw-header-accent`(상단 색 띠 두께), `--fw-side-w`, `--fw-logo-h`, `--fw-auth-logo-h`, `--fw-auth-bg`(로그인 배경) |
+
+**규칙**
+
+1. 업무 저장소는 `portal.css`, 레이아웃 뷰, `Profiles/default`를 고치지 않고 `Profiles/<시스템명>/`을 **새로 만듭니다**(`sample-hig`를 복사해 시작). 새 파일만 더하므로 프레임워크 태그를 병합할 때 충돌이 나지 않습니다.
+2. `tokens.css`에는 변수만 씁니다. 클래스 규칙을 덮어쓰면 프레임워크 업그레이드 때 깨질 수 있습니다. 필요한 변수가 없으면 프레임워크 저장소에 변수 추가를 요청합니다.
+3. 글자와 배경은 명도 대비 4.5:1 이상(라이트·다크 모두). 프레임워크가 배포하는 프로필은 단위 테스트(`UiProfileLoaderTests`)가 검사하므로, 업무 저장소도 자기 프로필을 같은 테스트에 더합니다.
+4. 글꼴 파일은 무료 라이선스(OFL 등)만 넣습니다. PDF는 서버(Windows)에 설치된 글꼴로 그리므로 웹 글꼴이 PDF에는 반영되지 않습니다.
+5. 설정 `SITE.THEME_COLOR`(설정 관리)는 비워 둡니다. 값을 넣으면 프로필의 `--fw-brand`보다 우선합니다(급할 때 색만 바꾸는 용도).
+6. 메일 레이아웃을 쓰면 Portal.Worker의 `appsettings.Production.json`에도 같은 `Portal:Ui:Profile`과 웹의 `Profiles` 폴더를 `ProfileRoot`로 지정합니다(비우면 Worker 메일은 레이아웃 없이 나감).
+7. 파일을 바꾸면 주소의 `?v=`(내용 해시)가 바뀌어 브라우저가 새 파일을 받습니다. 앱 풀을 재시작해야 프로필을 다시 읽습니다.

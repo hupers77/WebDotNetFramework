@@ -1,0 +1,12 @@
+@* 디자인 프로필(appsettings Portal:Ui:Profile): 파비콘, 기본 CSS → 프로필 변수(tokens.css) → 설정 SITE.THEME_COLOR(/theme.css) 순서로 연결한다. *@
+@inject Portal.Infrastructure.Ui.UiProfile DesignProfile
+@if (DesignProfile.PathOf(DesignProfile.Files.Favicon) is { } favicon)
+{
+    <link rel="icon" href="@Url.Content("~" + favicon)" />
+}
+<link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
+@if (DesignProfile.PathOf(Portal.Infrastructure.Ui.UiProfileLoader.TokensFile) is { } tokens)
+{
+    <link rel="stylesheet" href="@Url.Content("~" + tokens)" />
+}
+<link rel="stylesheet" href="~/theme.css" />

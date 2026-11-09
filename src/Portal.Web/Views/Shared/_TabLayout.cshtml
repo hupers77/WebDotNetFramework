@@ -14,8 +14,7 @@
     <meta name="fw-file-max-mb" content="@Config.GetInt(Portal.Core.Keys.ConfigKeys.FileMaxSizeMb)" />
     <meta name="fw-file-max-count" content="@Config.GetInt(Portal.Core.Keys.ConfigKeys.FileMaxCount)" />
     <title>@ViewData["Title"]</title>
-    <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/theme.css" />
+    <partial name="_ProfileHead" />
     <script type="module" src="~/js/fw.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </head>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- 정보광장: 가운데 정보(i) 기둥과 둘레에 모인 사람, 아래 광장 바닥 -->
+  <rect width="32" height="32" rx="7" fill="#0066cc"/>
+  <ellipse cx="16" cy="25" rx="12" ry="3.6" fill="#fff" fill-opacity=".32"/>
+  <circle cx="7.6" cy="14.2" r="1.9" fill="#fff" fill-opacity=".75"/>
+  <rect x="5.9" y="17" width="3.4" height="7" rx="1.7" fill="#fff" fill-opacity=".75"/>
+  <circle cx="24.4" cy="14.2" r="1.9" fill="#fff" fill-opacity=".75"/>
+  <rect x="22.7" y="17" width="3.4" height="7" rx="1.7" fill="#fff" fill-opacity=".75"/>
+  <circle cx="16" cy="7.6" r="2.7" fill="#fff"/>
+  <rect x="13.5" y="11.8" width="5" height="13.2" rx="2.5" fill="#fff"/>
+</svg>

@@ -5,6 +5,7 @@
 @inject Portal.Infrastructure.Localization.LangResources Lang
 @inject Portal.Core.Config.IPortalConfig Config
 @inject MenuService Menus
+@inject Portal.Infrastructure.Ui.UiProfile DesignProfile
 @inject Portal.Framework.Web.Authorization.CurrentPermissions Permissions
 @inject Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider FileVersions
 @{
@@ -31,8 +32,7 @@
     <meta name="fw-user" content="@user?.UserId" />
     <meta name="fw-icons" content="@Portal.Framework.Web.TagHelpers.FwIconTagHelper.SpriteUrl(FileVersions, Context)" />
     <title>@ViewData["Title"] - @L["SITE.NAME"]</title>
-    <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/theme.css" />
+    <partial name="_ProfileHead" />
     <script type="module" src="~/js/fw.js" asp-append-version="true"></script>
     <script type="module" src="~/js/fw-shell.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
@@ -41,7 +41,27 @@
     <a class="skip-link" href="#main">@L["LBL.SKIP_TO_CONTENT"]</a>
     <header class="top">
         <button type="button" class="menu-toggle" aria-controls="side" aria-expanded="true" aria-label="@L["BTN.MENU_TOGGLE"]" title="@L["BTN.MENU_TOGGLE"]"><fw-icon name="menu" /></button>
-        <a class="brand" href="~/"><span class="brand-mark" aria-hidden="true">@(siteName.Length > 0 ? siteName[..1] : "P")</span><span class="site-name">@siteName</span></a>
+        <a class="brand" href="~/">
+            @if (DesignProfile.PathOf(DesignProfile.Files.LogoLight) is { } logo)
+            {
+                @* 로고(디자인 프로필). 사이트명을 글자로 보이지 않으면 로고가 사이트명을 대신한다(alt) *@
+                <picture class="brand-logo">
+                    @if (DesignProfile.PathOf(DesignProfile.Files.LogoDark) is { } logoDark && logoDark != logo)
+                    {
+                        <source srcset="@Url.Content("~" + logoDark)" media="(prefers-color-scheme: dark)" />
+                    }
+                    <img src="@Url.Content("~" + logo)" alt="@(DesignProfile.ShowSiteName ? "" : siteName)" />
+                </picture>
+            }
+            else
+            {
+                <span class="brand-mark" aria-hidden="true">@(siteName.Length > 0 ? siteName[..1] : "P")</span>
+            }
+            @if (DesignProfile.ShowSiteName || DesignProfile.Files.LogoLight is null)
+            {
+                <span class="site-name">@siteName</span>
+            }
+        </a>
         <div class="menu-search" role="search">
             <fw-icon name="search" class="search-ic" />
             <label for="menu-search" class="sr-only">@L["LBL.MENU_SEARCH"]</label>

@@ -1,0 +1,75 @@
+/*
+  샘플 프로필 sample-hig: Apple Human Interface Guidelines 원칙을 따른 색·글꼴·모서리.
+  - 글꼴: 각 OS의 시스템 글꼴(맥 San Francisco, 윈도 Segoe UI, 한글 Apple SD Gothic Neo / 맑은 고딕). 글꼴 파일은 넣지 않는다.
+  - 색: 시스템 색 계열에서 흰 글자·배경 대비 4.5:1 이상인 값을 고른다(예: 파랑 #0066cc).
+  - 여기에는 portal.css의 변수(--fw-*)만 쓴다. 클래스 규칙을 덮어쓰면 프레임워크 업그레이드 때 깨질 수 있다.
+*/
+:root {
+    --fw-brand: #0066cc;
+    --fw-on-brand: #fff;
+    --fw-brand-dark: #409cff;
+    --fw-on-primary: #fff;
+    --fw-text: #1d1d1f;
+    --fw-muted: #424245;
+    --fw-subtle: #6e6e73;
+    --fw-bg: #f5f5f7;
+    --fw-surface: #fff;
+    --fw-surface-2: #fbfbfd;
+    --fw-border: #e3e3e8;
+    --fw-border-strong: #8e8e93;
+    --fw-hover: #ededf0;
+    --fw-current: #e0edfb;
+    --fw-error: #d70015;
+    --fw-notice: #0066cc;
+    --fw-warn: #a34700;
+    --fw-success: #1f7a35;
+    --fw-favorite: #a34700;
+    --fw-badge: #d70015;
+    --fw-badge-new: #d70015;
+    --fw-toast-bg: #1d1d1f;
+    --fw-toast-text: #f5f5f7;
+    --fw-backdrop: rgb(0 0 0 / .32);
+    --fw-radius: 12px;
+    --fw-radius-sm: 8px;
+    --fw-radius-lg: 16px;
+    --fw-radius-xl: 22px;
+    --fw-radius-mark: 8px;
+    --fw-control-h: 2.375rem;
+    --fw-shadow: 0 1px 2px rgb(0 0 0 / .04), 0 2px 8px rgb(0 0 0 / .04);
+    --fw-shadow-lg: 0 12px 40px rgb(0 0 0 / .12);
+    --fw-header-h: 3.25rem;
+    --fw-header-bg: rgb(255 255 255 / .8);
+    --fw-header-filter: saturate(180%) blur(20px);
+    --fw-header-accent: 0;
+    --fw-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Segoe UI", "Malgun Gothic", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --fw-font-size: 15px;
+    --fw-logo-h: 1.75rem;
+    --fw-auth-bg: linear-gradient(180deg, #fbfbfd, #f5f5f7);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --fw-on-primary: #000;
+        --fw-text: #f5f5f7;
+        --fw-muted: #c7c7cc;
+        --fw-subtle: #98989d;
+        --fw-bg: #000;
+        --fw-surface: #1c1c1e;
+        --fw-surface-2: #242426;
+        --fw-border: #38383a;
+        --fw-border-strong: #636366;
+        --fw-hover: #2c2c2e;
+        --fw-current: #10325a;
+        --fw-error: #ff6961;
+        --fw-notice: #409cff;
+        --fw-warn: #ffd60a;
+        --fw-success: #30d158;
+        --fw-favorite: #ffd60a;
+        --fw-toast-bg: #f5f5f7;
+        --fw-toast-text: #1d1d1f;
+        --fw-header-bg: rgb(28 28 30 / .8);
+        --fw-auth-bg: linear-gradient(180deg, #111, #000);
+        --fw-shadow: 0 1px 2px rgb(0 0 0 / .5);
+        --fw-shadow-lg: 0 12px 40px rgb(0 0 0 / .6);
+    }
+}

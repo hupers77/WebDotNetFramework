@@ -12,6 +12,12 @@
   <ItemGroup>
     <PackageReference Include="QRCoder" />
   </ItemGroup>
+  <!-- 디자인 프로필(Profiles/<이름>/): 실행 폴더로 복사하고, appsettings Portal:Ui:Profile로 하나를 고른다 -->
+  <ItemGroup>
+    <Content Remove="Profiles\**" />
+    <None Remove="Profiles\**" />
+    <Content Include="Profiles\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Portal.UnitTests" />
     <InternalsVisibleTo Include="Portal.IntegrationTests" />

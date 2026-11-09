@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Portal.Core.Config;
 using Portal.Core.Localization;
 using Portal.Infrastructure.Caching;
@@ -9,6 +10,7 @@ using Portal.Infrastructure.Files;
 using Portal.Infrastructure.Localization;
 using Portal.Infrastructure.Messaging;
 using Portal.Infrastructure.Pdf;
+using Portal.Infrastructure.Ui;
 
 namespace Portal.Infrastructure;
 
@@ -36,6 +38,10 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<NotificationService>();
         services.AddOptions<PdfOptions>().Bind(configuration.GetSection(PdfOptions.SectionName));
         services.AddSingleton<IPdfConverter, BrowserPdfConverter>();
+
+        // 디자인 프로필(Portal:Ui): 설치할 때 정하고 기동할 때 한 번 읽는다. 웹 호스트는 UsePortalWeb에서 바로 읽어 잘못된 프로필이면 기동을 멈춘다.
+        services.AddOptions<UiProfileOptions>().Bind(configuration.GetSection(UiProfileOptions.SectionName));
+        services.AddSingleton(sp => UiProfileLoader.Load(sp.GetRequiredService<IOptions<UiProfileOptions>>().Value, AppContext.BaseDirectory));
         return services;
     }
 }

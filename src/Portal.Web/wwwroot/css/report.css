@@ -6,6 +6,7 @@ html { color-scheme: light; }
 body { margin: 0; padding: 12px; background: #fff; color: #111; font: 10pt/1.4 'Malgun Gothic', 'Microsoft YaHei', 'Noto Sans CJK KR', sans-serif; }
 @media print { body { padding: 0; } }
 .rpt-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 10px; }
+.rpt-logo { display: block; height: 10mm; width: auto; max-width: 60mm; margin: 0 0 6px; }
 .rpt-heading h1 { margin: 0 0 6px; font-size: 16pt; }
 .rpt-conditions { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 0 0 4px; }
 .rpt-conditions dt { font-weight: 600; }

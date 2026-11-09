@@ -1,0 +1,9 @@
+// 프레임워크 기본 디자인 프로필. 색·글꼴·모서리는 wwwroot/css/portal.css의 기본값을 그대로 쓴다(tokens.css 없음).
+// 파비콘 원본은 favicon.svg(정보광장: 정보 기둥과 둘레에 모인 사람)이고, 브라우저 호환을 위해 64px PNG를 연결한다.
+{
+  "schemaVersion": 1,
+  "favicon": "favicon.png",
+  "logo": { "showSiteName": true },
+  "login": { "layout": "split" },
+  "report": { "logo": false }
+}

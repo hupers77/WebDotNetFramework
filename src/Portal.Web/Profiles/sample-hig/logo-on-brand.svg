@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- 정보광장 로고(브랜드 색 배경용): 흰 바탕에 브랜드 색 그림 -->
+  <rect width="32" height="32" rx="7" fill="#fff"/>
+  <ellipse cx="16" cy="25" rx="12" ry="3.6" fill="#0066cc" fill-opacity=".22"/>
+  <circle cx="7.6" cy="14.2" r="1.9" fill="#0066cc" fill-opacity=".6"/>
+  <rect x="5.9" y="17" width="3.4" height="7" rx="1.7" fill="#0066cc" fill-opacity=".6"/>
+  <circle cx="24.4" cy="14.2" r="1.9" fill="#0066cc" fill-opacity=".6"/>
+  <rect x="22.7" y="17" width="3.4" height="7" rx="1.7" fill="#0066cc" fill-opacity=".6"/>
+  <circle cx="16" cy="7.6" r="2.7" fill="#0066cc"/>
+  <rect x="13.5" y="11.8" width="5" height="13.2" rx="2.5" fill="#0066cc"/>
+</svg>

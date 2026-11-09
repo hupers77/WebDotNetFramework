@@ -182,12 +182,41 @@ public sealed partial class LayoutTests(PortalWebFactory web) : IClassFixture<Po
     }
 
     [Fact]
-    public async Task 테마CSS_브랜드색()
+    public async Task 테마CSS_설정이비면_빈CSS_값이있으면_브랜드색()
     {
-        var css = await web.NewClient().GetStringAsync("/theme.css", Ct);
+        var client = web.NewClient();
+        Assert.Equal("", await client.GetStringAsync("/theme.css", Ct));
 
-        Assert.Equal(":root { --fw-brand: #1F5FBF; }\n", css);
+        web.Config.Set("SITE.THEME_COLOR", "#1F5FBF");
+        try
+        {
+            Assert.Equal(":root { --fw-brand: #1F5FBF; }\n", await client.GetStringAsync("/theme.css", Ct));
+        }
+        finally
+        {
+            web.Config.Set("SITE.THEME_COLOR", null);
+        }
     }
+
+    [Fact]
+    public async Task 디자인프로필_파비콘은_내보내고_설정파일은_막는다()
+    {
+        var client = web.NewClient();
+        var page = await client.GetStringAsync("/Account/Login", Ct);
+        var favicon = FaviconPattern().Match(page).Groups[1].Value;
+
+        var icon = await client.GetAsync(favicon, Ct);
+        var manifest = await client.GetAsync("/profile/profile.json", Ct);
+
+        Assert.StartsWith("/profile/favicon.png?v=", favicon, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.OK, icon.StatusCode);
+        Assert.Equal("image/png", icon.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("immutable", icon.Headers.CacheControl!.ToString(), StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.NotFound, manifest.StatusCode);
+    }
+
+    [GeneratedRegex("""<link rel="icon" href="([^"]+)" """)]
+    private static partial Regex FaviconPattern();
 
     [GeneratedRegex("data-menu-id=\"(\\d+)\"")]
     private static partial Regex MenuIdPattern();

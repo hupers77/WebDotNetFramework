@@ -20,7 +20,6 @@ public sealed class FakePortalConfig : IPortalConfig
         ["SESSION.CONCURRENT_POLICY"] = "KICK_OLD",
         ["UI.TAB_MODE"] = "Y",
         ["UI.MAX_TABS"] = "10",
-        ["SITE.THEME_COLOR"] = "#1F5FBF",
         ["FILE.MAX_SIZE_MB"] = "20",
         ["FILE.MAX_COUNT"] = "10",
         ["AUTH.PARTNER_MFA"] = "Y",

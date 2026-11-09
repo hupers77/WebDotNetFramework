@@ -34,7 +34,7 @@ USING (VALUES
   (N'UI.PAGE_SIZE', N'50', N'INT', N'N', N'UI', N'그리드 기본 행 수', N'N'),
   (N'UI.DEFAULT_LANG', N'ko', N'STRING', N'N', N'UI', N'기본 언어', N'N'),
   (N'SITE.NAME', NULL, N'STRING', N'N', N'SITE', N'사이트명 (다국어 키 SITE.NAME을 우선 사용, 설치 시 입력)', N'N'),
-  (N'SITE.THEME_COLOR', N'#1F5FBF', N'STRING', N'N', N'SITE', N'브랜드 색상', N'N'),
+  (N'SITE.THEME_COLOR', NULL, N'STRING', N'N', N'SITE', N'브랜드 색상 덮어쓰기 (#RRGGBB, 비우면 디자인 프로필 색. 값이 있으면 프로필 색보다 우선)', N'N'),
   (N'SITE.BASE_URL', NULL, N'STRING', N'N', N'SITE', N'포털 주소 (메일 링크, 설치 시 입력. 예: https://portal.example.com)', N'N'),
   (N'MAIL.ENABLED', N'N', N'BOOL', N'N', N'MAIL', N'실제 발송 여부 (개발계 N)', N'N'),
   (N'MAIL.SMTP_HOST', NULL, N'STRING', N'N', N'MAIL', N'SMTP 서버', N'N'),
@@ -81,4 +81,9 @@ GO
 
 -- 쓰지 않기로 한 설정 정리 (AD는 LDAPS가 아니라 AD 마스터 뷰로 동기화한다)
 DELETE FROM [FW].[TB_CONFIG] WHERE [CONFIG_KEY] IN (N'AD.LDAP_SERVER', N'AD.BASE_DN', N'AD.BIND_PASSWORD');
+GO
+
+-- 브랜드 색은 디자인 프로필(appsettings Portal:Ui:Profile의 tokens.css)이 정한다(fw-v1.6.0).
+-- 예전 기본값 그대로인 값은 비워 프로필 색을 가리지 않게 한다. 운영자가 바꾼 값은 그대로 둔다.
+UPDATE [FW].[TB_CONFIG] SET [CONFIG_VAL] = NULL WHERE [CONFIG_KEY] = N'SITE.THEME_COLOR' AND [CONFIG_VAL] = N'#1F5FBF';
 GO
