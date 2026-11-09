@@ -1,0 +1,73 @@
+/*
+  샘플 프로필 sample-dense: IBM Carbon Design System 원칙을 따른 고밀도 업무형(Apache 2.0 공개 값 참고, 라이브러리는 쓰지 않음).
+  - 모양: 모서리 0~4px, 버튼·입력 높이 32px, 본문 14px. 한 화면에 표 행이 많이 보이게 한다.
+  - 색: 회색 10단계 + 파랑 하나(#0f62fe). 다크는 Gray 100 계열.
+  - 글꼴: IBM Plex Sans KR이 PC에 설치돼 있으면 쓰고, 없으면 OS 기본(맑은 고딕). 글꼴 파일은 넣지 않는다.
+  - 여기에는 portal.css의 변수(--fw-*)만 쓴다.
+*/
+:root {
+    --fw-brand: #0f62fe;
+    --fw-on-brand: #fff;
+    --fw-brand-dark: #78a9ff;
+    --fw-on-primary: #fff;
+    --fw-text: #161616;
+    --fw-muted: #525252;
+    --fw-subtle: #6f6f6f;
+    --fw-bg: #f4f4f4;
+    --fw-surface: #fff;
+    --fw-surface-2: #f4f4f4;
+    --fw-border: #e0e0e0;
+    --fw-border-strong: #8d8d8d;
+    --fw-hover: #e8e8e8;
+    --fw-current: #d0e2ff;
+    --fw-error: #da1e28;
+    --fw-notice: #0f62fe;
+    --fw-warn: #8e6a00;
+    --fw-success: #198038;
+    --fw-favorite: #8e6a00;
+    --fw-badge: #da1e28;
+    --fw-badge-new: #da1e28;
+    --fw-toast-bg: #393939;
+    --fw-toast-text: #f4f4f4;
+    --fw-backdrop: rgb(22 22 22 / .5);
+    --fw-radius: 2px;
+    --fw-radius-sm: 0;
+    --fw-radius-lg: 4px;
+    --fw-radius-xl: 4px;
+    --fw-radius-mark: 2px;
+    --fw-control-h: 2rem;
+    --fw-shadow: none;
+    --fw-shadow-lg: 0 2px 6px rgb(0 0 0 / .3);
+    --fw-header-h: 3rem;
+    --fw-header-accent: 2px;
+    --fw-side-w: 14rem;
+    --fw-font: "IBM Plex Sans KR", "Malgun Gothic", "Segoe UI", "Apple SD Gothic Neo", "Microsoft YaHei", "PingFang SC", sans-serif;
+    --fw-font-size: 14px;
+    --fw-logo-h: 1.5rem;
+    --fw-auth-bg: #f4f4f4;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --fw-on-primary: #000;
+        --fw-text: #f4f4f4;
+        --fw-muted: #c6c6c6;
+        --fw-subtle: #a8a8a8;
+        --fw-bg: #161616;
+        --fw-surface: #262626;
+        --fw-surface-2: #1f1f1f;
+        --fw-border: #393939;
+        --fw-border-strong: #6f6f6f;
+        --fw-hover: #333333;
+        --fw-current: #002d9c;
+        --fw-error: #ff8389;
+        --fw-notice: #78a9ff;
+        --fw-warn: #f1c21b;
+        --fw-success: #42be65;
+        --fw-favorite: #f1c21b;
+        --fw-toast-bg: #f4f4f4;
+        --fw-toast-text: #161616;
+        --fw-auth-bg: #161616;
+        --fw-shadow-lg: 0 2px 6px rgb(0 0 0 / .6);
+    }
+}

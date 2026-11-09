@@ -72,6 +72,6 @@ public sealed class AccessLogMiddleware(RequestDelegate next, AccessLogBuffer qu
     internal static bool IsExcluded(PathString path) =>
         path.StartsWithSegments("/css") || path.StartsWithSegments("/js") || path.StartsWithSegments("/lib")
         || path.StartsWithSegments("/img") || path.StartsWithSegments("/i18n") || path.StartsWithSegments("/health")
-        || path.StartsWithSegments("/profile")
+        || path.StartsWithSegments("/profile") || path.StartsWithSegments("/fonts")
         || path.Equals("/favicon.ico") || path.Equals("/theme.css");
 }

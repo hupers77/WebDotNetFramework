@@ -6,7 +6,7 @@ using Portal.UnitTests.Architecture;
 
 namespace Portal.UnitTests.Infrastructure;
 
-/// <summary>디자인 프로필 읽기·검사, 메일 레이아웃, 배포하는 프로필(default, sample-hig)의 형식과 명도 대비.</summary>
+/// <summary>디자인 프로필 읽기·검사, 메일 레이아웃, 배포하는 프로필(default, sample-hig, sample-dense, sample-office, sample-krds)의 형식과 명도 대비.</summary>
 public sealed partial class UiProfileLoaderTests : IDisposable
 {
     private const string Svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1 1\"/>";
@@ -177,6 +177,9 @@ public sealed partial class UiProfileLoaderTests : IDisposable
     [Theory]
     [InlineData("default")]
     [InlineData("sample-hig")]
+    [InlineData("sample-dense")]
+    [InlineData("sample-office")]
+    [InlineData("sample-krds")]
     public void 배포하는프로필은_읽힌다(string name)
     {
         var profile = UiProfileLoader.Load(new UiProfileOptions { Profile = name, ProfileRoot = ShippedRoot }, _root);
@@ -193,12 +196,39 @@ public sealed partial class UiProfileLoaderTests : IDisposable
         Assert.Matches("\"Profile\":\\s*\"default\"", json);
     }
 
+    /// <summary>프로필 tokens.css의 <c>@import url("../fonts/...")</c>는 <c>/profile/</c> 기준이라 wwwroot 아래 파일을 가리킨다. 그 파일과 글꼴 파일이 모두 있어야 한다.</summary>
+    [Theory]
+    [InlineData("sample-hig")]
+    [InlineData("sample-krds")]
+    public void 배포하는프로필의_웹글꼴은_wwwroot에있다(string name)
+    {
+        var wwwroot = Path.Combine(RepoPaths.Src, "Portal.Web", "wwwroot");
+        var css = File.ReadAllText(Path.Combine(ShippedRoot, name, UiProfileLoader.TokensFile));
+        var import = FontImport().Match(css);
+        Assert.True(import.Success, $"{name}: 글꼴 @import가 없습니다");
+        Assert.Contains("\"Noto Sans KR\"", css, StringComparison.Ordinal);
+
+        var fontCss = Path.Combine(wwwroot, import.Groups["path"].Value.Replace('/', Path.DirectorySeparatorChar));
+        Assert.True(File.Exists(fontCss), fontCss);
+        var dir = Path.GetDirectoryName(fontCss)!;
+        var files = FontFile().Matches(File.ReadAllText(fontCss)).Select(m => m.Groups["file"].Value).ToList();
+        Assert.NotEmpty(files);
+        Assert.All(files, f => Assert.True(File.Exists(Path.Combine(dir, f)), f));
+        Assert.True(File.Exists(Path.Combine(dir, "OFL.txt")), "글꼴 라이선스 파일(OFL.txt)이 없습니다");
+    }
+
     /// <summary>개발 표준 가이드 5장: 글자와 배경의 명도 대비 4.5:1 이상. 프로필 tokens.css가 portal.css 기본값을 덮어쓴 결과로 검사한다.</summary>
     [Theory]
     [InlineData("default", false)]
     [InlineData("default", true)]
     [InlineData("sample-hig", false)]
     [InlineData("sample-hig", true)]
+    [InlineData("sample-dense", false)]
+    [InlineData("sample-dense", true)]
+    [InlineData("sample-office", false)]
+    [InlineData("sample-office", true)]
+    [InlineData("sample-krds", false)]
+    [InlineData("sample-krds", true)]
     public void 배포하는프로필의_글자색은_명도대비4_5이상(string name, bool dark)
     {
         var vars = Tokens(File.ReadAllText(Path.Combine(RepoPaths.Src, "Portal.Web", "wwwroot", "css", "portal.css")), dark);
@@ -271,4 +301,10 @@ public sealed partial class UiProfileLoaderTests : IDisposable
 
     [GeneratedRegex(@"--fw-([a-z0-9-]+):\s*(#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?)\s*;")]
     private static partial Regex HexVar();
+
+    [GeneratedRegex("@import url\\(\"\\.\\./(?<path>[^\"]+)\"\\)")]
+    private static partial Regex FontImport();
+
+    [GeneratedRegex(@"url\(\./(?<file>[^)]+\.woff2)\)")]
+    private static partial Regex FontFile();
 }

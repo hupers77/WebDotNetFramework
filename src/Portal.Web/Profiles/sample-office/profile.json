@@ -1,0 +1,11 @@
+// 샘플 디자인 프로필: Microsoft Fluent 2의 원칙(Segoe UI, 4px 모서리, 옅은 그림자, 흰 상단 바, 파랑 강조)을 따른 오피스형.
+// Windows·Edge·Microsoft 365에 익숙한 사내 사용자용. 상표·로고·전용 아이콘은 쓰지 않고 색은 명도 대비 4.5:1을 지킨다.
+// 설치할 때 appsettings.json의 "Portal:Ui:Profile"을 "sample-office"로 바꾸면 적용된다.
+{
+  "schemaVersion": 1,
+  "favicon": "favicon.png",
+  "logo": { "light": "logo.svg", "onBrand": "logo-on-brand.svg", "showSiteName": true },
+  "login": { "layout": "center" },
+  "report": { "logo": true },
+  "mail": { "layout": "mail-layout.html" }
+}

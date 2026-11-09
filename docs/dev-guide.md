@@ -458,7 +458,16 @@ MR을 올릴 때 아래 체크리스트를 MR 본문에 붙이고 해당 항목�
 "Portal": { "Ui": { "Profile": "default", "ProfileRoot": "" } }
 ```
 
-- `Profile`: 폴더 이름(영문 소문자·숫자·`-`, 40자 이내). 프레임워크는 `default`(지금 화면 + 정보광장 파비콘)와 샘플 `sample-hig`(Apple Human Interface Guidelines 원칙)를 줍니다.
+- `Profile`: 폴더 이름(영문 소문자·숫자·`-`, 40자 이내). 프레임워크는 `default`(지금 화면 + 정보광장 파비콘)와 아래 샘플 4개를 줍니다.
+
+| 샘플 | 원칙 | 맞는 곳 | 글꼴 |
+| --- | --- | --- | --- |
+| `sample-hig` | Apple Human Interface Guidelines: 넓은 여백, 큰 모서리, 반투명 상단 바, 가운데 로그인 카드 | 사내 정보 포털 | Noto Sans KR(웹 글꼴) |
+| `sample-dense` | IBM Carbon: 작은 모서리, 32px 버튼·입력, 본문 14px, 회색 계열 다크 | 표·조회가 많은 업무 시스템 | IBM Plex Sans KR(PC에 있으면), 없으면 맑은 고딕 |
+| `sample-office` | Microsoft Fluent 2: 4px 모서리, 옅은 그림자, 흰 상단 바 | Windows·Microsoft 365 사용자가 많은 사내 포털 | Segoe UI·맑은 고딕(Windows 기본) |
+| `sample-krds` | 정부 디자인 시스템(KRDS)·웹 접근성 지침(KWCAG): 본문 16px, 44px 클릭 영역, 진한 색 대비 | 외부·협력사 사용자가 많은 화면 | Noto Sans KR(웹 글꼴) |
+
+  상표·로고·전용 아이콘·디자인 자산은 쓰지 않고 공개된 원칙과 값만 따랐습니다.
 - `ProfileRoot`: 비우면 실행 폴더의 `Profiles`. 프로필을 저장소 밖(배포 서버 폴더)에 두려면 그 상위 폴더를 적습니다.
 - 이름·폴더·`profile.json`·가리킨 파일이 잘못되면 **기동이 멈추고** 원인이 로그에 남습니다(운영 중에 깨진 화면을 보지 않게).
 
@@ -503,7 +512,7 @@ MR을 올릴 때 아래 체크리스트를 MR 본문에 붙이고 해당 항목�
 1. 업무 저장소는 `portal.css`, 레이아웃 뷰, `Profiles/default`를 고치지 않고 `Profiles/<시스템명>/`을 **새로 만듭니다**(`sample-hig`를 복사해 시작). 새 파일만 더하므로 프레임워크 태그를 병합할 때 충돌이 나지 않습니다.
 2. `tokens.css`에는 변수만 씁니다. 클래스 규칙을 덮어쓰면 프레임워크 업그레이드 때 깨질 수 있습니다. 필요한 변수가 없으면 프레임워크 저장소에 변수 추가를 요청합니다.
 3. 글자와 배경은 명도 대비 4.5:1 이상(라이트·다크 모두). 프레임워크가 배포하는 프로필은 단위 테스트(`UiProfileLoaderTests`)가 검사하므로, 업무 저장소도 자기 프로필을 같은 테스트에 더합니다.
-4. 글꼴 파일은 무료 라이선스(OFL 등)만 넣습니다. PDF는 서버(Windows)에 설치된 글꼴로 그리므로 웹 글꼴이 PDF에는 반영되지 않습니다.
+4. 글꼴 파일은 무료 라이선스(OFL 등)만 넣습니다. PDF는 서버(Windows)에 설치된 글꼴로 그리므로 웹 글꼴이 PDF에는 반영되지 않습니다. 프레임워크는 Noto Sans KR(OFL 1.1, 가변 굵기)을 `wwwroot/fonts/noto-sans-kr/`에 유니코드 범위별 woff2로 나눠 두었습니다(브라우저는 화면에 나온 글자가 든 파일만 받음). 쓰려면 `tokens.css` 맨 위에 `@import url("../fonts/noto-sans-kr/noto-sans-kr.css");`를 두고 `--fw-font` 맨 앞에 `"Noto Sans KR"`을 적습니다(`sample-hig`, `sample-krds` 참고). 메일은 받는 PC의 글꼴을 쓰므로 메일 레이아웃의 `font-family`에는 대체 글꼴을 함께 적습니다.
 5. 설정 `SITE.THEME_COLOR`(설정 관리)는 비워 둡니다. 값을 넣으면 프로필의 `--fw-brand`보다 우선합니다(급할 때 색만 바꾸는 용도).
 6. 메일 레이아웃을 쓰면 Portal.Worker의 `appsettings.Production.json`에도 같은 `Portal:Ui:Profile`과 웹의 `Profiles` 폴더를 `ProfileRoot`로 지정합니다(비우면 Worker 메일은 레이아웃 없이 나감).
 7. 파일을 바꾸면 주소의 `?v=`(내용 해시)가 바뀌어 브라우저가 새 파일을 받습니다. 앱 풀을 재시작해야 프로필을 다시 읽습니다.

@@ -1,0 +1,11 @@
+// 샘플 디자인 프로필: 대한민국 정부 디자인 시스템(KRDS)과 한국형 웹 콘텐츠 접근성 지침(KWCAG)의 원칙(큰 본문 글자, 높은 대비,
+// 넓은 클릭 영역, 또렷한 상단 색 띠)을 따른 공공형. 외부 사용자가 많은 화면용. 정부 상징·로고는 쓰지 않는다.
+// 글꼴은 Noto Sans KR(OFL, wwwroot/fonts/noto-sans-kr). 설치할 때 "Portal:Ui:Profile"을 "sample-krds"로 바꾸면 적용된다.
+{
+  "schemaVersion": 1,
+  "favicon": "favicon.png",
+  "logo": { "light": "logo.svg", "onBrand": "logo-on-brand.svg", "showSiteName": true },
+  "login": { "layout": "split" },
+  "report": { "logo": true },
+  "mail": { "layout": "mail-layout.html" }
+}
