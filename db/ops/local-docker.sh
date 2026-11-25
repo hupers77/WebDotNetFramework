@@ -43,7 +43,8 @@ setup() {
   echo "2/4 도구 복원"; dotnet tool restore
   echo "3/4 DB 프로젝트 빌드"; dotnet build db/Portal.Database/Portal.Database.sqlproj -c Debug
   echo "4/4 배포 (스키마 + 초기 데이터)"
-  dotnet sqlpackage /Action:Publish /SourceFile:db/Portal.Database/bin/Debug/Portal.Database.dacpac \
+  # sqlpackage 도구는 net8/net10 빌드만 있어 .NET 11만 설치된 PC에서는 상위 런타임으로 올려 실행한다
+  DOTNET_ROLL_FORWARD=Major dotnet sqlpackage /Action:Publish /SourceFile:db/Portal.Database/bin/Debug/Portal.Database.dacpac \
     /Profile:db/Portal.Database/Portal.Database.publish.xml /TargetConnectionString:"$CONN"
   echo "완료: ${DB}"
 }

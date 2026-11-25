@@ -55,7 +55,7 @@ public sealed class PopupAdminServiceTests : IAsyncLifetime
         var result = await _service.SaveAsync(Request(), Ct);
 
         var call = _sp.LastCall(PopupAdminService.SaveSp).Parameters;
-        var langs = JsonDocument.Parse((string)call["P_LANGS_JSON"]!).RootElement;
+        var langs = JsonElement.Parse((string)call["P_LANGS_JSON"]!);
         Assert.Equal(77, result.PopupId);
         Assert.Null(call["P_POPUP_ID"]);
         Assert.Equal("점검 안내", langs[0].GetProperty("title").GetString());

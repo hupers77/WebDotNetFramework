@@ -37,7 +37,7 @@ public sealed class ReportAdminServiceTests
 
         await _service.SaveAsync(Request(row), Ct);
 
-        var json = JsonDocument.Parse((string)_sp.LastCall(ReportAdminService.SaveSp).Parameters["P_ROWS_JSON"]!).RootElement;
+        var json = JsonElement.Parse((string)_sp.LastCall(ReportAdminService.SaveSp).Parameters["P_ROWS_JSON"]!);
         Assert.Equal("Screen", json[0].GetProperty("templateView").GetString());
         Assert.Equal("0000000000000002", json[0].GetProperty("rowVer").GetString());
     }

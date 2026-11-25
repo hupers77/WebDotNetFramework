@@ -41,7 +41,7 @@ public sealed class MenuAdminServiceTests : IAsyncLifetime
         var result = await _service.SaveAsync(Request(Row(), Row("U", "OLD_MENU")), Ct);
 
         var call = _sp.LastCall(MenuAdminService.SaveSp).Parameters;
-        var json = JsonDocument.Parse((string)call["P_ROWS_JSON"]!).RootElement;
+        var json = JsonElement.Parse((string)call["P_ROWS_JSON"]!);
         Assert.Equal(2, result.AffectedCnt);
         Assert.Equal("PORTAL", call["P_MENU_SET_CD"]);
         Assert.Equal("새 메뉴", json[0].GetProperty("names")[0].GetProperty("menuNm").GetString());

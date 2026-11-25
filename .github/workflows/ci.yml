@@ -61,6 +61,9 @@ jobs:
         run: dotnet build db/Portal.Database -c Release
 
       - name: 테스트 DB 배포 (스키마 + 초기 데이터, 두 번 배포해 반복 실행 가능 여부도 확인)
+        # sqlpackage 도구는 net8/net10 빌드만 있다. .NET 11만 있는 환경에서도 돌도록 상위 런타임으로 올려 실행한다
+        env:
+          DOTNET_ROLL_FORWARD: Major
         run: |
           dotnet tool restore
           for i in 1 2; do

@@ -27,12 +27,12 @@ Oct 21, 2026 · @사랑나무아빠
 
 ## 2. 개발 환경 구성
 
-개발 PC에는 .NET 10 SDK, SQL Server 2022 Developer Edition, Git만 있으면 되고, 처음 클론부터 로그인 화면까지 30분 안에 띄울 수 있어야 합니다. 그보다 오래 걸리면 이 장을 고칩니다.
+개발 PC에는 .NET 11 SDK, SQL Server 2022 Developer Edition, Git만 있으면 되고, 처음 클론부터 로그인 화면까지 30분 안에 띄울 수 있어야 합니다. 그보다 오래 걸리면 이 장을 고칩니다.
 
 | 도구 | 버전 | 라이선스 주의 |
 | --- | --- | --- |
-| .NET SDK | 10.0.114 이상(10.0.403 등 상위 기능 대역 포함, 레포지토리 `global.json`으로 하한 고정. 10.0.14 보안 업데이트 런타임을 담은 SDK) | 무료 |
-| IDE | Visual Studio 2022 이상 Professional, 또는 VS Code + C# 확장 | Visual Studio Community와 C# Dev Kit는 일정 규모 이상 기업의 업무 사용이 제한되므로, 회사 라이선스가 없으면 VS Code + C# 확장만 씁니다 |
+| .NET SDK | 11.0.100 이상(같은 11.0.1xx 대역과 상위 기능 대역 포함, 레포지토리 `global.json`으로 하한 고정). `fw-v1.7.0` 이하를 고칠 때는 10.0.114 이상도 함께 설치 ([.NET 11 이관 안내](upgrade/dotnet-11.md)) | 무료 |
+| IDE | Visual Studio 2026 최신 업데이트 Professional(Visual Studio 2022는 `net11.0` 프로젝트를 열 수 없음), 또는 VS Code + C# 확장 | Visual Studio Community와 C# Dev Kit는 일정 규모 이상 기업의 업무 사용이 제한되므로, 회사 라이선스가 없으면 VS Code + C# 확장만 씁니다 |
 | DB | SQL Server 2022 Developer Edition | 개발·테스트 전용 무료 (운영 사용 금지) |
 | DB 도구 | SSMS, SqlPackage (dotnet tool) | 무료 |
 | 형상관리 | Git, GitLab 계정 | - |

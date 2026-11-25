@@ -40,6 +40,9 @@ db-integration:
   needs: [build]
   when: manual
   allow_failure: false
+  variables:
+    # sqlpackage 도구는 net8/net10 빌드만 있다. .NET 11만 설치된 러너에서도 돌도록 상위 런타임으로 올려 실행한다
+    DOTNET_ROLL_FORWARD: Major
   script:
     - dotnet tool restore
     - dotnet sqlpackage /Action:Publish /SourceFile:db/Portal.Database/bin/$env:CONFIGURATION/Portal.Database.dacpac /Profile:db/Portal.Database/Portal.Database.publish.xml /TargetConnectionString:$env:PORTAL_TEST_DB

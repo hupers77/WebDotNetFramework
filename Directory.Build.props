@@ -1,7 +1,7 @@
 <Project>
   <!-- 모든 프로젝트 공통 빌드 규칙. 개발 표준 가이드 4장: 경고 = 오류, Nullable 사용 -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
@@ -11,7 +11,7 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Deterministic>true</Deterministic>
-    <Version>1.7.0</Version>
+    <Version>1.8.0</Version>
     <Company>Portal</Company>
     <Product>Enterprise Web Portal Framework</Product>
   </PropertyGroup>

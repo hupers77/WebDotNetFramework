@@ -32,7 +32,7 @@ public sealed class HolidayAdminServiceTests
     {
         var result = await _service.SaveAsync(Request(Row(), Row("U", "2026-05-06", "대체", RowVer, "Y")), Ct);
 
-        var json = JsonDocument.Parse((string)_sp.LastCall(HolidayAdminService.SaveSp).Parameters["P_ROWS_JSON"]!).RootElement;
+        var json = JsonElement.Parse((string)_sp.LastCall(HolidayAdminService.SaveSp).Parameters["P_ROWS_JSON"]!);
         Assert.Equal(2, result.AffectedCnt);
         Assert.Equal("어린이날", json[0].GetProperty("holidayNm").GetString());
         Assert.Equal(JsonValueKind.Null, json[0].GetProperty("rowVer").ValueKind);
