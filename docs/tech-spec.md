@@ -1,6 +1,6 @@
 # 기술 스펙 (버전 표기)
 
-기준 시점: 2026-11-09, 프레임워크 **`fw-v1.7.0`** (샘플 디자인 프로필 3종과 Noto Sans KR 웹 글꼴 추가; 직전 `fw-v1.6.0`은 설치 시 고르는 디자인 프로필; 직전 `fw-v1.5.0`은 메일 보내는 사람 지정; 직전 `fw-v1.4.0`은 AD 로그인 확장 지점; 직전 `fw-v1.3.0`은 표준 화면 6종 추가; 직전 `fw-v1.2.1`은 PR #66 보안 패치, PR #67 문서·도구, PR #68 통합 테스트 정리). 이 문서는 프레임워크가 쓰는 플랫폼·도구·패키지의 **실제 버전**을 한곳에 적은 것입니다. 업무 저장소(프레임워크에서 시작한 저장소)는 프레임워크를 병합할 때 이 문서를 보고 개발 PC·빌드 서버·운영 서버의 버전을 맞춥니다.
+기준 시점: 2026-11-25, 프레임워크 **`fw-v1.8.0`** (.NET 11 전환; 직전 `fw-v1.7.0`은 샘플 디자인 프로필 3종과 Noto Sans KR 웹 글꼴 추가; 직전 `fw-v1.6.0`은 설치 시 고르는 디자인 프로필; 직전 `fw-v1.5.0`은 메일 보내는 사람 지정; 직전 `fw-v1.4.0`은 AD 로그인 확장 지점; 직전 `fw-v1.3.0`은 표준 화면 6종 추가; 직전 `fw-v1.2.1`은 PR #66 보안 패치, PR #67 문서·도구, PR #68 통합 테스트 정리). 이 문서는 프레임워크가 쓰는 플랫폼·도구·패키지의 **실제 버전**을 한곳에 적은 것입니다. 업무 저장소(프레임워크에서 시작한 저장소)는 프레임워크를 병합할 때 이 문서를 보고 개발 PC·빌드 서버·운영 서버의 버전을 맞춥니다.
 
 설계 배경과 선택 이유는 [설계서](framework-design.md) 1·2장에 있습니다. 설계서와 이 문서의 버전이 다르면 **이 문서가 현재 상태**입니다.
 
@@ -8,8 +8,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 현재 버전 | `fw-v1.7.0` (태그는 사용자가 붙임) |
-| 어셈블리 버전 | `Directory.Build.props`의 `<Version>` = `1.7.0`. 서버 자신(localhost)에서 `/health`를 부르면 이 값이 보입니다 |
+| 현재 버전 | `fw-v1.8.0` (태그는 사용자가 붙임) |
+| 어셈블리 버전 | `Directory.Build.props`의 `<Version>` = `1.8.0`. 서버 자신(localhost)에서 `/health`를 부르면 이 값이 보입니다 |
 | 버전 규칙 | `fw-v주.부.수`. 버그·보안 수정과 문서는 `수`, 기능 추가(업무 코드 수정 불필요)는 `부`, 깨지는 변경(SP 파라미터·결과, 공통 JS API, 설정 키 이름)은 `주` ([04-new-business-repo.md](handover/04-new-business-repo.md) 2장) |
 | 변경 기록 | [README 작업 기록](../README.md#작업-기록) |
 
@@ -19,6 +19,7 @@
 | `fw-v1.1.0` | `cd5a01d` | 2026-10-30 | 화면 디자인 개편, 게시판 서식 편집기·본문 사진, 차트 위젯 |
 | `fw-v1.2.0` | `491a95f` | 2026-10-31 | 보안 점검과 취약점 패치, .NET 10.0.14 (PR #66), 반영 안내·점검 skill·기술 스펙 (PR #67) |
 | `fw-v1.2.1` | `5248831` | 2026-10-31 | 쪽 나눔 없는 목록 조회, 레포트 요청 삭제 시각, 경로 시드 누락, 통합 테스트 정리 (PR #68). 태그가 가리키는 커밋의 어셈블리 버전은 아직 1.2.0이고, 1.2.1은 이 표기 정리 PR부터 |
+| `fw-v1.8.0` | (병합 후 태그) | 2026-11-25 | .NET 10 → .NET 11 (SDK 11.0.100, `net11.0`, Microsoft 패키지 11.0.0). 기능·DB 변경 없음. [.NET 11 이관 안내](upgrade/dotnet-11.md) |
 | `fw-v1.7.0` | (병합 후 태그) | 2026-11-09 | 샘플 프로필 `sample-dense`(Carbon 원칙), `sample-office`(Fluent 2 원칙), `sample-krds`(KRDS·KWCAG 원칙), Noto Sans KR 웹 글꼴(`wwwroot/fonts/noto-sans-kr`, OFL 1.1)을 `sample-hig`·`sample-krds`에 적용 |
 | `fw-v1.6.0` | (병합 후 태그) | 2026-11-09 | 디자인 프로필(`Portal:Ui:Profile`, `Profiles/<이름>/`): 색·글꼴 변수, 로고, 파비콘, 로그인 배치, 레포트·메일 서식. 샘플 `sample-hig` |
 | `fw-v1.5.0` | (병합 후 태그) | 2026-11-05 | 메일 보내는 사람 지정(`@P_FROM_USER_ID`, `MAIL.FROM_NAME`, `MAIL.ALLOW_USER_FROM`, 템플릿 표시 이름) |
@@ -31,7 +32,7 @@
 | --- | --- | --- | --- |
 | OS | Windows Server | 2022 | 최신 누적 업데이트 |
 | 웹 서버 | IIS + ASP.NET Core Module V2 | IIS 10, In-Process 호스팅 | `src/Portal.Web/web.config` |
-| 런타임 | **ASP.NET Core Hosting Bundle** | **10.0.14 이상** | .NET 10 LTS (지원 종료 2028-11). 10.0.14는 CVE-2026-111497, CVE-2026-70197 보안 수정 포함 |
+| 런타임 | **ASP.NET Core Hosting Bundle** | **11.0.0 이상** (패치가 나오면 최신) | .NET 11 STS (지원 종료 2028-11-14, .NET 10 LTS와 같은 날). `fw-v1.7.0` 이하 빌드는 10.0.14 이상. 두 번들은 나란히 설치하고 롤백 전까지 10을 지우지 않음([이관 안내](upgrade/dotnet-11.md) 4장) |
 | 배치 서비스 | Portal.Worker (Windows 서비스) | 같은 런타임 | `Microsoft.Extensions.Hosting.WindowsServices` |
 | DB | SQL Server | 2022 (호환성 수준 160) | Standard 이상 권장. 데이터 정렬 `Korean_Wansung_CI_AS`, `READ_COMMITTED_SNAPSHOT ON` |
 | PDF 변환 | Microsoft Edge | 서버 설치본 최신 | 헤드리스로 HTML→PDF. 경로 기본값 `C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe` |
@@ -40,7 +41,7 @@
 확인 명령 (서버에서):
 
 ```powershell
-dotnet --list-runtimes          # Microsoft.AspNetCore.App 10.0.14 이상
+dotnet --list-runtimes          # Microsoft.AspNetCore.App 11.0.0 이상
 Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL16.*\Setup' | Select-Object PatchLevel
 ```
 
@@ -48,13 +49,14 @@ Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL16.*\Setup'
 
 | 구분 | 제품 | 버전 | 어디에 고정 |
 | --- | --- | --- | --- |
-| SDK | .NET SDK | **10.0.114 이상** (같은 10.0.1xx 대역의 최신 기능 밴드 허용) | `global.json` (`rollForward: latestFeature`) |
-| 대상 프레임워크 | `net10.0` | | `Directory.Build.props` |
-| 언어 | C# | `latest` (.NET 10 기준 C# 14) | `Directory.Build.props` |
+| SDK | .NET SDK | **11.0.100 이상** (상위 기능 밴드 허용) | `global.json` (`rollForward: latestFeature`) |
+| 대상 프레임워크 | `net11.0` | | `Directory.Build.props` |
+| 언어 | C# | `latest` (.NET 11 기준 C# 15) | `Directory.Build.props` |
 | 코드 규칙 | Nullable, 경고 = 오류, 분석기 `Recommended`, 코드 스타일 빌드 검사 | | `Directory.Build.props`, `.editorconfig` |
 | DB 프로젝트 | Microsoft.Build.Sql SDK | 2.3.0 | `db/Portal.Database/Portal.Database.sqlproj` |
-| DB 배포 | SqlPackage (dotnet tool) | 170.5.96 | `dotnet-tools.json` (`dotnet tool restore`) |
+| DB 배포 | SqlPackage (dotnet tool) | 170.5.96 | `dotnet-tools.json` (`dotnet tool restore`). net8/net10용만 있어 실행 때 `DOTNET_ROLL_FORWARD=Major`(CI·`db/ops` 스크립트에 적용) |
 | 운영 스크립트 | PowerShell | 5.1 이상 (7 권장) | `db/ops/*.ps1` |
+| IDE | Visual Studio 2026 최신 업데이트 또는 VS Code + C# 확장 | | VS 2022는 `net11.0` 미지원 |
 | CI (현재) | GitHub Actions | `ubuntu-latest`, `actions/setup-dotnet@v4` (global.json 따름) | `.github/workflows/ci.yml` |
 | CI (운영 이전용) | GitLab CI | Windows Runner (PowerShell shell executor) | `.gitlab-ci.yml` |
 | 개발 DB | SQL Server 2022 Developer | | `db/ops/local-setup.ps1` |
@@ -68,11 +70,11 @@ Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL16.*\Setup'
 | --- | --- | --- | --- | --- |
 | Microsoft.Data.SqlClient | 7.1.1 | MIT | DB 접근 (SP 실행기) | 예 |
 | DocumentFormat.OpenXml | 3.5.1 | MIT | 엑셀 올리기·내려받기 | 예 |
-| Microsoft.Extensions.Hosting.WindowsServices | 10.0.14 | MIT | Portal.Worker Windows 서비스 | 예 |
-| System.DirectoryServices.Protocols | 10.0.14 | MIT | LDAP 조회 모듈(선택 사용) | 예 |
-| System.Security.Cryptography.Pkcs | 10.0.14 | MIT | SqlClient 전이 의존성 보안 패치 고정 | 예 |
+| Microsoft.Extensions.Hosting.WindowsServices | 11.0.0 | MIT | Portal.Worker Windows 서비스 | 예 |
+| System.DirectoryServices.Protocols | 11.0.0 | MIT | LDAP 조회 모듈(선택 사용) | 예 |
+| System.Security.Cryptography.Pkcs | 11.0.0 | MIT | SqlClient 전이 의존성 보안 패치 고정 | 예 |
 | QRCoder | 1.6.0 | MIT | 2단계 인증 QR (의존성 없는 마지막 판) | 예 |
-| Microsoft.AspNetCore.Mvc.Testing | 10.0.14 | MIT | 웹 통합 테스트 | 아니요 |
+| Microsoft.AspNetCore.Mvc.Testing | 11.0.0 | MIT | 웹 통합 테스트 | 아니요 |
 | Microsoft.NET.Test.Sdk | 18.11.0 | MIT | 테스트 | 아니요 |
 | xunit.v3 | 3.2.2 | Apache 2.0 | 테스트 | 아니요 |
 | xunit.runner.visualstudio | 3.1.5 | Apache 2.0 | 테스트 | 아니요 |

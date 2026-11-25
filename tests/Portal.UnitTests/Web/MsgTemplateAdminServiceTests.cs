@@ -37,7 +37,7 @@ public sealed class MsgTemplateAdminServiceTests : IAsyncLifetime
         await _service.SaveAsync(Request(), Ct);
 
         var args = _sp.LastCall(MsgTemplateAdminService.SaveSp).Parameters;
-        var json = JsonDocument.Parse((string)args["P_LANGS_JSON"]!).RootElement;
+        var json = JsonElement.Parse((string)args["P_LANGS_JSON"]!);
         Assert.Equal("안내", json[0].GetProperty("subject").GetString());
         Assert.Equal(RowVer, args["P_ROW_VER"]);
     }

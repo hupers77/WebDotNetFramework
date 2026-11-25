@@ -32,7 +32,7 @@ public sealed class ApiOutboundAdminServiceTests
 
     private static ApiOutboundSaveRequest Req(params ApiOutboundSaveRow[] rows) => new() { Rows = [.. rows] };
 
-    private JsonElement Sent() => JsonDocument.Parse((string)_sp.LastCall(ApiOutboundAdminService.SaveSp).Parameters["P_ROWS_JSON"]!).RootElement;
+    private JsonElement Sent() => JsonElement.Parse((string)_sp.LastCall(ApiOutboundAdminService.SaveSp).Parameters["P_ROWS_JSON"]!);
 
     [Fact]
     public async Task 저장은_주소_끝슬래시를_빼고_비밀값은_암호화해서_넘긴다()

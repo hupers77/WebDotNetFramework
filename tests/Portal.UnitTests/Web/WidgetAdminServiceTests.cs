@@ -34,7 +34,7 @@ public sealed class WidgetAdminServiceTests
     {
         var result = await _service.SaveAsync(Request(Row()), Ct);
 
-        var json = JsonDocument.Parse((string)_sp.LastCall(WidgetAdminService.SaveSp).Parameters["P_ROWS_JSON"]!).RootElement[0];
+        var json = JsonElement.Parse((string)_sp.LastCall(WidgetAdminService.SaveSp).Parameters["P_ROWS_JSON"]!)[0];
         Assert.Equal(1, result.AffectedCnt);
         Assert.Equal("공지", json.GetProperty("nameKo").GetString());
         Assert.Equal(8, json.GetProperty("spanCols").GetInt32());

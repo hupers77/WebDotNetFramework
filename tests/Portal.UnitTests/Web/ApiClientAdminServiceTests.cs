@@ -39,7 +39,7 @@ public sealed class ApiClientAdminServiceTests
     {
         await _service.SaveAsync(Req(Row("I"), Row("U", "erp-2")), Ct);
 
-        var rows = JsonDocument.Parse((string)_sp.LastCall(ApiClientAdminService.SaveSp).Parameters["P_ROWS_JSON"]!).RootElement;
+        var rows = JsonElement.Parse((string)_sp.LastCall(ApiClientAdminService.SaveSp).Parameters["P_ROWS_JSON"]!);
         Assert.Equal("PING,ORDER_GET", rows[0].GetProperty("apiCodes").GetString());
         Assert.Equal("10.0.0.0/8", rows[0].GetProperty("allowIpList").GetString());
         Assert.Equal("ERP", rows[0].GetProperty("clientNm").GetString());
@@ -124,7 +124,7 @@ public sealed class ApiClientAdminServiceTests
         await Assert.ThrowsAsync<BizException>(() => _service.SaveAsync(Req(badDate), Ct));
         await _service.SaveAsync(Req(empty), Ct);
 
-        var json = JsonDocument.Parse((string)_sp.LastCall(ApiClientAdminService.SaveSp).Parameters["P_ROWS_JSON"]!).RootElement[0];
+        var json = JsonElement.Parse((string)_sp.LastCall(ApiClientAdminService.SaveSp).Parameters["P_ROWS_JSON"]!)[0];
         Assert.Equal("", json.GetProperty("apiCodes").GetString());
         Assert.Equal(JsonValueKind.Null, json.GetProperty("allowIpList").ValueKind);
         Assert.Equal(JsonValueKind.Null, json.GetProperty("expireDt").ValueKind);

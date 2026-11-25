@@ -1,6 +1,6 @@
 # WebDotNetFramework
 
-.NET 10 / Windows Server 2022 / MSSQL 2022 기반 엔터프라이즈 웹 포털 프레임워크입니다. 현재 버전 **`fw-v1.5.0`** ([기술 스펙](docs/tech-spec.md)).
+.NET 11 / Windows Server 2022 / MSSQL 2022 기반 엔터프라이즈 웹 포털 프레임워크입니다. 현재 버전 **`fw-v1.8.0`** ([기술 스펙](docs/tech-spec.md)).
 
 ## 문서
 
@@ -11,13 +11,14 @@
 | [초기 데이터 정의서](docs/initial-data.md) | 초기 역할, 메뉴, 공통코드, 설정 키, 배치 작업 |
 | [업무 개발 이관 문서](docs/handover/README.md) | 별도 업무 저장소에서 개발할 때 읽을 요약: 프레임워크 사용법·구현 현황, 업무(경비대 반출입) 분석 내용, 새 업무 저장소 시작·업데이트 방식, CLAUDE.md 초안 |
 | [기술 스펙 (버전 표기)](docs/tech-spec.md) | 현재 프레임워크 버전, 서버·개발 환경·패키지·화면 라이브러리의 실제 버전 |
+| [.NET 11 이관 안내](docs/upgrade/dotnet-11.md) | .NET 10 → 11 변경점, 업무 저장소·서버 적용 순서, 되돌리는 방법 |
 | [보안 점검 보고서 (2026-10)](docs/security/2026-10-security-audit.md) | KISA 보안약점 49개·주통기반 웹 21개 항목·OWASP Top 10 자가진단, 발견 취약점과 조치, 운영 권고 |
 | [보안 점검 반영 방법 (업무 저장소용)](docs/security/apply-to-business-repos.md) | 프레임워크에서 시작한 업무 저장소가 이번 보안 패치를 받는 순서와 직접 고칠 곳 |
 | [보안 점검 skill `web-security-audit`](.claude/skills/web-security-audit/README.md) | 같은 점검을 다른 PC·다른 사내 시스템에서 Claude Code로 하는 방법, 점검 스크립트 |
 
 ## 빌드와 테스트
 
-.NET 10 SDK 10.0.114 이상만 있으면 됩니다(`global.json`으로 버전 고정). 버전 전체는 [기술 스펙](docs/tech-spec.md).
+.NET 11 SDK 11.0.100 이상만 있으면 됩니다(`global.json`으로 버전 고정). 버전 전체는 [기술 스펙](docs/tech-spec.md), .NET 10에서 옮겨 오는 방법은 [.NET 11 이관 안내](docs/upgrade/dotnet-11.md).
 
 ```powershell
 dotnet build Portal.sln                                   # 분석기 경고도 오류로 처리
@@ -59,6 +60,7 @@ dotnet run --project src/Portal.Web                       # https://localhost:50
 
 | 날짜 | 버전 | 내용 | 업무 저장소가 할 일 |
 | --- | --- | --- | --- |
+| 2026-11-25 | `fw-v1.8.0` | .NET 10 → .NET 11 전환: `global.json` SDK 11.0.100, 대상 프레임워크 `net11.0`, Microsoft 패키지 4개 11.0.0(`Hosting.WindowsServices`, `DirectoryServices.Protocols`, `Cryptography.Pkcs`, `Mvc.Testing`). 새 분석기 규칙 CA2026에 맞춰 테스트 11곳을 `JsonElement.Parse`로 수정. SqlPackage(net8/net10용)는 CI·`db/ops` 스크립트에서 `DOTNET_ROLL_FORWARD=Major`로 실행. 기능·DB·설정 키 변경 없음. .NET 11은 STS로 지원 종료가 .NET 10 LTS와 같은 2028-11-14. 변경점·영향·롤백은 [.NET 11 이관 안내](docs/upgrade/dotnet-11.md). 어셈블리 버전 1.8.0 | 개발 PC·러너에 .NET SDK 11.0.100 이상과 Visual Studio 2026 최신 업데이트, 웹 서버에 ASP.NET Core 11 Hosting Bundle 설치(10은 롤백용으로 남김). 병합 후 빌드 경고(CA2026, NU1510, `SYSLIB*`)를 고치고, 배포 스크립트의 SqlPackage 실행에 `DOTNET_ROLL_FORWARD=Major`. 금액 계산에 double→decimal 변환이 있으면 확인([이관 안내](docs/upgrade/dotnet-11.md) 3·4장) |
 | 2026-11-09 | `fw-v1.7.0` | 샘플 디자인 프로필 3종 추가: `sample-dense`(IBM Carbon 원칙의 고밀도 업무형: 작은 모서리, 32px 버튼·입력, 본문 14px), `sample-office`(Microsoft Fluent 2 원칙의 오피스형: Segoe UI·맑은 고딕, 4px 모서리, 옅은 그림자), `sample-krds`(정부 디자인 시스템·웹 접근성 지침 원칙의 공공형: 본문 16px, 44px 클릭 영역). Noto Sans KR 웹 글꼴(OFL 1.1, 유니코드 범위별 woff2)을 `wwwroot/fonts/noto-sans-kr/`에 넣고 `sample-hig`와 `sample-krds`에 적용. 모든 샘플은 라이트·다크 명도 대비 4.5:1 단위 테스트 통과 대상. 어셈블리 버전 1.7.0 | 할 일 없음(기존 화면 그대로). 회사 프로필에서 Noto Sans KR을 쓰려면 `tokens.css` 맨 위에 `@import url("../fonts/noto-sans-kr/noto-sans-kr.css");`와 `--fw-font: "Noto Sans KR", ...`([개발 표준 가이드](docs/dev-guide.md) 12장 규칙 4) |
 | 2026-11-09 | `fw-v1.6.0` | 설치 시 고르는 디자인 프로필: `appsettings.json`의 `Portal:Ui:Profile`(기본 `default`)이 `src/Portal.Web/Profiles/<이름>/` 폴더(`profile.json`, `tokens.css`, 로고, 파비콘, `report.css`, `mail-layout.html`)를 고르고, 화면은 `/profile/*`로 그 파일을 씁니다. 잘못된 프로필이면 기동이 멈춥니다. `portal.css`의 박힌 색·글꼴·크기를 `--fw-*` 변수로 정리(기본 화면은 그대로, 새 글 표시 N 배지만 명도 대비 때문에 조금 진한 빨강). 로고(밝은/다크/브랜드 배경), 파비콘(기본: 정보광장 아이콘), 로그인 배치(`split`/`center`), 레포트·PDF 머리말 로고와 추가 CSS, 메일 공통 머리말·꼬리말(대기열 메일·인증번호 메일). 샘플 `sample-hig`(Apple HIG 원칙: 시스템 글꼴, 큰 모서리, 반투명 상단 바, 가운데 로그인 카드). 설정 `SITE.THEME_COLOR`는 기본값을 비우고(프로필 색 사용), 값이 있으면 프로필 색보다 우선(예전 기본값 `#1F5FBF`는 시드가 비움). Portal.Worker는 `Portal:Ui`가 비어 있으면 메일 레이아웃 없이 보냄. 어셈블리 버전 1.6.0 | 병합 후 DB 재배포(시드). 회사 디자인이 필요하면 `Profiles/<시스템명>/`을 **새로 추가**하고(프레임워크 파일·`default`는 고치지 않음) 웹 `appsettings.Production.json`에 `Portal:Ui:Profile`을 지정. 메일 레이아웃을 쓰면 Portal.Worker에도 같은 `Profile`과 웹의 `Profiles` 폴더 경로(`ProfileRoot`)를 지정. `SITE.THEME_COLOR`를 사이트에서 바꿔 두었다면 프로필 색을 쓰려면 설정 관리에서 비움. 레이아웃 뷰를 복사해 쓰고 있었다면 프레임워크 것으로 교체([개발 표준 가이드](docs/dev-guide.md) 12장) |
 | 2026-11-05 | `fw-v1.5.0` | 메일 보내는 사람 지정(업무 저장소 요청서 2): `FW.USP_MSG_QUEUE_SAVE`에 선택 파라미터 `@P_FROM_USER_ID`(발송 때 그 사용자의 업무 이메일 사용; `TB_MSG_QUEUE.FROM_USER_ID` 추가). 새 설정 `MAIL.FROM_NAME`(보내는 사람 표시 이름)과 `MAIL.ALLOW_USER_FROM`(기본 N: 보내는 주소는 `MAIL.FROM` 그대로, 그 사용자 주소는 Reply-To; Y: 그 사용자 주소를 보내는 주소로 사용하려면 메일 서버가 허용해야 함). 템플릿별 표시 이름 `TB_MSG_TEMPLATE.FROM_NAME`(메시지 템플릿 화면 입력, `USP_MSG_TEMPLATE_SAVE`에 선택 파라미터 `@P_FROM_NAME`). `MailMessageData`에 `FromAddress`/`FromName`/`ReplyTo`(선택). 파라미터를 안 주는 기존 호출은 그대로. 어셈블리 버전 1.5.0 | 병합 후 DB 재배포. 반출불가 처리 등에서 `FW.USP_MSG_QUEUE_SAVE`를 `@P_FROM_USER_ID = 처리한 경비원 ID`로 부름. 사이트에서 `MAIL.FROM_NAME`(예: 통합반출시스템)을 입력하고, 메일 서버가 사용자 주소로 보내기를 허용하는지 확인한 뒤에만 `MAIL.ALLOW_USER_FROM = Y` (허용 안 하면 N으로 두면 됨) |

@@ -20,7 +20,7 @@ Oct 21, 2026 · @사랑나무아빠
 | 구분 | 사양 |
 | --- | --- |
 | 웹/WAS | 운영계·개발계 각 1대, Windows Server 2022, IIS 10 + ASP.NET Core Module(In-Process) |
-| 런타임 | .NET 10 LTS (2028년 11월까지 지원) |
+| 런타임 | .NET 11 STS (`fw-v1.8.0`부터. 설계 당시 .NET 10 LTS. 지원 기간과 이관은 [기술 스펙](tech-spec.md)과 [.NET 11 이관 안내](upgrade/dotnet-11.md)) |
 | DB | 운영계·개발계 각 1대, SQL Server 2022 (Standard 이상 권장, READ\_COMMITTED\_SNAPSHOT ON) |
 | 인증 연계 | Active Directory SSO (Kerberos/NTLM). 조직·사용자 정보는 AD 연계 팀이 제공하는 AD 마스터 뷰에서 받아 옴 |
 | 클라이언트 | Edge/Chrome 최신 2개 버전, 해상도 1366px 이상, 모바일 반응형(조회 위주) |
@@ -762,7 +762,7 @@ Cache-Control: no-store   (인증이 필요한 동적 페이지)
    6. `app_offline.htm`을 없애고 확인 목록(로그인, 메뉴 표시, 조회 1건, 저장 1건, 첨부 다운로드)을 점검합니다.
    7. 복구 시점·손실 구간을 장애 보고서에 기록합니다.
 2. **실수로 데이터를 삭제·변경한 경우**: 운영 DB를 덮어쓰지 않고, 다른 이름(`PORTAL_RESTORE`)으로 사고 직전 시점까지 복원(`STOPAT`)한 뒤 필요한 행만 비교해 되돌립니다. 감사 로그의 변경 전 값으로 범위를 먼저 확인합니다.
-3. **웹서버 장애**: ① 서버 구성서대로 Windows Server 2022, IIS, .NET 10 Hosting Bundle(최신 보안 패치, 2026-10 기준 10.0.14 이상), Microsoft Edge, 한국어·중국어 글꼴을 설치 ② GitLab의 마지막 운영 릴리스 패키지 배포 ③ 설정 파일, Data Protection 키, 첨부파일 복원 ④ 확인 목록 점검. Data Protection 키를 잃으면 모든 사용자가 다시 로그인해야 하고 암호화된 설정값을 다시 입력해야 합니다.
+3. **웹서버 장애**: ① 서버 구성서대로 Windows Server 2022, IIS, .NET Hosting Bundle([기술 스펙](tech-spec.md) 2장의 버전. `fw-v1.8.0`부터 11.0.0 이상), Microsoft Edge, 한국어·중국어 글꼴을 설치 ② GitLab의 마지막 운영 릴리스 패키지 배포 ③ 설정 파일, Data Protection 키, 첨부파일 복원 ④ 확인 목록 점검. Data Protection 키를 잃으면 모든 사용자가 다시 로그인해야 하고 암호화된 설정값을 다시 입력해야 합니다.
 4. **배포 실패**: 17장의 롤백 절차를 따릅니다.
 
 **복원 스크립트 예시**

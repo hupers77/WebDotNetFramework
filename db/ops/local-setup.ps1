@@ -35,7 +35,12 @@ dotnet build $project -c Debug
 if ($LASTEXITCODE -ne 0) { throw "DB 프로젝트 빌드 실패" }
 
 Write-Host "3/3 배포 (스키마 + 초기 데이터)"
-dotnet sqlpackage /Action:Publish /SourceFile:$dacpac /Profile:$profile /TargetConnectionString:$ConnectionString
-if ($LASTEXITCODE -ne 0) { throw "배포 실패" }
+# sqlpackage 도구는 net8/net10 빌드만 있어 .NET 11만 설치된 PC에서는 상위 런타임으로 올려 실행한다
+$env:DOTNET_ROLL_FORWARD = "Major"
+try {
+    dotnet sqlpackage /Action:Publish /SourceFile:$dacpac /Profile:$profile /TargetConnectionString:$ConnectionString
+    if ($LASTEXITCODE -ne 0) { throw "배포 실패" }
+}
+finally { Remove-Item Env:DOTNET_ROLL_FORWARD -ErrorAction SilentlyContinue }
 
 Write-Host "완료: $Database"

@@ -7,7 +7,7 @@
 | 항목 | 내용 |
 | --- | --- |
 | 실행 환경 | Windows Server 2022 + IIS, SQL Server 2022. 운영계·개발계 각각 웹 1대 + DB 1대 |
-| 기술 | .NET 10 (LTS), ASP.NET Core MVC/Razor 모듈형 모놀리스, 배치는 Windows 서비스 `Portal.Worker` |
+| 기술 | .NET 11 (`fw-v1.8.0`부터, STS. 옮기는 방법은 [.NET 11 이관 안내](../upgrade/dotnet-11.md)), ASP.NET Core MVC/Razor 모듈형 모놀리스, 배치는 Windows 서비스 `Portal.Worker` |
 | DB 접근 | **SP만** 사용. EF Core·인라인 SQL 금지. `ISpExecutor`(Microsoft.Data.SqlClient 위 자체 구현) 하나로 호출. 앱 DB 계정은 SP `EXECUTE` 권한만 가짐(DB 역할 `portal_app`) |
 | 사용자 | 본사 임직원 + 다수 협력사. 협력사는 자기 회사 데이터만 봄(데이터 범위 함수) |
 | 로그인 | ID/PW + 관리자·협력사 2단계 인증(TOTP 또는 이메일 인증번호). 협력사 전용 로그인 `/Account/PartnerLogin`. AD SSO(도메인 PC 자동 로그인)는 **프레임워크 범위 밖, 업무 저장소에서 개발** |

@@ -42,7 +42,7 @@ public sealed class LangAdminServiceTests : IAsyncLifetime
     {
         await _service.SaveAsync(Request(Row(), Row("U", "SYS.TEST.OTHER")), Ct);
 
-        var json = JsonDocument.Parse((string)_sp.LastCall(LangAdminService.SaveSp).Parameters["P_ROWS_JSON"]!).RootElement;
+        var json = JsonElement.Parse((string)_sp.LastCall(LangAdminService.SaveSp).Parameters["P_ROWS_JSON"]!);
         Assert.Equal("제목", json[0].GetProperty("texts")[0].GetProperty("resText").GetString());
         Assert.Equal(JsonValueKind.Null, json[0].GetProperty("rowVer").ValueKind);
         Assert.Equal("0000000000000005", json[1].GetProperty("rowVer").GetString());
